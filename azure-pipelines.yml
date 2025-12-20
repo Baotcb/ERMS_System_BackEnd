@@ -6,14 +6,23 @@ trigger:
 pool:
   vmImage: 'ubuntu-latest'
 
+
 variables:
-  solution: '**/*.sln'
-  buildConfiguration: 'Release'
-  dotNetVersion: '10.x'
-  azureSubscription: 'AzureConnection-Students' 
-  webAppName: 'ERMSBE'
-  sonarProjectKey: 'EnterpriseResourcePlanningSystem_EnterpriseResourcePlanningSystem_BE'
-  sonarOrg: 'enterpriseresourceplanningsystem'
+- group: SONAR_TOKEN  
+- name: solution
+  value: '**/*.sln'
+- name: buildConfiguration
+  value: 'Release'
+- name: dotNetVersion
+  value: '10.x'
+- name: azureSubscription
+  value: 'AzureConnection-Students'
+- name: webAppName
+  value: 'ERMSBE'
+- name: sonarProjectKey
+  value: 'EnterpriseResourcePlanningSystem_EnterpriseResourcePlanningSystem_BE'
+- name: sonarOrg
+  value: 'enterpriseresourceplanningsystem'
 
 stages:
 - stage: Build
@@ -40,7 +49,7 @@ stages:
         /d:sonar.host.url="https://sonarcloud.io"
       displayName: 'SonarScanner Begin'
       env: 
-        SONAR_TOKEN_ENV: $(SONAR_TOKEN)
+        SONAR_TOKEN_ENV: $(SONAR_TOKEN) 
 
     - task: DotNetCoreCLI@2
       displayName: 'Restore Dependencies'
@@ -54,10 +63,13 @@ stages:
         command: 'build'
         projects: '$(solution)'
         arguments: '--configuration $(buildConfiguration) --no-restore'
+
     - script: |
         export PATH="$PATH:$HOME/.dotnet/tools"
-        dotnet sonarscanner end /d:sonar.token="$(SONAR_TOKEN)"
+        dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN_ENV"
       displayName: 'SonarScanner End'
+      env: 
+        SONAR_TOKEN_ENV: $(SONAR_TOKEN)
 
     - task: DotNetCoreCLI@2
       displayName: 'Publish API'
@@ -90,7 +102,7 @@ stages:
           - download: current
             artifact: drop
 
-          - task: AzureWebApp@1
+          - task: AzureWebApp@2
             displayName: 'Deploy API'
             inputs:
               azureSubscription: '$(azureSubscription)'
