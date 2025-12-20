@@ -12,6 +12,8 @@ variables:
   dotNetVersion: '10.x'
   azureSubscription: 'AzureConnection-Students' 
   webAppName: 'ERMSBE'
+  sonarProjectKey: 'EnterpriseResourcePlanningSystem_EnterpriseResourcePlanningSystem_BE'
+  sonarOrg: 'enterpriseresourceplanningsystem'
 
 stages:
 - stage: Build
@@ -27,6 +29,17 @@ stages:
         version: '$(dotNetVersion)'
         includePreviewVersions: true
 
+    - script: dotnet tool install --global dotnet-sonarscanner
+      displayName: 'Install SonarScanner Tool'
+
+    - script: |
+        export PATH="$PATH:$HOME/.dotnet/tools"
+        dotnet sonarscanner begin /k:"$(sonarProjectKey)" \
+        /o:"$(sonarOrg)" \
+        /d:sonar.token="$(SONAR_TOKEN)" \
+        /d:sonar.host.url="https://sonarcloud.io"
+      displayName: 'SonarScanner Begin'
+
     - task: DotNetCoreCLI@2
       displayName: 'Restore Dependencies'
       inputs:
@@ -39,6 +52,10 @@ stages:
         command: 'build'
         projects: '$(solution)'
         arguments: '--configuration $(buildConfiguration) --no-restore'
+    - script: |
+        export PATH="$PATH:$HOME/.dotnet/tools"
+        dotnet sonarscanner end /d:sonar.token="$(SONAR_TOKEN)"
+      displayName: 'SonarScanner End'
 
     - task: DotNetCoreCLI@2
       displayName: 'Publish API'
