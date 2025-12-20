@@ -102,7 +102,7 @@ stages:
           - download: current
             artifact: drop
 
-          - task: AzureWebApp@2
+          - task: AzureWebApp@1
             displayName: 'Deploy API'
             inputs:
               azureSubscription: '$(azureSubscription)'
