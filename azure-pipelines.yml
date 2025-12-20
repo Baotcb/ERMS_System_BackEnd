@@ -11,7 +11,7 @@ variables:
   buildConfiguration: 'Release'
   dotNetVersion: '10.x'
   azureSubscription: 'AzureConnection-Students' 
-  webAppName: 'ERMSBE '
+  webAppName: 'ERMSBE'
 
 stages:
 - stage: Build
