@@ -45,7 +45,7 @@ stages:
       inputs:
         command: 'publish'
         publishWebProjects: false
-        projects: '**/AuctionSystem.API.csproj'
+        projects: '**/ERMS.API.csproj'
         arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/api --runtime linux-x64 --self-contained false'
         zipAfterPublish: true
 
