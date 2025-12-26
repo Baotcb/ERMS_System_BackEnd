@@ -6,11 +6,11 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Microsoft.AspNetCore.Http;
 
 namespace ERMS.Infrastructure
 {
@@ -25,10 +25,15 @@ namespace ERMS.Infrastructure
             // 2. Identity
             services.AddIdentityCore<User>()
                 .AddRoles<IdentityRole<Guid>>()
-                .AddEntityFrameworkStores<ERMSDbContext>();
+                .AddEntityFrameworkStores<ERMSDbContext>()
+                .AddDefaultTokenProviders();
 
 
+            
+
+            services.AddScoped<ICurrentUserService, CurrentUserService>();
             services.AddScoped<ITokenService, TokenService>();
+            services.AddTransient<IEmailService, EmailService>();
 
 
 

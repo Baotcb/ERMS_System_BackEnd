@@ -1,5 +1,7 @@
-﻿using ERMS.Application.Features.Auth.Login;
+﻿using ERMS.Application.Features.Auth.ForgotPassword;
+using ERMS.Application.Features.Auth.Login;
 using ERMS.Application.Features.Auth.Register;
+using ERMS.Application.Features.Auth.ResetPassword;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -47,6 +49,42 @@ namespace ERMS.API.Controllers
             }
             catch (Exception ex)
             {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordCommand command)
+        {
+            try
+            {
+                var token = await _sender.Send(command);
+              
+                return Ok(new { message = "Vui lòng kiểm tra email " });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordCommand command)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                var resultMessage = await _sender.Send(command);
+                return Ok(new { message = resultMessage });
+            }
+            catch (Exception ex)
+            {
+                
                 return BadRequest(new { message = ex.Message });
             }
         }
