@@ -13,6 +13,7 @@ namespace ERMS.API
             services.AddEndpointsApiExplorer();
             services.AddHttpContextAccessor();
 
+
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                .AddJwtBearer(options =>
                {
