@@ -20,30 +20,37 @@ namespace ERMS.Application.Features.Auth.ForgotPassword
         public async Task<string> Handle(ForgotPasswordCommand request, CancellationToken cancellationToken)
         {
             var user = await _userManager.FindByEmailAsync(request.Email);
-            if (user == null)
-            {
-                
-                return "Nếu email tồn tại, bạn sẽ nhận được hướng dẫn đặt lại mật khẩu.";
-            }
-
-           
-            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-
-          
-            string emailBody = $@"
-            <h3>Yêu cầu đặt lại mật khẩu - ERMS System</h3>
-            <p>Chào {user.FullName},</p>
-            <p>Bạn vừa yêu cầu đặt lại mật khẩu. Vui lòng sử dụng Token dưới đây:</p>
-            <p><b>{token}</b></p>
-            <p>Token này sẽ hết hạn sau vài giờ.</p>
-            <br/>
-            <p>Trân trọng,<br/>Đội ngũ quản trị</p>
-        ";
+            if (user == null) return "Email đã được gửi.";
 
             
-            await _emailService.SendEmailAsync(user.Email, "Reset Password Token", emailBody);
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
 
-            return "Email hướng dẫn đã được gửi đi!";
+           
+            var encodedToken = Uri.EscapeDataString(token);
+
+            var encodedEmail = Uri.EscapeDataString(user.Email);
+
+            
+            string clientUrl = "http://localhost:3000";
+            string resetLink = $"{clientUrl}/reset-password?email={encodedEmail}&token={encodedToken}";
+
+           
+            string emailBody = $@"
+        <h3>Yêu cầu đặt lại mật khẩu</h3>
+        <p>Chào {user.FullName},</p>
+        <p>Bấm vào nút bên dưới để đặt lại mật khẩu của bạn:</p>
+        <a href='{resetLink}' 
+           style='background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;'>
+           Đặt lại mật khẩu
+        </a>
+        <p>Hoặc copy link này vào trình duyệt:</p>
+        <p>{resetLink}</p>
+    ";
+
+       
+            await _emailService.SendEmailAsync(user.Email, "Reset Password", emailBody);
+
+            return "Email đã được gửi đi!";
         }
     }
 }

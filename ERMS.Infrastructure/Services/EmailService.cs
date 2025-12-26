@@ -21,28 +21,28 @@ namespace ERMS.Infrastructure.Services
         {
             var email = new MimeMessage();
 
-            // 1. Người gửi
+        
             email.From.Add(new MailboxAddress(
                 _config["EmailSettings:SenderName"],
                 _config["EmailSettings:SenderEmail"]));
 
-            // 2. Người nhận
+       
             email.To.Add(MailboxAddress.Parse(toEmail));
 
-            // 3. Nội dung
+         
             email.Subject = subject;
             var builder = new BodyBuilder();
-            builder.HtmlBody = body; // Hỗ trợ gửi HTML
+            builder.HtmlBody = body;
             email.Body = builder.ToMessageBody();
 
-            // 4. Kết nối SMTP Gmail và gửi
+          
             using var smtp = new SmtpClient();
             try
             {
-                // Kết nối đến server Gmail (Port 587 là chuẩn cho TLS)
+             
                 await smtp.ConnectAsync(_config["EmailSettings:SmtpServer"], int.Parse(_config["EmailSettings:Port"]), SecureSocketOptions.StartTls);
 
-                // Đăng nhập
+                
                 await smtp.AuthenticateAsync(_config["EmailSettings:SenderEmail"], _config["EmailSettings:Password"]);
 
                 
