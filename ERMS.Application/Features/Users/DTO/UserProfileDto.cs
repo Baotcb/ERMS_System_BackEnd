@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace ERMS.Application.DTO.Users
+namespace ERMS.Application.Features.Users.DTO
 {
     public class UserProfileDto
     {

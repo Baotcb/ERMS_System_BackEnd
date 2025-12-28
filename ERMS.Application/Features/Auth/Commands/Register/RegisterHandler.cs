@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace ERMS.Application.Features.Auth.Register
+namespace ERMS.Application.Features.Auth.Commands.Register
 {
     public class RegisterHandler : IRequestHandler<RegisterCommand, Guid>
     {

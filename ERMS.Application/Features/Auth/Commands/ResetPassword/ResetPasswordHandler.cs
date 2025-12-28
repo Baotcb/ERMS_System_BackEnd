@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace ERMS.Application.Features.Auth.ResetPassword
+namespace ERMS.Application.Features.Auth.Commands.ResetPassword
 {
     public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand, string>
     {
