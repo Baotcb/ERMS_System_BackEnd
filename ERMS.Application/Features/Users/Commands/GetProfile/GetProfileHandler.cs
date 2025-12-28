@@ -1,46 +1,50 @@
-﻿using ERMS.Application.DTO.Users;
-using ERMS.Application.Features.Users.GetProfile;
+﻿using ERMS.Application.Features.Users.DTO;
 using ERMS.Application.Interface;
 using ERMS.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace ERMS.Application.Features.Users.ChangeProfile
+namespace ERMS.Application.Features.Users.Commands.GetProfile
 {
-    public class ChangeProfileHandler : IRequestHandler<ChangeProfileCommand, UserProfileDto>
+    public class GetProfileHandler : IRequestHandler<GetProfileCommand, UserProfileDto>
     {
         private readonly UserManager<User> _userManager;
         private readonly ICurrentUserService _currentUserService;
-        public ChangeProfileHandler(UserManager<User> userManager, ICurrentUserService currentUserService)
+
+
+        public GetProfileHandler(UserManager<User> userManager, ICurrentUserService currentUserService)
         {
             _userManager = userManager;
             _currentUserService = currentUserService;
         }
-        public async Task<UserProfileDto> Handle(ChangeProfileCommand request, CancellationToken cancellationToken)
+        public async Task<UserProfileDto> Handle(GetProfileCommand request, CancellationToken cancellationToken)
         {
+            
             var userId = _currentUserService.UserId;
+
             if (userId == null)
             {
                 throw new UnauthorizedAccessException("Không tìm thấy thông tin người dùng trong Token.");
             }
-            var user = await _userManager.FindByIdAsync(userId.ToString());
+
+     
+            var user = await _userManager.Users
+                .Include(u => u.Department)
+                .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+
             if (user == null)
             {
-                throw new UnauthorizedAccessException("Người dùng không tồn tại.");
+                throw new Exception("Người dùng không tồn tại trong hệ thống.");
             }
-            user.FullName = request.FullName;
-            user.DateOfBirth = request.DateOfBirth;
-            user.Hometown = request.Hometown;
-            user.Phones = request.Phones;
-            var result = await _userManager.UpdateAsync(user);
-            if (!result.Succeeded)
-            {
-                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                throw new Exception($"Cập nhật profile thất bại: {errors}");
-            }
+
+          
+            var roles = await _userManager.GetRolesAsync(user);
+
+         
             return new UserProfileDto
             {
                 UserName = user.UserName ?? string.Empty,
@@ -55,6 +59,5 @@ namespace ERMS.Application.Features.Users.ChangeProfile
                 DateJoined = user.DateJoined
             };
         }
-
     }
 }
