@@ -1,7 +1,7 @@
 using ERMS.API;
+using ERMS.Application;
 using ERMS.Infrastructure;
 using Scalar.AspNetCore;
-using ERMS.Application;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +11,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddWebApi(builder.Configuration);
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
+
+
+
 
 
 var app = builder.Build();
@@ -27,6 +30,10 @@ var app = builder.Build();
 //}
 
 app.UseHttpsRedirection();
+
+app.UseCors("AllowFrontend");
+
+app.UseRateLimiter(); 
 
 app.UseAuthorization();
 

@@ -1,4 +1,4 @@
-﻿using ERMS.Application.DTO.Users;
+﻿using ERMS.Application.Features.Users.DTO;
 using ERMS.Application.Interface;
 using ERMS.Domain.Entities;
 using MediatR;
@@ -7,7 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace ERMS.Application.Features.Users.ChangeProfile
+namespace ERMS.Application.Features.Users.Commands.ChangeProfile
 {
     public class ChangeProfileCommand : IRequest<UserProfileDto>
     {
