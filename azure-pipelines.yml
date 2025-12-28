@@ -6,9 +6,7 @@ trigger:
 pool:
   vmImage: 'ubuntu-latest'
 
-
 variables:
-- group: SONAR_TOKEN  
 - name: solution
   value: '**/*.sln'
 - name: buildConfiguration
@@ -19,10 +17,6 @@ variables:
   value: 'AzureConnection-Students'
 - name: webAppName
   value: 'ERMSBE'
-- name: sonarProjectKey
-  value: 'EnterpriseResourcePlanningSystem_EnterpriseResourcePlanningSystem_BE'
-- name: sonarOrg
-  value: 'enterpriseresourceplanningsystem'
 
 stages:
 - stage: Build
@@ -38,19 +32,6 @@ stages:
         version: '$(dotNetVersion)'
         includePreviewVersions: true
 
-    - script: dotnet tool install --global dotnet-sonarscanner
-      displayName: 'Install SonarScanner Tool'
-
-    - script: |
-        export PATH="$PATH:$HOME/.dotnet/tools"
-        dotnet sonarscanner begin /k:"$(sonarProjectKey)" \
-        /o:"$(sonarOrg)" \
-        /d:sonar.token="$SONAR_TOKEN_ENV" \
-        /d:sonar.host.url="https://sonarcloud.io"
-      displayName: 'SonarScanner Begin'
-      env: 
-        SONAR_TOKEN_ENV: $(SONAR_TOKEN) 
-
     - task: DotNetCoreCLI@2
       displayName: 'Restore Dependencies'
       inputs:
@@ -64,13 +45,6 @@ stages:
         projects: '$(solution)'
         arguments: '--configuration $(buildConfiguration) --no-restore'
 
-    - script: |
-        export PATH="$PATH:$HOME/.dotnet/tools"
-        dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN_ENV"
-      displayName: 'SonarScanner End'
-      env: 
-        SONAR_TOKEN_ENV: $(SONAR_TOKEN)
-
     - task: DotNetCoreCLI@2
       displayName: 'Publish API'
       inputs:
@@ -80,6 +54,7 @@ stages:
         arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/api --runtime linux-x64 --self-contained false'
         zipAfterPublish: true
 
+  
     - task: PublishBuildArtifacts@1
       displayName: 'Publish Artifacts'
       inputs:
