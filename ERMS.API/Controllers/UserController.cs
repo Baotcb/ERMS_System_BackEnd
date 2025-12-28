@@ -1,15 +1,17 @@
-﻿using ERMS.Application.Features.Users.ChangeProfile;
-using ERMS.Application.Features.Users.GetProfile;
+﻿using ERMS.Application.Features.Users.Commands.ChangeProfile;
+using ERMS.Application.Features.Users.Commands.GetProfile;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace ERMS.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
+    [EnableRateLimiting("fixed")]
     public class UserController : ControllerBase
     {
         private readonly IMediator _mediator;

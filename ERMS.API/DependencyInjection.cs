@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Threading.RateLimiting;
 
 namespace ERMS.API
 {
@@ -12,6 +14,18 @@ namespace ERMS.API
             services.AddOpenApi();
             services.AddEndpointsApiExplorer();
             services.AddHttpContextAccessor();
+
+
+            services.AddCors(options =>
+            {
+                options.AddPolicy("AllowFrontend", policy =>
+                {
+                    policy.WithOrigins("http://localhost:3000", "https://localhost:3000")
+                          .AllowAnyHeader()
+                          .AllowAnyMethod()
+                          .AllowCredentials();
+                });
+            });
 
 
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -29,6 +43,20 @@ namespace ERMS.API
                            Encoding.UTF8.GetBytes(configuration["JwtSettings:Key"]))
                    };
                });
+
+            services.AddRateLimiter(options =>
+            {
+                options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+
+                options.AddFixedWindowLimiter("fixed", limiterOptions =>
+                {
+                    limiterOptions.PermitLimit = 5;
+                    limiterOptions.Window = TimeSpan.FromSeconds(10);
+                    limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+                    limiterOptions.QueueLimit = 2;
+                });
+            });
 
 
             return services;

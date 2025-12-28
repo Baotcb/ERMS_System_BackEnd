@@ -1,15 +1,17 @@
-﻿using ERMS.Application.Features.Auth.ForgotPassword;
-using ERMS.Application.Features.Auth.Login;
-using ERMS.Application.Features.Auth.Register;
-using ERMS.Application.Features.Auth.ResetPassword;
+﻿using ERMS.Application.Features.Auth.Commands.ForgotPassword;
+using ERMS.Application.Features.Auth.Commands.Login;
+using ERMS.Application.Features.Auth.Commands.Register;
+using ERMS.Application.Features.Auth.Commands.ResetPassword;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace ERMS.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [EnableRateLimiting("fixed")]
     public class AuthController : ControllerBase
     {
         private readonly ISender _sender;

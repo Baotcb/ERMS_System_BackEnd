@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
 
-namespace ERMS.Application.Features.Auth.Register
+namespace ERMS.Application.Features.Auth.Commands.Register
 {
     public class RegisterCommand : IRequest<Guid>
     {

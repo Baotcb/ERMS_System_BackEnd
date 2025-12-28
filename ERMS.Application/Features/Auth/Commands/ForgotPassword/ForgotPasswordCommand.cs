@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
 
-namespace ERMS.Application.Features.Auth.ForgotPassword
+namespace ERMS.Application.Features.Auth.Commands.ForgotPassword
 {
     public class ForgotPasswordCommand : IRequest<string>
     {

@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace ERMS.Application.Features.Auth.Login
+namespace ERMS.Application.Features.Auth.Commands.Login
 {
     public class LoginHandler : IRequestHandler<LoginCommand, string>
     {

@@ -15,4 +15,8 @@
     <ProjectReference Include="..\ERMS.Domain\ERMS.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Features\Auth\DTO\" />
+  </ItemGroup>
+
 </Project>
