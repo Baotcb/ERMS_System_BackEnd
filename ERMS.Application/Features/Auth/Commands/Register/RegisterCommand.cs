@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using ERMS.Domain.Constants.Roles;
+using MediatR;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -19,6 +20,6 @@ namespace ERMS.Application.Features.Auth.Commands.Register
         [Required]
         public string FullName { get; set; } = string.Empty;
 
-        public string Role { get; set; } = "Employee";
+        public string Role { get; set; } = AppRoles.Candidate;
     }
 }

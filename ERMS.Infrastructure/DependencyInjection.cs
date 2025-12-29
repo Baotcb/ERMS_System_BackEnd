@@ -22,6 +22,9 @@ namespace ERMS.Infrastructure
             services.AddDbContext<ERMSDbContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
+            services.AddScoped<IERMSDbContext>(provider => provider.GetRequiredService<ERMSDbContext>());
+
+
             // 2. Identity
             services.AddIdentityCore<User>()
                 .AddRoles<IdentityRole<Guid>>()

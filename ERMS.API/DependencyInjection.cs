@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
 
@@ -40,7 +41,9 @@ namespace ERMS.API
                        ValidIssuer = configuration["JwtSettings:Issuer"],
                        ValidAudience = configuration["JwtSettings:Audience"],
                        IssuerSigningKey = new SymmetricSecurityKey(
-                           Encoding.UTF8.GetBytes(configuration["JwtSettings:Key"]))
+                           Encoding.UTF8.GetBytes(configuration["JwtSettings:Key"])),
+                       RoleClaimType = ClaimTypes.Role,
+                       NameClaimType = ClaimTypes.Name
                    };
                });
 

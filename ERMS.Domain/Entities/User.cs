@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace ERMS.Domain.Entities
 {
@@ -11,13 +10,14 @@ namespace ERMS.Domain.Entities
         public string? Hometown { get; set; }
         public DateTime? DateOfBirth { get; set; }
 
-        // IdentityUser already has a PhoneNumber property
-        // Need nullable for Google registered users
+
         public string? Phones { get; set; }
         public Guid? DepartmentId { get; set; }
         public Department? Department { get; set; }
 
-        public int Status { get; set; } 
-        public DateTime DateJoined { get; set; } = DateTime.UtcNow;
+        public Employee? Employee { get; set; }
+        public Candidate? Candidate { get; set; }
+
+        public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
     }
 }
