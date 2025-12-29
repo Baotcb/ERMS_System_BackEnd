@@ -9,14 +9,10 @@ namespace ERMS.Domain.Entities
         public string FullName { get; set; } = string.Empty;
         public string? Hometown { get; set; }
         public DateTime? DateOfBirth { get; set; }
-        public string? Phones { get; set; }
-        public string? AvatarUrl { get; set; }
-        public int Status { get; set; } // 0: Locked, 1: Active
-        public DateTime DateJoined { get; set; } = DateTime.UtcNow;
-        public DateTime? UpdatedAt { get; set; }
 
-     
-        public int? DepartmentId { get; set; }
+
+        public string? Phones { get; set; }
+        public Guid? DepartmentId { get; set; }
         public Department? Department { get; set; }
 
         public Employee? Employee { get; set; }
