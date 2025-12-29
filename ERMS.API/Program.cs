@@ -3,14 +3,18 @@ using ERMS.Application;
 using ERMS.Infrastructure;
 using Scalar.AspNetCore;
 
+
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 
-builder.Services.AddWebApi(builder.Configuration);
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
+builder.Services.AddWebApi(builder.Configuration);
+
+
 
 
 

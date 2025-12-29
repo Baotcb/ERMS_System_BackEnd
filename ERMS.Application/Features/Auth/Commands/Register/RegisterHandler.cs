@@ -1,4 +1,5 @@
-﻿using ERMS.Domain.Entities;
+﻿using ERMS.Domain.Constants.Roles;
+using ERMS.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using System;
@@ -48,7 +49,7 @@ namespace ERMS.Application.Features.Auth.Commands.Register
             }
             else
             {
-                await _userManager.AddToRoleAsync(user, "Employee");
+                await _userManager.AddToRoleAsync(user, AppRoles.Candidate);
             }
             return user.Id;
         }

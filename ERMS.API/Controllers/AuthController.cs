@@ -1,11 +1,19 @@
 ﻿using ERMS.Application.Features.Auth.Commands.ForgotPassword;
+using ERMS.Application.Features.Auth.Commands.GoogleLogin;
 using ERMS.Application.Features.Auth.Commands.Login;
 using ERMS.Application.Features.Auth.Commands.Register;
 using ERMS.Application.Features.Auth.Commands.ResetPassword;
+using ERMS.Application.Interface;
+using ERMS.Domain.Entities;
+using Google.Apis.Auth;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace ERMS.API.Controllers
 {
@@ -15,10 +23,16 @@ namespace ERMS.API.Controllers
     public class AuthController : ControllerBase
     {
         private readonly ISender _sender;
+        private readonly IConfiguration _config;
+        private readonly ITokenService _tokenService;
 
-        public AuthController(ISender sender)
+        public AuthController(ISender sender,
+            IConfiguration config,
+            ITokenService tokenService)
         {
             _sender = sender;
+            _config = config;
+            _tokenService = tokenService;
         }
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterCommand command)
@@ -91,6 +105,18 @@ namespace ERMS.API.Controllers
             }
         }
 
-
+        [HttpPost("login-google")]
+        public async Task<IActionResult> LoginGoogle([FromBody] GoogleLoginCommand command)
+        {
+            try
+            {
+                var token = await _sender.Send(command);
+                return Ok(new { token });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }
