@@ -12,16 +12,21 @@ namespace ERMS.Application.Features.Auth.Commands.GoogleLogin
         private readonly UserManager<User> _userManager;
         private readonly ITokenService _tokenService;
         private readonly IConfiguration _configuration;
+        private readonly RoleManager<IdentityRole<Guid>> _roleManager;
+
 
         public GoogleLoginHandler(
             UserManager<User> userManager,
             ITokenService tokenService,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            RoleManager<IdentityRole<Guid>> roleManager)
         {
             _userManager = userManager;
             _tokenService = tokenService;
             _configuration = configuration;
+            _roleManager = roleManager;
         }
+        private const string DefaultRole = "Candidate";
 
         public async Task<string> Handle(GoogleLoginCommand request, CancellationToken cancellationToken)
         {
@@ -34,9 +39,7 @@ namespace ERMS.Application.Features.Auth.Commands.GoogleLogin
                 });
 
             if (payload == null)
-            {
                 throw new Exception("Google token không hợp lệ.");
-            }
 
             // 2. Tìm user theo email
             var user = await _userManager.FindByEmailAsync(payload.Email);
@@ -54,13 +57,21 @@ namespace ERMS.Application.Features.Auth.Commands.GoogleLogin
 
                 var createResult = await _userManager.CreateAsync(user);
                 if (!createResult.Succeeded)
-                {
                     throw new Exception("Không thể tạo tài khoản Google.");
+
+                // 4. Tạo role nếu chưa tồn tại
+                if (!await _roleManager.RoleExistsAsync(DefaultRole))
+                {
+                    await _roleManager.CreateAsync(new IdentityRole<Guid>(DefaultRole));
                 }
+
+                // 5. Gán role cho user
+                await _userManager.AddToRoleAsync(user, DefaultRole);
             }
 
-            // 4. Tạo JWT token
+            // 6. Tạo JWT
             return await _tokenService.CreateToken(user);
         }
+
     }
 }
