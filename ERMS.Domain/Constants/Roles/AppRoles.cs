@@ -11,5 +11,6 @@ namespace ERMS.Domain.Constants.Roles
         public const string Department_Head = "Department Head";
         public const string Employee = "Employee";
         public const string Trainer = "Trainer";
+        public const string Candidate = "Candidate";
     }
 }

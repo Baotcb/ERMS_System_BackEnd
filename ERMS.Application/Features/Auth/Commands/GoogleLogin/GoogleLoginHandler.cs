@@ -1,4 +1,5 @@
 ﻿using ERMS.Application.Interface;
+using ERMS.Domain.Constants.Roles;
 using ERMS.Domain.Entities;
 using Google.Apis.Auth;
 using MediatR;
@@ -26,7 +27,7 @@ namespace ERMS.Application.Features.Auth.Commands.GoogleLogin
             _configuration = configuration;
             _roleManager = roleManager;
         }
-        private const string DefaultRole = "Candidate";
+        private const string DefaultRole = AppRoles.Candidate;
 
         public async Task<string> Handle(GoogleLoginCommand request, CancellationToken cancellationToken)
         {
