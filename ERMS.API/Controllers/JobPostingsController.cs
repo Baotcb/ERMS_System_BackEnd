@@ -43,12 +43,7 @@ namespace ERMS.API.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
-        [HttpGet("debug-claims")]
-        [Authorize] // Chỉ cần đăng nhập là được
-        public IActionResult GetClaims()
-        {
-            return Ok(User.Claims.Select(c => new { c.Type, c.Value }));
-        }
+       
 
         [HttpPut("{id}")]
         [Authorize(Roles = AppRoles.Manager)]
