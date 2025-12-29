@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace ERMS.Application.Features.Users.DTO
 {
@@ -12,7 +10,7 @@ namespace ERMS.Application.Features.Users.DTO
         public DateTime? DateOfBirth { get; set; }
         public string? Hometown { get; set; }
         public string? Phones { get; set; }
-        public Guid? DepartmentId { get; set; }
+        public int? DepartmentId { get; set; } 
         public string? DepartmentName { get; set; }
         public int Status { get; set; }
         public DateTime DateJoined { get; set; }

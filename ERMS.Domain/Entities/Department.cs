@@ -1,21 +1,20 @@
-﻿using System;
+﻿using ERMS.Domain.Common;
+using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Text;
 
 namespace ERMS.Domain.Entities
 {
-    public class Department
+    public class Department : BaseEntityInt
     {
-        public Guid DepartmentID { get; set; }
         public string DepartmentName { get; set; } = string.Empty;
-        public ICollection<User> Users { get; set; } = new List<User>();
-
-
-
+        public string? Description { get; set; }
 
         public Guid? ManagerId { get; set; }
-        public User? Manager { get; set; }
+        public Employee? Manager { get; set; }
 
+        // Navigation properties
+        public ICollection<User> Users { get; set; } = new List<User>();
+        public ICollection<Employee> Employees { get; set; } = new List<Employee>();
+        public ICollection<JobPosting> JobPostings { get; set; } = new List<JobPosting>();
     }
 }
