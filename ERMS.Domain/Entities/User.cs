@@ -10,8 +10,10 @@ namespace ERMS.Domain.Entities
         public string FullName { get; set; } = string.Empty;
         public string? Hometown { get; set; }
         public DateTime? DateOfBirth { get; set; }
-        public string Phones { get; set; }
 
+        // IdentityUser already has a PhoneNumber property
+        // Need nullable for Google registered users
+        public string? Phones { get; set; }
         public Guid? DepartmentId { get; set; }
         public Department? Department { get; set; }
 
