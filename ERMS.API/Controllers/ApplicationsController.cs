@@ -10,8 +10,15 @@ using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
 
-namespace ERMS.API.Controllers
+namespace ERMS.API.Controllers;
+
+[Route("api/[controller]")]
+[ApiController]
+
+[Authorize]
+public class ApplicationsController : ControllerBase
 {
+<<<<<<< Updated upstream
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
@@ -113,6 +120,12 @@ namespace ERMS.API.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+=======
+    
+    public ApplicationsController()
+    {
+       
+>>>>>>> Stashed changes
     }
 }
 
