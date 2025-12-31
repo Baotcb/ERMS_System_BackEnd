@@ -42,12 +42,15 @@ namespace ERMS.API.Controllers
             }
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateApplication(Guid id, [FromBody] UpdateApplicationCommand command)
+        [HttpPut]
+        public async Task<IActionResult> UpdateApplication([FromBody] UpdateApplicationCommand command)
         {
             try
             {
-                command.Id = id;
+                if (command.Id == Guid.Empty)
+                {
+                    return BadRequest(new { message = "Id là bắt buộc." });
+                }
                 var result = await _mediator.Send(command);
                 return Ok(new { message = "Cập nhật thành công!" });
             }
@@ -61,12 +64,16 @@ namespace ERMS.API.Controllers
             }
         }
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteApplication(Guid id)
+        [HttpDelete]
+        public async Task<IActionResult> DeleteApplication([FromBody] DeleteApplicationCommand command)
         {
             try
             {
-                var result = await _mediator.Send(new DeleteApplicationCommand { Id = id });
+                if (command.Id == Guid.Empty)
+                {
+                    return BadRequest(new { message = "Id là bắt buộc." });
+                }
+                var result = await _mediator.Send(command);
                 return Ok(new { message = "Xóa thành công!" });
             }
             catch (UnauthorizedAccessException ex)
