@@ -125,12 +125,6 @@ namespace ERMS.API.Controllers
         [HttpPut("change-password")]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordCommand command)
         {
-            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
-            if (userIdClaim == null)
-            {
-                return Unauthorized(new { message = "Không tìm thấy Id người dùng" });
-            }
-            command.UserId = Guid.Parse(userIdClaim.Value);
             try
             {
                 var resultMessage = await _sender.Send(command);

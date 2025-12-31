@@ -1,4 +1,5 @@
-﻿using ERMS.Domain.Entities;
+﻿using ERMS.Application.Interface;
+using ERMS.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using System;
@@ -10,13 +11,23 @@ namespace ERMS.Application.Features.Auth.Commands.ChangePassword
     public class ChangePasswordHandler : IRequestHandler<ChangePasswordCommand, string>
     {
         private readonly UserManager<User> _userManager;
-        public ChangePasswordHandler(UserManager<User> userManager)
+        private readonly ICurrentUserService _currentUserService;
+
+        public ChangePasswordHandler(UserManager<User> userManager,
+            ICurrentUserService currentUserService)
         {
             _userManager = userManager;
+            _currentUserService = currentUserService;
         }
-        public Task<string> Handle(ChangePasswordCommand request, CancellationToken cancellationToken)
+        public async Task<string> Handle(ChangePasswordCommand request, CancellationToken cancellationToken)
         {
-            var user = _userManager.FindByIdAsync(request.UserId.ToString()).Result;
+            var userId = _currentUserService.UserId;
+            if (userId == null)
+            {
+                throw new UnauthorizedAccessException("Không tìm thấy thông tin người dùng.");
+            }
+
+            var user = await _userManager.FindByIdAsync(userId.Value.ToString());
             if (user == null)
             {
                 throw new Exception("Không tìm thấy người dùng");
@@ -26,7 +37,7 @@ namespace ERMS.Application.Features.Auth.Commands.ChangePassword
             {
                 throw new Exception("Thay đổi mật khẩu thất bại: " + string.Join(", ", result.Errors.Select(e => e.Description)));
             }
-            return Task.FromResult("Thay đổi mật khẩu thành công");
+            return "Thay đổi mật khẩu thành công";
         }
     }
 }
