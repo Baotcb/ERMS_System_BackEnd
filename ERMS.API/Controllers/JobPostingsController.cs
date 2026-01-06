@@ -1,5 +1,6 @@
 ﻿using ERMS.Application.Features.JobPostings.Commands.CreateJobPosting;
 using ERMS.Application.Features.JobPostings.Commands.DeleteJobPosting;
+using ERMS.Application.Features.JobPostings.Commands.IncrementJobPostingViewCount;
 using ERMS.Application.Features.JobPostings.Commands.UpdateJobPosting;
 using ERMS.Application.Features.JobPostings.Queries.GetAllJobPostings;
 using ERMS.Application.Features.JobPostings.Queries.GetJobPostingById;
@@ -93,6 +94,21 @@ namespace ERMS.API.Controllers
             {
                 var jobPosting = await _mediator.Send(new GetJobPostingByIdQuery { Id = id });
                 return Ok(jobPosting);
+            }
+            catch (Exception ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("{id}/view")]
+        [AllowAnonymous]
+        public async Task<IActionResult> IncrementViewCount(Guid id)
+        {
+            try
+            {
+                var result = await _mediator.Send(new IncrementJobPostingViewCountCommand { Id = id });
+                return Ok(new { message = "Cập nhật lượt xem thành công!" });
             }
             catch (Exception ex)
             {

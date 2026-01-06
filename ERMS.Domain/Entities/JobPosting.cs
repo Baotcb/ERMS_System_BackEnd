@@ -24,6 +24,7 @@ namespace ERMS.Domain.Entities
         public string Status { get; set; } = "Draft"; // Draft, PendingApproval, Open, Closed
         public DateTime? PublishDate { get; set; }
         public DateTime? ExpiresAt { get; set; }
+        public int ViewCount { get; set; } = 0;
 
         // Navigation properties
         public ICollection<JobSkill> JobSkills { get; set; } = new List<JobSkill>();

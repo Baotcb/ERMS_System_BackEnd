@@ -50,6 +50,7 @@ namespace ERMS.Application.Features.JobPostings.Queries.GetJobPostingById
                 Status = jobPosting.Status,
                 PublishDate = jobPosting.PublishDate,
                 ExpiresAt = jobPosting.ExpiresAt,
+                ViewCount = jobPosting.ViewCount,
                 Skills = jobPosting.JobSkills.Select(js => new SkillDto
                 {
                     Id = js.SkillId,

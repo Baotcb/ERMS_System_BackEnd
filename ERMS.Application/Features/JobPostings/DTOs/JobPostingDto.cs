@@ -21,6 +21,7 @@ namespace ERMS.Application.Features.JobPostings.DTOs
         public string Status { get; set; } = "Draft";
         public DateTime? PublishDate { get; set; }
         public DateTime? ExpiresAt { get; set; }
+        public int ViewCount { get; set; }
         public List<SkillDto>? Skills { get; set; }
     }
 
