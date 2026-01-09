@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ERMS.Infrastructure.Migrations
 {
     [DbContext(typeof(ERMSDbContext))]
-    [Migration("20251229112008_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20251231073944_Ini")]
+    partial class Ini
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
