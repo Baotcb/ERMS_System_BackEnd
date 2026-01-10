@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 
 namespace ERMS.API.Controllers
 {
+
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
@@ -115,4 +116,3 @@ namespace ERMS.API.Controllers
         }
     }
 }
-

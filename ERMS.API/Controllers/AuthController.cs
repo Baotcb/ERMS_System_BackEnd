@@ -1,4 +1,5 @@
-﻿using ERMS.Application.Features.Auth.Commands.ForgotPassword;
+﻿using ERMS.Application.Features.Auth.Commands.ChangePassword;
+using ERMS.Application.Features.Auth.Commands.ForgotPassword;
 using ERMS.Application.Features.Auth.Commands.GoogleLogin;
 using ERMS.Application.Features.Auth.Commands.Login;
 using ERMS.Application.Features.Auth.Commands.Register;
@@ -7,6 +8,7 @@ using ERMS.Application.Interface;
 using ERMS.Domain.Entities;
 using Google.Apis.Auth;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -76,7 +78,7 @@ namespace ERMS.API.Controllers
             try
             {
                 var token = await _sender.Send(command);
-              
+
                 return Ok(new { message = "Vui lòng kiểm tra email " });
             }
             catch (Exception ex)
@@ -100,7 +102,7 @@ namespace ERMS.API.Controllers
             }
             catch (Exception ex)
             {
-                
+
                 return BadRequest(new { message = ex.Message });
             }
         }
@@ -118,5 +120,22 @@ namespace ERMS.API.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
-    }
+
+        [Authorize]
+        [HttpPut("change-password")]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordCommand command)
+        {
+            try
+            {
+                var resultMessage = await _sender.Send(command);
+                return Ok(new { message = resultMessage });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+    } 
 }
+
