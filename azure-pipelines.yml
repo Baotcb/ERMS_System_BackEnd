@@ -1,4 +1,4 @@
-  trigger:
+trigger:
   branches:
     include:
     - master
@@ -54,7 +54,6 @@ stages:
         arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/api --runtime linux-x64 --self-contained false'
         zipAfterPublish: true
 
-  
     - task: PublishBuildArtifacts@1
       displayName: 'Publish Artifacts'
       inputs:
