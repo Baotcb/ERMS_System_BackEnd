@@ -1,4 +1,4 @@
-trigger:
+  trigger:
   branches:
     include:
     - master
@@ -17,8 +17,6 @@ variables:
   value: '10.x'
 - name: azureSubscription
   value: 'AzureConnection-Students'
-- name: webAppName
-  value: 'ERMSBE'
 
 stages:
 - stage: Build
@@ -68,6 +66,8 @@ stages:
   displayName: 'Deploy to Azure'
   dependsOn: Build
   condition: succeeded()
+  variables:
+  - group: appsettings.json-master
   jobs:
   - deployment: DeployWeb
     displayName: 'Deploy to Azure App Service'
@@ -87,3 +87,4 @@ stages:
               appName: '$(webAppName)'
               package: '$(Pipeline.Workspace)/drop/api/*.zip'
               runtimeStack: 'DOTNETCORE|10.0'
+              jsonVariableSubstitution: true
