@@ -9,7 +9,7 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-- group: SONAR_TOKEN  
+- group: SONAR_TOKEN
 - name: solution
   value: '**/*.sln'
 - name: buildConfiguration
@@ -20,51 +20,102 @@ variables:
   value: 'EnterpriseResourcePlanningSystem_EnterpriseResourcePlanningSystem_BE'
 - name: sonarOrg
   value: 'enterpriseresourceplanningsystem'
+- name: azureSubscription
+  value: 'AzureConnection-Students'
 
-steps:
-- task: UseDotNet@2
-  displayName: 'Install .NET 10 SDK'
-  inputs:
-    packageType: 'sdk'
-    version: '$(dotNetVersion)'
-    includePreviewVersions: true
+stages:
+- stage: Build
+  displayName: 'Build, Analyze and Package'
+  jobs:
+  - job: Build
+    displayName: 'Build and Analyze'
+    steps:
+    - task: UseDotNet@2
+      displayName: 'Install .NET 10 SDK'
+      inputs:
+        packageType: 'sdk'
+        version: '$(dotNetVersion)'
+        includePreviewVersions: true
 
+    - task: JavaToolInstaller@0
+      inputs:
+        versionSpec: '17'
+        jdkArchitectureOption: 'x64'
+        jdkSourceOption: 'PreInstalled'
 
-- task: JavaToolInstaller@0
-  inputs:
-    versionSpec: '17'
-    jdkArchitectureOption: 'x64'
-    jdkSourceOption: 'PreInstalled'
+    - script: dotnet tool install --global dotnet-sonarscanner
+      displayName: 'Install SonarScanner Tool'
 
-- script: dotnet tool install --global dotnet-sonarscanner
-  displayName: 'Install SonarScanner Tool'
+    - script: |
+        export PATH="$PATH:$HOME/.dotnet/tools"
+        dotnet sonarscanner begin /k:"$(sonarProjectKey)" \
+        /o:"$(sonarOrg)" \
+        /d:sonar.token="$SONAR_TOKEN_ENV" \
+        /d:sonar.host.url="https://sonarcloud.io"
+      displayName: 'SonarScanner Begin'
+      env: 
+        SONAR_TOKEN_ENV: $(SONAR_TOKEN) 
 
-- script: |
-    export PATH="$PATH:$HOME/.dotnet/tools"
-    dotnet sonarscanner begin /k:"$(sonarProjectKey)" \
-    /o:"$(sonarOrg)" \
-    /d:sonar.token="$SONAR_TOKEN_ENV" \
-    /d:sonar.host.url="https://sonarcloud.io"
-  displayName: 'SonarScanner Begin'
-  env: 
-    SONAR_TOKEN_ENV: $(SONAR_TOKEN) 
+    - task: DotNetCoreCLI@2
+      displayName: 'Restore Dependencies'
+      inputs:
+        command: 'restore'
+        projects: '$(solution)'
 
-- task: DotNetCoreCLI@2
-  displayName: 'Restore Dependencies'
-  inputs:
-    command: 'restore'
-    projects: '$(solution)'
+    - task: DotNetCoreCLI@2
+      displayName: 'Build Solution'
+      inputs:
+        command: 'build'
+        projects: '$(solution)'
+        arguments: '--configuration $(buildConfiguration) --no-restore'
 
-- task: DotNetCoreCLI@2
-  displayName: 'Build Solution'
-  inputs:
-    command: 'build'
-    projects: '$(solution)'
-    arguments: '--configuration $(buildConfiguration) --no-restore'
+    - script: |
+        export PATH="$PATH:$HOME/.dotnet/tools"
+        dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN_ENV"
+      displayName: 'SonarScanner End'
+      env: 
+        SONAR_TOKEN_ENV: $(SONAR_TOKEN)
 
-- script: |
-    export PATH="$PATH:$HOME/.dotnet/tools"
-    dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN_ENV"
-  displayName: 'SonarScanner End'
-  env: 
-    SONAR_TOKEN_ENV: $(SONAR_TOKEN)
+    - task: DotNetCoreCLI@2
+      displayName: 'Publish API'
+      inputs:
+        command: 'publish'
+        publishWebProjects: false
+        projects: '**/ERMS.API.csproj'
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/api --runtime linux-x64 --self-contained false'
+        zipAfterPublish: true
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Artifacts'
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'drop'
+        publishLocation: 'Container'
+
+- stage: Deploy
+  displayName: 'Deploy to Azure'
+  dependsOn: Build
+  condition: succeeded()
+  variables:
+
+  - group: appsettings.json-uat 
+  jobs:
+  - deployment: DeployWeb
+    displayName: 'Deploy to Azure App Service'
+    environment: 'uat'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: drop
+
+          - task: AzureWebApp@1
+            displayName: 'Deploy API'
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              appType: 'webAppLinux'
+              appName: '$(webAppName)'
+              package: '$(Pipeline.Workspace)/drop/api/*.zip'
+              runtimeStack: 'DOTNETCORE|10.0'
+              jsonVariableSubstitution: true
