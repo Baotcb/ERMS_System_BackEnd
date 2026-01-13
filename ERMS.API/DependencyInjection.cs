@@ -16,12 +16,12 @@ namespace ERMS.API
             services.AddEndpointsApiExplorer();
             services.AddHttpContextAccessor();
 
-
+            string clientUrl = configuration["ClientSettings:Url"];
             services.AddCors(options =>
             {
                 options.AddPolicy("AllowFrontend", policy =>
                 {
-                    policy.WithOrigins("http://localhost:3000", "https://localhost:3000")
+                    policy.WithOrigins("http://localhost:3000", "https://localhost:3000", clientUrl)
                           .AllowAnyHeader()
                           .AllowAnyMethod()
                           .AllowCredentials();
