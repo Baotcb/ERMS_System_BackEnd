@@ -16,7 +16,7 @@ builder.Services.AddApplication();
 builder.Services.AddWebApi(builder.Configuration);
 
 
-
+builder.Services.AddHealthChecks();
 
 
 
@@ -33,7 +33,7 @@ var app = builder.Build();
         options.ShowSidebar = true;
     });
 //}
-app.MapGet("/health", () => Results.Ok());
+
 
 app.UseHttpsRedirection();
 
@@ -42,6 +42,8 @@ app.UseCors("AllowFrontend");
 app.UseRateLimiter(); 
 
 app.UseAuthorization();
+
+app.MapHealthChecks("/health").AllowAnonymous();
 
 app.MapControllers();
 
