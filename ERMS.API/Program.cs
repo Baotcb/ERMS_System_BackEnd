@@ -1,6 +1,7 @@
 using ERMS.API;
 using ERMS.Application;
 using ERMS.Infrastructure;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Scalar.AspNetCore;
 
 
@@ -32,6 +33,7 @@ var app = builder.Build();
         options.ShowSidebar = true;
     });
 //}
+app.MapGet("/health", () => Results.Ok());
 
 app.UseHttpsRedirection();
 
