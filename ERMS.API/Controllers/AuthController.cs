@@ -8,8 +8,11 @@ using ERMS.Application.Interface;
 using ERMS.Domain.Entities;
 using Google.Apis.Auth;
 using MediatR;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
@@ -27,14 +30,17 @@ namespace ERMS.API.Controllers
         private readonly ISender _sender;
         private readonly IConfiguration _config;
         private readonly ITokenService _tokenService;
+        private readonly IMediator _mediator;
 
         public AuthController(ISender sender,
             IConfiguration config,
-            ITokenService tokenService)
+            ITokenService tokenService,
+            IMediator mediator)
         {
             _sender = sender;
             _config = config;
             _tokenService = tokenService;
+            _mediator = mediator;
         }
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterCommand command)
@@ -107,18 +113,41 @@ namespace ERMS.API.Controllers
             }
         }
 
-        [HttpPost("login-google")]
-        public async Task<IActionResult> LoginGoogle([FromBody] GoogleLoginCommand command)
+        [HttpGet("google-login")]
+        public IActionResult GoogleLogin()
         {
-            try
+            var redirectUrl = Url.Action("GoogleResponse", "Auth");
+            var properties = new AuthenticationProperties
             {
-                var token = await _sender.Send(command);
-                return Ok(new { token });
-            }
-            catch (Exception ex)
+                RedirectUri = redirectUrl
+            };
+
+            return Challenge(properties, GoogleDefaults.AuthenticationScheme);
+        }
+
+        // Google callback
+        [HttpGet("google-response")]
+        public async Task<IActionResult> GoogleResponse()
+        {
+            var result = await HttpContext.AuthenticateAsync(
+                IdentityConstants.ExternalScheme);
+
+            if (!result.Succeeded)
+                return Unauthorized();
+
+            var email = result.Principal.FindFirstValue(ClaimTypes.Email);
+            var name = result.Principal.FindFirstValue(ClaimTypes.Name);
+
+            var token = await _mediator.Send(new GoogleLoginCommand
             {
-                return BadRequest(new { message = ex.Message });
-            }
+                Email = email!,
+                FullName = name
+            });
+
+            await HttpContext.SignOutAsync(
+                IdentityConstants.ExternalScheme);
+
+            return Ok(new { token });
         }
 
         [Authorize]

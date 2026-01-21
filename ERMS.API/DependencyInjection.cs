@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
@@ -29,7 +31,18 @@ namespace ERMS.API
             });
 
 
-            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+                .AddCookie( options =>
+                {
+                    options.Cookie.Name = "ERMS.External";
+                    options.Cookie.HttpOnly = true;
+                    options.Cookie.SameSite = SameSiteMode.None; 
+                    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+                })
                .AddJwtBearer(options =>
                {
                    options.TokenValidationParameters = new TokenValidationParameters
@@ -45,6 +58,12 @@ namespace ERMS.API
                        RoleClaimType = ClaimTypes.Role,
                        NameClaimType = ClaimTypes.Name
                    };
+               })
+               .AddGoogle(options =>
+               {
+                   options.ClientId = configuration["GoogleAuth:ClientId"];
+                   options.ClientSecret = configuration["GoogleAuth:ClientSecret"];
+                 //  options.CallbackPath = "/api/auth/google-response";
                });
 
             services.AddRateLimiter(options =>
