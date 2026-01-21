@@ -1,7 +1,7 @@
-trigger:
+﻿trigger:
   branches:
     include:
-    - master
+    - DEV
 
 pr: none
 
@@ -53,7 +53,7 @@ stages:
         projects: '**/ERMS.API.csproj'
         arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/api --runtime linux-x64 --self-contained false'
         zipAfterPublish: true
-
+  
     - task: PublishBuildArtifacts@1
       displayName: 'Publish Artifacts'
       inputs:
@@ -66,11 +66,11 @@ stages:
   dependsOn: Build
   condition: succeeded()
   variables:
-  - group: appsettings.json-master
+  - group: appsettings.json-dev
   jobs:
   - deployment: DeployWeb
     displayName: 'Deploy to Azure App Service'
-    environment: 'production'
+    environment: 'development'
     strategy:
       runOnce:
         deploy:

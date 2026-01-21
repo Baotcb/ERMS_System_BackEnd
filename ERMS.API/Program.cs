@@ -1,6 +1,7 @@
 using ERMS.API;
 using ERMS.Application;
 using ERMS.Infrastructure;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Scalar.AspNetCore;
 
 
@@ -15,7 +16,7 @@ builder.Services.AddApplication();
 builder.Services.AddWebApi(builder.Configuration);
 
 
-
+builder.Services.AddHealthChecks();
 
 
 
@@ -33,6 +34,7 @@ var app = builder.Build();
     });
 //}
 
+
 app.UseHttpsRedirection();
 
 app.UseCors("AllowFrontend");
@@ -40,6 +42,8 @@ app.UseCors("AllowFrontend");
 app.UseRateLimiter(); 
 
 app.UseAuthorization();
+
+app.MapHealthChecks("/health").AllowAnonymous();
 
 app.MapControllers();
 

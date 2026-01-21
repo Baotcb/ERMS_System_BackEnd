@@ -16,12 +16,12 @@ namespace ERMS.API
             services.AddEndpointsApiExplorer();
             services.AddHttpContextAccessor();
 
-
+            string clientUrl = configuration["ClientSettings:Url"];
             services.AddCors(options =>
             {
                 options.AddPolicy("AllowFrontend", policy =>
                 {
-                    policy.WithOrigins("http://localhost:3000", "https://localhost:3000")
+                    policy.WithOrigins("http://localhost:3000", "https://localhost:3000", clientUrl)
                           .AllowAnyHeader()
                           .AllowAnyMethod()
                           .AllowCredentials();
@@ -54,10 +54,10 @@ namespace ERMS.API
 
                 options.AddFixedWindowLimiter("fixed", limiterOptions =>
                 {
-                    limiterOptions.PermitLimit = 5;
-                    limiterOptions.Window = TimeSpan.FromSeconds(10);
+                    limiterOptions.PermitLimit = 1;
+                    limiterOptions.Window = TimeSpan.FromSeconds(5);
                     limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-                    limiterOptions.QueueLimit = 2;
+                    limiterOptions.QueueLimit = 0;
                 });
             });
 
