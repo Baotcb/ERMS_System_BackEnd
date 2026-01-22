@@ -1,16 +1,21 @@
 using ERMS.Domain.Common;
-using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace ERMS.Domain.Entities
 {
-    public class Skill : BaseEntityInt
+    public class Skill : BaseEntity
     {
+        [Required]
+        [StringLength(100)]
         public string Name { get; set; } = string.Empty;
-        public string Type { get; set; } = string.Empty; // Technical, SoftSkill
-
-        // Navigation properties
-        public ICollection<JobSkill> JobSkills { get; set; } = new List<JobSkill>();
-        public ICollection<CandidateSkill> CandidateSkills { get; set; } = new List<CandidateSkill>();
-        public ICollection<CourseSkill> CourseSkills { get; set; } = new List<CourseSkill>();
+        
+        [StringLength(50)]
+        public string? Category { get; set; } // Technical/Soft/Language/...
+        
+        public bool IsVerified { get; set; } = false;
+        
+        // Navigation Properties
+        public virtual ICollection<JobSkill> JobSkills { get; set; } = new HashSet<JobSkill>();
+        public virtual ICollection<CandidateSkill> CandidateSkills { get; set; } = new HashSet<CandidateSkill>();
     }
 }

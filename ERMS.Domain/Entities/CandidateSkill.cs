@@ -1,16 +1,20 @@
-using System;
+using ERMS.Domain.Common;
+using System.ComponentModel.DataAnnotations;
 
 namespace ERMS.Domain.Entities
 {
-    public class CandidateSkill
+    public class CandidateSkill : BaseEntity
     {
         public Guid CandidateId { get; set; }
-        public Candidate Candidate { get; set; } = null!;
-
-        public int SkillId { get; set; }
-        public Skill Skill { get; set; } = null!;
-
-        public bool IsVerified { get; set; } = false;
-        public int Proficiency { get; set; } = 1; // 1-5
+        public Guid SkillId { get; set; }
+        
+        [StringLength(20)]
+        public string? ProficiencyLevel { get; set; } // Beginner/Intermediate/Advanced/Expert
+        
+        public int? YearsOfExperience { get; set; }
+        
+        // Navigation Properties
+        public virtual Candidate Candidate { get; set; } = null!;
+        public virtual Skill Skill { get; set; } = null!;
     }
 }

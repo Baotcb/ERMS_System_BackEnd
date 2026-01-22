@@ -12,28 +12,32 @@ namespace ERMS.Application.Features.Auth.Commands.Register
     {
         private readonly UserManager<User> _userManager;
         private readonly RoleManager<IdentityRole<Guid>> _roleManager;
+        
         public RegisterHandler(UserManager<User> userManager, RoleManager<IdentityRole<Guid>> roleManager)
         {
             _userManager = userManager;
             _roleManager = roleManager;
         }
+        
         public async Task<Guid> Handle(RegisterCommand request, CancellationToken cancellationToken)
         {
             var existingUser = await _userManager.FindByEmailAsync(request.Email);
             if (existingUser != null)
             {
                 throw new Exception("Email đã tồn tại trong hệ thống.");
-                
             }
+            
             var user = new User
             {
                 UserName = request.Email,
                 Email = request.Email,
                 FullName = request.FullName,
-                Status = 1,
-                DateJoined = DateTime.UtcNow,
+                EmailConfirmed = false,        
+                LockoutEnabled = true,         // ✅ Cho phép admin khóa tài khoản
+                CreatedAt = DateTime.UtcNow,
                 SecurityStamp = Guid.NewGuid().ToString()
             };
+            
             var result = await _userManager.CreateAsync(user, request.Password);
             if (!result.Succeeded)
             {
@@ -41,18 +45,16 @@ namespace ERMS.Application.Features.Auth.Commands.Register
                 throw new Exception($"Đăng ký không thành công: {errors}");
             }
 
-
             if (await _roleManager.RoleExistsAsync(request.Role))
             {
                 await _userManager.AddToRoleAsync(user, request.Role);
-                   
             }
             else
             {
                 await _userManager.AddToRoleAsync(user, AppRoles.Candidate);
             }
+            
             return user.Id;
         }
-
     }
 }

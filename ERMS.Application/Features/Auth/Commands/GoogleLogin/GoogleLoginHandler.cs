@@ -52,7 +52,7 @@ namespace ERMS.Application.Features.Auth.Commands.GoogleLogin
                 {
                     UserName = payload.Email,
                     Email = payload.Email,
-                    FullName = payload.Name,
+                    FullName = $"{payload.GivenName ?? string.Empty} {payload.FamilyName ?? string.Empty}".Trim(),
                     EmailConfirmed = true
                 };
 

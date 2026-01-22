@@ -1,16 +1,19 @@
+using ERMS.Domain.Common;
+using System.ComponentModel.DataAnnotations;
 using System;
 
 namespace ERMS.Domain.Entities
 {
-    public class JobSkill
+    public class JobSkill : BaseEntity
     {
-        public Guid JobId { get; set; }
-        public JobPosting Job { get; set; } = null!;
-
-        public int SkillId { get; set; }
-        public Skill Skill { get; set; } = null!;
-
-        public int Weight { get; set; } = 1; // 1-5
-        public int MinProficiency { get; set; } = 1; // 1-5: Basic -> Expert
+        public Guid JobPostingId { get; set; }
+        public Guid SkillId { get; set; }
+        
+        public bool IsRequired { get; set; } = true;
+        public int? MinYearsExperience { get; set; }
+        
+        // Navigation Properties
+        public virtual JobPosting JobPosting { get; set; } = null!;
+        public virtual Skill Skill { get; set; } = null!;
     }
 }

@@ -1,6 +1,7 @@
 using ERMS.Domain.Common;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace ERMS.Domain.Entities
 {
@@ -9,15 +10,33 @@ namespace ERMS.Domain.Entities
         public Guid CourseId { get; set; }
         public Course Course { get; set; } = null!;
 
+        [Required]
+        [StringLength(200)]
         public string Title { get; set; } = string.Empty;
-        public string? Type { get; set; } // Video, LiveSession
-        public string? VideoUrl { get; set; }
-        public string? MeetingLink { get; set; }
-        public DateTime? StartTime { get; set; }
-        public DateTime? EndTime { get; set; }
-        public int OrderIndex { get; set; } = 1;
 
-        // Navigation properties
-        public ICollection<Attendance> Attendances { get; set; } = new List<Attendance>();
+        [StringLength(1000)]
+        public string? Description { get; set; }
+
+        public int SessionNumber { get; set; }
+
+        public DateTime StartTime { get; set; }
+        public DateTime EndTime { get; set; }
+
+        [StringLength(200)]
+        public string? Location { get; set; }
+
+        [StringLength(500)]
+        public string? MeetingLink { get; set; }
+
+        [StringLength(1000)]
+        public string? Materials { get; set; }
+
+        public bool IsCompleted { get; set; } = false;
+
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        // Navigation Properties
+        public virtual ICollection<Attendance> Attendances { get; set; } = new List<Attendance>();
+        public virtual ICollection<LearningProgress> LearningProgresses { get; set; } = new HashSet<LearningProgress>();
     }
 }
