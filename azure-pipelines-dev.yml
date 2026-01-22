@@ -86,4 +86,16 @@ stages:
               appName: '$(webAppName)'
               package: '$(Pipeline.Workspace)/drop/api/*.zip'
               runtimeStack: 'DOTNETCORE|10.0'
-              jsonVariableSubstitution: true
+              appSettings: |
+                -ClientSettings__Url $(ClientSettings:Url)
+                -ConnectionStrings__DefaultConnection $(ConnectionStrings:DefaultConnection)
+                -EmailSettings__SmtpServer $(EmailSettings:SmtpServer)
+                -EmailSettings__Port $(EmailSettings:Port)
+                -EmailSettings__SenderEmail $(EmailSettings:SenderEmail)
+                -EmailSettings__SenderName $(EmailSettings:SenderName)
+                -EmailSettings__Password $(EmailSettings:Password)
+                -GoogleAuth__ClientId $(GoogleAuth:ClientId)
+                -JwtSettings__Key $(JwtSettings:Key)
+                -JwtSettings__Issuer $(JwtSettings:Issuer)
+                -JwtSettings__Audience $(JwtSettings:Audience)
+                -JwtSettings__DurationInMinutes $(JwtSettings:DurationInMinutes)

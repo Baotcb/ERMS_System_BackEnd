@@ -25,7 +25,7 @@ app.MapScalarApiReference(options => {
 
 app.UseHttpsRedirection();
 
-// app.UseCors("AllowFrontend");
+app.UseCors("AllowFrontend");
 
 app.UseRateLimiter(); 
 app.UseAuthentication();
