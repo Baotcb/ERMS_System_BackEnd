@@ -86,7 +86,7 @@ stages:
               appName: '$(webAppName)'
               package: '$(Pipeline.Workspace)/drop/api/*.zip'
               runtimeStack: 'DOTNETCORE|10.0'
-              appSettings: |
+              appSettings: >
                 -ClientSettings__Url $(ClientSettings:Url)
                 -ConnectionStrings__DefaultConnection $(ConnectionStrings:DefaultConnection)
                 -EmailSettings__SmtpServer $(EmailSettings:SmtpServer)
