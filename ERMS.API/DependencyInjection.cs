@@ -18,6 +18,8 @@ namespace ERMS.API
             services.AddEndpointsApiExplorer();
             services.AddHttpContextAccessor();
 
+      
+            /*
             string clientUrl = configuration["ClientSettings:Url"];
             services.AddCors(options =>
             {
@@ -29,6 +31,7 @@ namespace ERMS.API
                           .AllowCredentials();
                 });
             });
+            */
 
 
             services.AddAuthentication(options =>

@@ -16,28 +16,22 @@ builder.Services.AddHealthChecks();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-//if (app.Environment.IsDevelopment())
-//{
 app.MapOpenApi();
 app.MapScalarApiReference(options => {
     options.Title = "ERMS System API";
     options.Theme = ScalarTheme.Mars;
     options.ShowSidebar = true;
 });
-//}
 
 app.UseHttpsRedirection();
 
-app.UseCors("AllowFrontend");
+// app.UseCors("AllowFrontend");
 
-app.UseRateLimiter();
-
-
+app.UseRateLimiter(); 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapHealthChecks("/health").AllowAnonymous();
-
 app.MapControllers();
 
 app.Run();
