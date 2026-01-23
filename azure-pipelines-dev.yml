@@ -99,3 +99,4 @@ stages:
                 -JwtSettings__Issuer "$(JwtSettingsIssuer)"
                 -JwtSettings__Audience "$(JwtSettingsAudience)"
                 -JwtSettings__DurationInMinutes "$(JwtSettingsDurationInMinutes)"
+                -GoogleAuth__ClientSecret "$(GoogleAuthClientSecret)"
