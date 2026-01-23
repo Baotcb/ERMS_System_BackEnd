@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Microsoft.AspNetCore.Http;
+using ERMS.Domain.Entities.Identity;
 
 namespace ERMS.Infrastructure
 {
