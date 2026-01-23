@@ -113,10 +113,10 @@ namespace ERMS.Infrastructure.Data
             // =============================================
             builder.Entity<User>(entity =>
             {
-                entity.HasOne(u => u.Enterprise)
-                    .WithMany(e => e.Users)
-                    .HasForeignKey(u => u.EnterpriseId)
-                    .OnDelete(DeleteBehavior.SetNull);
+                //entity.HasOne(u => u.Enterprise)
+                //    .WithMany(e => e.Users)
+                //    .HasForeignKey(u => u.EnterpriseId)
+                //    .OnDelete(DeleteBehavior.SetNull);
 
                 entity.HasOne(u => u.Department)
                     .WithMany(d => d.Users)
