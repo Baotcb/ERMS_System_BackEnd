@@ -87,15 +87,15 @@ stages:
               package: '$(Pipeline.Workspace)/drop/api/*.zip'
               runtimeStack: 'DOTNETCORE|10.0'
               appSettings: >
-                -ClientSettings__Url $(ClientSettingsUrl)
-                -ConnectionStrings__DefaultConnection $(ConnectionStringsDefaultConnection)
-                -EmailSettings__SmtpServer $(EmailSettingsSmtpServer)
-                -EmailSettings__Port $(EmailSettingsPort)
-                -EmailSettings__SenderEmail $(EmailSettingsSenderEmail)
-                -EmailSettings__SenderName $(EmailSettingsSenderName)
-                -EmailSettings__Password $(EmailSettingsPassword)
-                -GoogleAuth__ClientId $(GoogleAuthClientId)
-                -JwtSettings__Key $(JwtSettingsKey)
-                -JwtSettings__Issuer $(JwtSettingsIssuer)
-                -JwtSettings__Audience $(JwtSettingsAudience)
-                -JwtSettings__DurationInMinutes $(JwtSettingsDurationInMinutes)
+                -ClientSettings__Url "$(ClientSettingsUrl)"
+                -ConnectionStrings__DefaultConnection "$(ConnectionStringsDefaultConnection)"
+                -EmailSettings__SmtpServer "$(EmailSettingsSmtpServer)"
+                -EmailSettings__Port "$(EmailSettingsPort)"
+                -EmailSettings__SenderEmail "$(EmailSettingsSenderEmail)"
+                -EmailSettings__SenderName "$(EmailSettingsSenderName)"
+                -EmailSettings__Password "$(EmailSettingsPassword)"
+                -GoogleAuth__ClientId "$(GoogleAuthClientId)"
+                -JwtSettings__Key "$(JwtSettingsKey)"
+                -JwtSettings__Issuer "$(JwtSettingsIssuer)"
+                -JwtSettings__Audience "$(JwtSettingsAudience)"
+                -JwtSettings__DurationInMinutes "$(JwtSettingsDurationInMinutes)"
