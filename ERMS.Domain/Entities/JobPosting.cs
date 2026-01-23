@@ -6,6 +6,9 @@ namespace ERMS.Domain.Entities
 {
     public class JobPosting : BaseEntity
     {
+        public Guid EnterpriseId { get; set; }
+        public Enterprise Enterprise { get; set; } = null!;
+
         public string Title { get; set; } = string.Empty;
         public string? Description { get; set; }
         public string? Requirements { get; set; }
@@ -16,6 +19,9 @@ namespace ERMS.Domain.Entities
 
         public int? DepartmentId { get; set; }
         public Department? Department { get; set; }
+        
+        public bool IsDeleted { get; set; } = false;
+        public DateTime? DeletedAt { get; set; }
 
         public Guid CreatorId { get; set; }
         public Employee Creator { get; set; } = null!;

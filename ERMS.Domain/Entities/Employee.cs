@@ -8,12 +8,17 @@ namespace ERMS.Domain.Entities
         public Guid UserId { get; set; }
         public User User { get; set; } = null!;
 
+        public Guid EnterpriseId { get; set; }
+        public Enterprise Enterprise { get; set; } = null!;
+
         public string EmployeeCode { get; set; } = string.Empty;
         public int? DepartmentId { get; set; }
         public Department? Department { get; set; }
 
         public bool IsTrainer { get; set; } = false;
         public DateTime JoinDate { get; set; } = DateTime.UtcNow;
+        public bool IsDeleted { get; set; } = false;
+        public DateTime? DeletedAt { get; set; }
 
         // Navigation properties
         public ICollection<JobPosting> CreatedJobPostings { get; set; } = new List<JobPosting>();

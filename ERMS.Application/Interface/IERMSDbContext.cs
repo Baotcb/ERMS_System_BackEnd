@@ -8,6 +8,10 @@ namespace ERMS.Application.Interface
 {
     public interface IERMSDbContext
     {
+        // Enterprise & Subscription
+        DbSet<SubscriptionPlan> SubscriptionPlans { get; set; }
+        DbSet<Enterprise> Enterprises { get; set; }
+
         // Core
         DbSet<Department> Departments { get; set; }
         DbSet<Employee> Employees { get; set; }

@@ -18,6 +18,8 @@ namespace ERMS.Infrastructure.Data
         }
 
         // DbSets
+        public DbSet<SubscriptionPlan> SubscriptionPlans { get; set; }
+        public DbSet<Enterprise> Enterprises { get; set; }
         public DbSet<Department> Departments { get; set; }
         public DbSet<Employee> Employees { get; set; }
         public DbSet<Candidate> Candidates { get; set; }
@@ -74,10 +76,48 @@ namespace ERMS.Infrastructure.Data
             builder.Entity<IdentityRoleClaim<Guid>>().ToTable("RoleClaims");
 
             // =============================================
+            // ENTERPRISE & SUBSCRIPTION PLAN
+            // =============================================
+            builder.Entity<SubscriptionPlan>(entity =>
+            {
+                entity.HasKey(sp => sp.Id);
+                entity.HasIndex(sp => sp.PlanCode).IsUnique();
+                entity.Property(sp => sp.PriceMonthly).HasColumnType("decimal(18,2)");
+                entity.Property(sp => sp.PriceYearly).HasColumnType("decimal(18,2)");
+            });
+
+            builder.Entity<Enterprise>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.EnterpriseCode).IsUnique();
+
+                entity.HasOne(e => e.SubscriptionPlan)
+                    .WithMany(sp => sp.Enterprises)
+                    .HasForeignKey(e => e.SubscriptionPlanId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.CreatedBy)
+                    .WithMany()
+                    .HasForeignKey(e => e.CreatedById)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.Property(e => e.SubscriptionStatus)
+                    .HasMaxLength(30);
+
+                entity.ToTable(t => t.HasCheckConstraint("CK_Enterprise_SubscriptionStatus", 
+                    "SubscriptionStatus IN ('Active', 'Expired', 'Cancelled', 'Trial', 'PastDue')"));
+            });
+
+            // =============================================
             // USER & DEPARTMENT
             // =============================================
             builder.Entity<User>(entity =>
             {
+                entity.HasOne(u => u.Enterprise)
+                    .WithMany(e => e.Users)
+                    .HasForeignKey(u => u.EnterpriseId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
                 entity.HasOne(u => u.Department)
                     .WithMany(d => d.Users)
                     .HasForeignKey(u => u.DepartmentId)
@@ -98,6 +138,11 @@ namespace ERMS.Infrastructure.Data
             {
                 entity.HasKey(d => d.Id);
 
+                entity.HasOne(d => d.Enterprise)
+                    .WithMany(e => e.Departments)
+                    .HasForeignKey(d => d.EnterpriseId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
                 entity.HasOne(d => d.Manager)
                     .WithMany()
                     .HasForeignKey(d => d.ManagerId)
@@ -114,12 +159,17 @@ namespace ERMS.Infrastructure.Data
             {
                 entity.HasKey(e => e.UserId);
 
+                entity.HasOne(e => e.Enterprise)
+                    .WithMany(ent => ent.Employees)
+                    .HasForeignKey(e => e.EnterpriseId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
                 entity.HasOne(e => e.Department)
                     .WithMany(d => d.Employees)
                     .HasForeignKey(e => e.DepartmentId)
                     .OnDelete(DeleteBehavior.SetNull);
 
-                entity.HasIndex(e => e.EmployeeCode).IsUnique();
+                entity.HasIndex(e => new { e.EnterpriseId, e.EmployeeCode }).IsUnique();
             });
 
             builder.Entity<Candidate>(entity =>
@@ -132,6 +182,11 @@ namespace ERMS.Infrastructure.Data
             // =============================================
             builder.Entity<Skill>(entity =>
             {
+                entity.HasOne(s => s.Enterprise)
+                    .WithMany(e => e.Skills)
+                    .HasForeignKey(s => s.EnterpriseId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
                 entity.HasIndex(s => s.Name).IsUnique();
                 
                 entity.Property(s => s.Id)
@@ -143,6 +198,11 @@ namespace ERMS.Infrastructure.Data
             // =============================================
             builder.Entity<JobPosting>(entity =>
             {
+                entity.HasOne(j => j.Enterprise)
+                    .WithMany(e => e.JobPostings)
+                    .HasForeignKey(j => j.EnterpriseId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
                 entity.HasOne(j => j.Department)
                     .WithMany(d => d.JobPostings)
                     .HasForeignKey(j => j.DepartmentId)
@@ -269,6 +329,11 @@ namespace ERMS.Infrastructure.Data
             // =============================================
             builder.Entity<Course>(entity =>
             {
+                entity.HasOne(c => c.Enterprise)
+                    .WithMany(e => e.Courses)
+                    .HasForeignKey(c => c.EnterpriseId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
                 entity.HasOne(c => c.Creator)
                     .WithMany(e => e.CreatedCourses)
                     .HasForeignKey(c => c.CreatorId)

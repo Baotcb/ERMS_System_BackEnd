@@ -17,7 +17,9 @@ namespace ERMS.Domain.Entities
         public DateTime DateJoined { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
 
-  
+        public Guid? EnterpriseId { get; set; }
+        public Enterprise? Enterprise { get; set; }
+
         public int? DepartmentId { get; set; } 
         public Department? Department { get; set; }
 

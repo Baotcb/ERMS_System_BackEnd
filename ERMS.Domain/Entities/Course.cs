@@ -6,6 +6,9 @@ namespace ERMS.Domain.Entities
 {
     public class Course : BaseEntity
     {
+        public Guid EnterpriseId { get; set; }
+        public Enterprise Enterprise { get; set; } = null!;
+
         public string Title { get; set; } = string.Empty;
         public string? Description { get; set; }
         public string? ThumbnailUrl { get; set; }
@@ -16,6 +19,9 @@ namespace ERMS.Domain.Entities
         public bool IsRequired { get; set; } = false;
         public int MinAttendancePercent { get; set; } = 80;
         public string Status { get; set; } = "Draft"; // Draft, Published, Archived
+        
+        public bool IsDeleted { get; set; } = false;
+        public DateTime? DeletedAt { get; set; }
 
         // Navigation properties
         public ICollection<CourseSkill> CourseSkills { get; set; } = new List<CourseSkill>();
