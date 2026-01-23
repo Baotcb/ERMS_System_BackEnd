@@ -1,5 +1,6 @@
 ﻿using ERMS.Domain.Constants.Roles;
 using ERMS.Domain.Entities;
+using ERMS.Domain.Entities.Identity;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using System;
@@ -30,7 +31,6 @@ namespace ERMS.Application.Features.Auth.Commands.Register
                 UserName = request.Email,
                 Email = request.Email,
                 FullName = request.FullName,
-                Status = 1,
                 DateJoined = DateTime.UtcNow,
                 SecurityStamp = Guid.NewGuid().ToString()
             };
