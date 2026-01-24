@@ -5,7 +5,8 @@ using ERMS.Application.Features.Auth.Commands.Login;
 using ERMS.Application.Features.Auth.Commands.Register;
 using ERMS.Application.Features.Auth.Commands.ResetPassword;
 using ERMS.Application.Interface;
-using ERMS.Domain.Entities;
+using ERMS.Domain.Constants.Roles;
+using ERMS.Domain.Entities.Identity;
 using Google.Apis.Auth;
 using MediatR;
 using Microsoft.AspNetCore.Authentication;
@@ -16,7 +17,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
+using System;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Security.Claims;
 using System.Text;
 
@@ -31,16 +34,22 @@ namespace ERMS.API.Controllers
         private readonly IConfiguration _config;
         private readonly ITokenService _tokenService;
         private readonly IMediator _mediator;
+        private readonly UserManager<User> _userManager;
+        private readonly RoleManager<IdentityRole<Guid>> _roleManager;
 
         public AuthController(ISender sender,
             IConfiguration config,
             ITokenService tokenService,
-            IMediator mediator)
+            IMediator mediator,
+            UserManager<User> userManager,
+            RoleManager<IdentityRole<Guid>> roleManager)
         {
             _sender = sender;
             _config = config;
             _tokenService = tokenService;
             _mediator = mediator;
+            _userManager = userManager;
+            _roleManager = roleManager;
         }
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterCommand command)
@@ -113,10 +122,40 @@ namespace ERMS.API.Controllers
             }
         }
 
-        [HttpGet("google-login")]
-        public IActionResult GoogleLogin()
+        
+        [HttpPost("google-login")]
+        public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginCommand command)
         {
-            var redirectUrl = Url.Action("GoogleResponse", "Auth");
+            try
+            {
+                if (string.IsNullOrWhiteSpace(command.IdToken))
+                {
+                    return BadRequest(new { message = "Google ID token là bắt buộc." });
+                }
+
+                var token = await _sender.Send(command);
+                return Ok(new
+                {
+                    token = token
+                });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Đăng nhập bằng Google OAuth redirect flow (cho web browsers)
+        /// </summary>
+        [HttpGet("google-login-redirect")]
+        public IActionResult GoogleLoginRedirect()
+        {
+            var redirectUrl = Url.Action("GoogleResponse", "Auth", null, Request.Scheme);
             var properties = new AuthenticationProperties
             {
                 RedirectUri = redirectUrl
@@ -125,29 +164,104 @@ namespace ERMS.API.Controllers
             return Challenge(properties, GoogleDefaults.AuthenticationScheme);
         }
 
-        // Google callback
         [HttpGet("google-response")]
         public async Task<IActionResult> GoogleResponse()
         {
-            var result = await HttpContext.AuthenticateAsync(
-                IdentityConstants.ExternalScheme);
-
-            if (!result.Succeeded)
-                return Unauthorized();
-
-            var email = result.Principal.FindFirstValue(ClaimTypes.Email);
-            var name = result.Principal.FindFirstValue(ClaimTypes.Name);
-
-            var token = await _mediator.Send(new GoogleLoginCommand
+            try
             {
-                Email = email!,
-                FullName = name
-            });
+                var result = await HttpContext.AuthenticateAsync(
+                    IdentityConstants.ExternalScheme);
 
-            await HttpContext.SignOutAsync(
-                IdentityConstants.ExternalScheme);
+                if (!result.Succeeded)
+                {
+                    return Unauthorized(new { message = "Xác thực Google không thành công." });
+                }
 
-            return Ok(new { token });
+                // Lấy ID token từ authentication properties
+                var idToken = result.Properties?.GetTokenValue("id_token");
+                
+                // Nếu không có ID token, thử lấy từ claims (fallback)
+                if (string.IsNullOrWhiteSpace(idToken))
+                {
+                    idToken = result.Principal.FindFirstValue("id_token");
+                }
+
+                var email = result.Principal.FindFirstValue(ClaimTypes.Email);
+                var name = result.Principal.FindFirstValue(ClaimTypes.Name);
+
+                if (string.IsNullOrWhiteSpace(email))
+                {
+                    return BadRequest(new { message = "Không thể lấy email từ Google." });
+                }
+
+                string jwtToken;
+                
+                if (!string.IsNullOrWhiteSpace(idToken))
+                {
+                    // Sử dụng ID token để validate (cách an toàn nhất)
+                    jwtToken = await _mediator.Send(new GoogleLoginCommand
+                    {
+                        IdToken = idToken
+                    });
+                }
+                else
+                {
+                    
+                    var user = await _userManager.FindByEmailAsync(email);
+                    if (user == null)
+                    {
+                        // Tạo user mới từ claims
+                        user = new User
+                        {
+                            UserName = email,
+                            Email = email,
+                            FullName = name ?? email.Split('@')[0],
+                            EmailConfirmed = true,
+                            DateJoined = DateTime.UtcNow
+                        };
+
+                        var createResult = await _userManager.CreateAsync(user);
+                        if (!createResult.Succeeded)
+                        {
+                            var errors = string.Join(", ", createResult.Errors.Select(e => e.Description));
+                            return BadRequest(new { message = $"Không thể tạo tài khoản: {errors}" });
+                        }
+
+                        // Gán role mặc định
+                        if (!await _roleManager.RoleExistsAsync(AppRoles.Candidate))
+                        {
+                            await _roleManager.CreateAsync(new IdentityRole<Guid>(AppRoles.Candidate));
+                        }
+                        await _userManager.AddToRoleAsync(user, AppRoles.Candidate);
+                    }
+                    else
+                    {
+                        // Cập nhật thông tin user nếu cần
+                        if (!string.IsNullOrWhiteSpace(name) && user.FullName != name)
+                        {
+                            user.FullName = name;
+                            user.UpdatedAt = DateTime.UtcNow;
+                            await _userManager.UpdateAsync(user);
+                        }
+                    }
+
+                    jwtToken = await _tokenService.CreateToken(user);
+                }
+
+                await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+
+                
+                var frontendUrl = _config["ClientSettings:Url"] ?? "http://localhost:3000";
+                return Redirect($"{frontendUrl}/auth/callback?token={jwtToken}");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [Authorize]

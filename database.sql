@@ -1,1167 +1,2271 @@
--- =============================================
--- ERMS System - Microsoft SQL Server Schema
--- SaaS Recruitment & Internal Training Management System
--- Version: 1.0
--- Database: Microsoft SQL Server 2016+
--- =============================================
-
--- =============================================
--- SECTION 1: DROP EXISTING TABLES (Reverse FK order)
--- =============================================
-IF OBJECT_ID('dbo.OwnershipTransfer', 'U') IS NOT NULL DROP TABLE dbo.OwnershipTransfer;
-IF OBJECT_ID('dbo.SavedJob', 'U') IS NOT NULL DROP TABLE dbo.SavedJob;
-IF OBJECT_ID('dbo.Notification', 'U') IS NOT NULL DROP TABLE dbo.Notification;
-IF OBJECT_ID('dbo.QuizAnswer', 'U') IS NOT NULL DROP TABLE dbo.QuizAnswer;
-IF OBJECT_ID('dbo.QuizAttempt', 'U') IS NOT NULL DROP TABLE dbo.QuizAttempt;
-IF OBJECT_ID('dbo.QuizQuestion', 'U') IS NOT NULL DROP TABLE dbo.QuizQuestion;
-IF OBJECT_ID('dbo.Quiz', 'U') IS NOT NULL DROP TABLE dbo.Quiz;
-IF OBJECT_ID('dbo.LessonProgress', 'U') IS NOT NULL DROP TABLE dbo.LessonProgress;
-IF OBJECT_ID('dbo.Lesson', 'U') IS NOT NULL DROP TABLE dbo.Lesson;
-IF OBJECT_ID('dbo.Enrollment', 'U') IS NOT NULL DROP TABLE dbo.Enrollment;
-IF OBJECT_ID('dbo.CourseSkill', 'U') IS NOT NULL DROP TABLE dbo.CourseSkill;
-IF OBJECT_ID('dbo.Course', 'U') IS NOT NULL DROP TABLE dbo.Course;
-IF OBJECT_ID('dbo.TrainingPlan', 'U') IS NOT NULL DROP TABLE dbo.TrainingPlan;
-IF OBJECT_ID('dbo.Offer', 'U') IS NOT NULL DROP TABLE dbo.Offer;
-IF OBJECT_ID('dbo.InterviewParticipant', 'U') IS NOT NULL DROP TABLE dbo.InterviewParticipant;
-IF OBJECT_ID('dbo.Interview', 'U') IS NOT NULL DROP TABLE dbo.Interview;
-IF OBJECT_ID('dbo.CVScreeningResult', 'U') IS NOT NULL DROP TABLE dbo.CVScreeningResult;
-IF OBJECT_ID('dbo.Application', 'U') IS NOT NULL DROP TABLE dbo.Application;
-IF OBJECT_ID('dbo.Resume', 'U') IS NOT NULL DROP TABLE dbo.Resume;
-IF OBJECT_ID('dbo.CandidateSkill', 'U') IS NOT NULL DROP TABLE dbo.CandidateSkill;
-IF OBJECT_ID('dbo.WorkExperience', 'U') IS NOT NULL DROP TABLE dbo.WorkExperience;
-IF OBJECT_ID('dbo.Education', 'U') IS NOT NULL DROP TABLE dbo.Education;
-IF OBJECT_ID('dbo.Candidate', 'U') IS NOT NULL DROP TABLE dbo.Candidate;
-IF OBJECT_ID('dbo.JobSkill', 'U') IS NOT NULL DROP TABLE dbo.JobSkill;
-IF OBJECT_ID('dbo.JobPosting', 'U') IS NOT NULL DROP TABLE dbo.JobPosting;
-IF OBJECT_ID('dbo.ApprovalHistory', 'U') IS NOT NULL DROP TABLE dbo.ApprovalHistory;
-IF OBJECT_ID('dbo.PlanDetail', 'U') IS NOT NULL DROP TABLE dbo.PlanDetail;
-IF OBJECT_ID('dbo.RecruitmentPlan', 'U') IS NOT NULL DROP TABLE dbo.RecruitmentPlan;
-IF OBJECT_ID('dbo.Skill', 'U') IS NOT NULL DROP TABLE dbo.Skill;
-IF OBJECT_ID('dbo.Employee', 'U') IS NOT NULL DROP TABLE dbo.Employee;
-IF OBJECT_ID('dbo.UserTokens', 'U') IS NOT NULL DROP TABLE dbo.UserTokens;
-IF OBJECT_ID('dbo.UserLogins', 'U') IS NOT NULL DROP TABLE dbo.UserLogins;
-IF OBJECT_ID('dbo.UserClaims', 'U') IS NOT NULL DROP TABLE dbo.UserClaims;
-IF OBJECT_ID('dbo.UserRoles', 'U') IS NOT NULL DROP TABLE dbo.UserRoles;
-IF OBJECT_ID('dbo.RoleClaims', 'U') IS NOT NULL DROP TABLE dbo.RoleClaims;
-IF OBJECT_ID('dbo.Users', 'U') IS NOT NULL DROP TABLE dbo.Users;
-IF OBJECT_ID('dbo.Roles', 'U') IS NOT NULL DROP TABLE dbo.Roles;
-IF OBJECT_ID('dbo.Department', 'U') IS NOT NULL DROP TABLE dbo.Department;
-IF OBJECT_ID('dbo.SubscriptionHistory', 'U') IS NOT NULL DROP TABLE dbo.SubscriptionHistory;
-IF OBJECT_ID('dbo.Enterprise', 'U') IS NOT NULL DROP TABLE dbo.Enterprise;
-IF OBJECT_ID('dbo.SubscriptionPlan', 'U') IS NOT NULL DROP TABLE dbo.SubscriptionPlan;
+USE [master]
 GO
+/****** Object:  Database [ERMS]    Script Date: 24/01/2026 3:13:47 PM ******/
+CREATE DATABASE [ERMS]
 
--- =============================================
--- SECTION 2: ENTERPRISE & SUBSCRIPTION (Multi-tenant Core)
--- =============================================
-
--- SubscriptionPlan: Defines available subscription tiers (Basic, Pro, Enterprise)
--- This is a shared/global table not tied to any specific tenant
-CREATE TABLE dbo.SubscriptionPlan (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key, auto-generated UUID
-    PlanName NVARCHAR(100) NOT NULL,                        -- Display name: 'Basic', 'Pro', 'Enterprise'
-    PlanCode VARCHAR(50) NOT NULL,                          -- Unique code for API: 'basic', 'pro', 'enterprise'
-    Description NVARCHAR(500) NULL,                         -- Marketing description of the plan
-    MaxUsers INT NOT NULL DEFAULT 10,                       -- Maximum users allowed in this plan
-    MaxJobPostings INT NOT NULL DEFAULT 5,                  -- Maximum active job postings allowed
-    MaxCourses INT NOT NULL DEFAULT 10,                     -- Maximum training courses allowed
-    PriceMonthly DECIMAL(18,2) NOT NULL DEFAULT 0,          -- Monthly subscription price (USD)
-    PriceYearly DECIMAL(18,2) NOT NULL DEFAULT 0,           -- Yearly subscription price (USD) - typically discounted
-    Features NVARCHAR(MAX) NULL,                            -- JSON array of feature flags enabled for this plan
-    IsActive BIT NOT NULL DEFAULT 1,                        -- Whether this plan is available for new subscriptions
-    DisplayOrder INT NOT NULL DEFAULT 0,                    -- Sort order for displaying plans on pricing page
-    CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),       -- Record creation timestamp
-    UpdatedAt DATETIME NULL,                                -- Last modification timestamp
-    IsDeleted BIT NOT NULL DEFAULT 0,                       -- Soft delete flag (1 = deleted)
-    DeletedAt DATETIME NULL,                                -- Timestamp when soft deleted
-    CONSTRAINT PK_SubscriptionPlan PRIMARY KEY (Id),
-    CONSTRAINT UQ_SubscriptionPlan_PlanCode UNIQUE (PlanCode)
-);
-
--- Enterprise: Tenant organization (company) - core of multi-tenant architecture
--- Each company that signs up gets one Enterprise record
-CREATE TABLE dbo.Enterprise (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key, tenant identifier
-    EnterpriseName NVARCHAR(200) NOT NULL,                  -- Company/organization name
-    EnterpriseCode VARCHAR(50) NOT NULL,                    -- Unique code for subdomain/URL slug
-    TaxCode VARCHAR(50) NULL,                               -- Tax identification number
-    Address NVARCHAR(500) NULL,                             -- Company headquarters address
-    Phone VARCHAR(20) NULL,                                 -- Contact phone number
-    Email VARCHAR(255) NULL,                                -- Contact email address
-    Website VARCHAR(255) NULL,                              -- Company website URL
-    LogoUrl VARCHAR(500) NULL,                              -- URL to company logo image
-    SubscriptionPlanId UNIQUEIDENTIFIER NOT NULL,           -- FK to current subscription plan
-    SubscriptionStartDate DATETIME NOT NULL,                -- When current subscription period started
-    SubscriptionEndDate DATETIME NOT NULL,                  -- When current subscription expires
-    SubscriptionStatus VARCHAR(30) NOT NULL DEFAULT 'Active', -- Status: Active, Expired, Cancelled, Trial
-    CreatedById UNIQUEIDENTIFIER NULL,                      -- FK to User who created (Director/Owner)
-    CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),       -- Record creation timestamp
-    UpdatedAt DATETIME NULL,                                -- Last modification timestamp
-    IsDeleted BIT NOT NULL DEFAULT 0,                       -- Soft delete flag
-    DeletedAt DATETIME NULL,                                -- Timestamp when soft deleted
-    CONSTRAINT PK_Enterprise PRIMARY KEY (Id),
-    CONSTRAINT UQ_Enterprise_EnterpriseCode UNIQUE (EnterpriseCode),
-    CONSTRAINT FK_Enterprise_SubscriptionPlan FOREIGN KEY (SubscriptionPlanId) REFERENCES dbo.SubscriptionPlan(Id),
-    CONSTRAINT CK_Enterprise_SubscriptionStatus CHECK (SubscriptionStatus IN ('Active', 'Expired', 'Cancelled', 'Trial', 'PastDue'))
-);
-
--- SubscriptionHistory: Audit trail for subscription changes and payments
--- Tracks plan upgrades, downgrades, renewals, and payment records
-CREATE TABLE dbo.SubscriptionHistory (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key
-    EnterpriseId UNIQUEIDENTIFIER NOT NULL,                 -- FK to Enterprise
-    SubscriptionPlanId UNIQUEIDENTIFIER NOT NULL,           -- FK to the plan for this period
-    ActionType VARCHAR(30) NOT NULL,                        -- Action: Subscribe, Upgrade, Downgrade, Renew, Cancel
-    PreviousPlanId UNIQUEIDENTIFIER NULL,                   -- FK to previous plan (for upgrades/downgrades)
-    Amount DECIMAL(18,2) NOT NULL DEFAULT 0,                -- Amount paid for this action
-    Currency VARCHAR(3) NOT NULL DEFAULT 'USD',             -- Currency code (ISO 4217)
-    PaymentMethod VARCHAR(50) NULL,                         -- Payment method: CreditCard, BankTransfer, PayPal
-    PaymentReference VARCHAR(100) NULL,                     -- External payment transaction ID
-    PeriodStartDate DATETIME NOT NULL,                      -- Subscription period start
-    PeriodEndDate DATETIME NOT NULL,                        -- Subscription period end
-    Note NVARCHAR(500) NULL,                                -- Additional notes about this transaction
-    CreatedById UNIQUEIDENTIFIER NULL,                      -- FK to User who performed the action
-    CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),       -- Record creation timestamp
-    CONSTRAINT PK_SubscriptionHistory PRIMARY KEY (Id),
-    CONSTRAINT FK_SubscriptionHistory_Enterprise FOREIGN KEY (EnterpriseId) REFERENCES dbo.Enterprise(Id),
-    CONSTRAINT FK_SubscriptionHistory_Plan FOREIGN KEY (SubscriptionPlanId) REFERENCES dbo.SubscriptionPlan(Id),
-    CONSTRAINT CK_SubscriptionHistory_ActionType CHECK (ActionType IN ('Subscribe', 'Upgrade', 'Downgrade', 'Renew', 'Cancel', 'Refund'))
-);
 GO
-
--- =============================================
--- SECTION 3: USER & ORGANIZATION (ASP.NET Identity Compatible)
--- =============================================
-
--- Roles: ASP.NET Identity compatible roles table
--- Stores system-wide role definitions
-CREATE TABLE dbo.Roles (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key, role identifier
-    Name NVARCHAR(256) NOT NULL,                            -- Role name: Admin, Director, HRManager, etc.
-    NormalizedName NVARCHAR(256) NOT NULL,                  -- Uppercase role name for lookups
-    ConcurrencyStamp NVARCHAR(MAX) NULL,                    -- Optimistic concurrency token
-    Description NVARCHAR(500) NULL,                         -- Human-readable description of the role
-    IsSystemRole BIT NOT NULL DEFAULT 0,                    -- 1 = System role (cannot be deleted)
-    CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),       -- Record creation timestamp
-    CONSTRAINT PK_Roles PRIMARY KEY (Id),
-    CONSTRAINT UQ_Roles_NormalizedName UNIQUE (NormalizedName)
-);
-
--- Department: Organizational units within an enterprise
--- Each enterprise can have multiple departments
-CREATE TABLE dbo.Department (
-    Id INT IDENTITY(1,1) NOT NULL,                          -- Primary key, auto-increment
-    EnterpriseId UNIQUEIDENTIFIER NOT NULL,                 -- FK to Enterprise (tenant isolation)
-    DepartmentName NVARCHAR(200) NOT NULL,                  -- Department display name
-    DepartmentCode VARCHAR(50) NULL,                        -- Internal code for the department
-    Description NVARCHAR(500) NULL,                         -- Description of department function
-    ManagerId UNIQUEIDENTIFIER NULL,                        -- FK to Employee who manages this dept
-    ParentDepartmentId INT NULL,                            -- FK to parent dept (for hierarchy)
-    IsActive BIT NOT NULL DEFAULT 1,                        -- Whether department is active
-    CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),       -- Record creation timestamp
-    UpdatedAt DATETIME NULL,                                -- Last modification timestamp
-    IsDeleted BIT NOT NULL DEFAULT 0,                       -- Soft delete flag
-    DeletedAt DATETIME NULL,                                -- Timestamp when soft deleted
-    CONSTRAINT PK_Department PRIMARY KEY (Id),
-    CONSTRAINT FK_Department_Enterprise FOREIGN KEY (EnterpriseId) REFERENCES dbo.Enterprise(Id),
-    CONSTRAINT FK_Department_Parent FOREIGN KEY (ParentDepartmentId) REFERENCES dbo.Department(Id)
-);
-
--- Users: ASP.NET Identity compatible users table
--- Central user account for all system users (employees, candidates, admins)
-CREATE TABLE dbo.Users (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key, user identifier
-    UserName NVARCHAR(256) NOT NULL,                        -- Login username (usually email)
-    NormalizedUserName NVARCHAR(256) NOT NULL,              -- Uppercase username for lookups
-    Email NVARCHAR(256) NOT NULL,                           -- Email address
-    NormalizedEmail NVARCHAR(256) NOT NULL,                 -- Uppercase email for lookups
-    EmailConfirmed BIT NOT NULL DEFAULT 0,                  -- Whether email is verified
-    PasswordHash NVARCHAR(MAX) NULL,                        -- Hashed password (null for external logins)
-    SecurityStamp NVARCHAR(MAX) NULL,                       -- Security stamp for password changes
-    ConcurrencyStamp NVARCHAR(MAX) NULL,                    -- Optimistic concurrency token
-    PhoneNumber VARCHAR(20) NULL,                           -- Phone number
-    PhoneNumberConfirmed BIT NOT NULL DEFAULT 0,            -- Whether phone is verified
-    TwoFactorEnabled BIT NOT NULL DEFAULT 0,                -- Whether 2FA is enabled
-    LockoutEnd DATETIMEOFFSET NULL,                         -- When lockout expires (null = not locked)
-    LockoutEnabled BIT NOT NULL DEFAULT 1,                  -- Whether account can be locked
-    AccessFailedCount INT NOT NULL DEFAULT 0,               -- Failed login attempts counter
-    FullName NVARCHAR(200) NOT NULL,                        -- User's full display name
-    AvatarUrl VARCHAR(500) NULL,                            -- URL to profile picture
-    EnterpriseId UNIQUEIDENTIFIER NULL,                     -- FK to Enterprise (null for candidates)
-    DepartmentId INT NULL,                                  -- FK to Department (null for non-employees)
-    Status VARCHAR(30) NOT NULL DEFAULT 'Active',           -- Account status: Active, Inactive, Suspended
-    LastLoginAt DATETIME NULL,                              -- Last successful login timestamp
-    CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),       -- Account creation timestamp
-    UpdatedAt DATETIME NULL,                                -- Last profile update timestamp
-    IsDeleted BIT NOT NULL DEFAULT 0,                       -- Soft delete flag
-    DeletedAt DATETIME NULL,                                -- Timestamp when soft deleted
-    CONSTRAINT PK_Users PRIMARY KEY (Id),
-    CONSTRAINT UQ_Users_NormalizedUserName UNIQUE (NormalizedUserName),
-    CONSTRAINT UQ_Users_NormalizedEmail UNIQUE (NormalizedEmail),
-    CONSTRAINT FK_Users_Enterprise FOREIGN KEY (EnterpriseId) REFERENCES dbo.Enterprise(Id),
-    CONSTRAINT FK_Users_Department FOREIGN KEY (DepartmentId) REFERENCES dbo.Department(Id),
-    CONSTRAINT CK_Users_Status CHECK (Status IN ('Active', 'Inactive', 'Suspended', 'PendingVerification'))
-);
-
--- UserRoles: Many-to-many relationship between Users and Roles
--- A user can have multiple roles (e.g., Employee + Trainer)
-CREATE TABLE dbo.UserRoles (
-    UserId UNIQUEIDENTIFIER NOT NULL,                       -- FK to Users
-    RoleId UNIQUEIDENTIFIER NOT NULL,                       -- FK to Roles
-    AssignedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),      -- When role was assigned
-    AssignedById UNIQUEIDENTIFIER NULL,                     -- FK to User who assigned the role
-    CONSTRAINT PK_UserRoles PRIMARY KEY (UserId, RoleId),
-    CONSTRAINT FK_UserRoles_User FOREIGN KEY (UserId) REFERENCES dbo.Users(Id) ON DELETE CASCADE,
-    CONSTRAINT FK_UserRoles_Role FOREIGN KEY (RoleId) REFERENCES dbo.Roles(Id) ON DELETE CASCADE
-);
-
--- UserClaims: ASP.NET Identity claims storage
--- Stores additional claims (key-value) for users
-CREATE TABLE dbo.UserClaims (
-    Id INT IDENTITY(1,1) NOT NULL,                          -- Primary key, auto-increment
-    UserId UNIQUEIDENTIFIER NOT NULL,                       -- FK to Users
-    ClaimType NVARCHAR(MAX) NULL,                           -- Claim type (e.g., 'permission')
-    ClaimValue NVARCHAR(MAX) NULL,                          -- Claim value (e.g., 'can_approve_jobs')
-    CONSTRAINT PK_UserClaims PRIMARY KEY (Id),
-    CONSTRAINT FK_UserClaims_User FOREIGN KEY (UserId) REFERENCES dbo.Users(Id) ON DELETE CASCADE
-);
-
--- UserLogins: External login providers (Google, Microsoft, etc.)
--- Links external OAuth accounts to local users
-CREATE TABLE dbo.UserLogins (
-    LoginProvider NVARCHAR(128) NOT NULL,                   -- Provider name: Google, Microsoft, Facebook
-    ProviderKey NVARCHAR(128) NOT NULL,                     -- Unique key from provider
-    ProviderDisplayName NVARCHAR(MAX) NULL,                 -- Human-readable provider name
-    UserId UNIQUEIDENTIFIER NOT NULL,                       -- FK to Users
-    CONSTRAINT PK_UserLogins PRIMARY KEY (LoginProvider, ProviderKey),
-    CONSTRAINT FK_UserLogins_User FOREIGN KEY (UserId) REFERENCES dbo.Users(Id) ON DELETE CASCADE
-);
-
--- UserTokens: Authentication tokens storage
--- Stores refresh tokens, password reset tokens, etc.
-CREATE TABLE dbo.UserTokens (
-    UserId UNIQUEIDENTIFIER NOT NULL,                       -- FK to Users
-    LoginProvider NVARCHAR(128) NOT NULL,                   -- Token provider name
-    Name NVARCHAR(128) NOT NULL,                            -- Token name (e.g., 'RefreshToken')
-    Value NVARCHAR(MAX) NULL,                               -- Token value
-    CONSTRAINT PK_UserTokens PRIMARY KEY (UserId, LoginProvider, Name),
-    CONSTRAINT FK_UserTokens_User FOREIGN KEY (UserId) REFERENCES dbo.Users(Id) ON DELETE CASCADE
-);
-
--- RoleClaims: Claims associated with roles
--- All users with a role automatically get these claims
-CREATE TABLE dbo.RoleClaims (
-    Id INT IDENTITY(1,1) NOT NULL,                          -- Primary key, auto-increment
-    RoleId UNIQUEIDENTIFIER NOT NULL,                       -- FK to Roles
-    ClaimType NVARCHAR(MAX) NULL,                           -- Claim type
-    ClaimValue NVARCHAR(MAX) NULL,                          -- Claim value
-    CONSTRAINT PK_RoleClaims PRIMARY KEY (Id),
-    CONSTRAINT FK_RoleClaims_Role FOREIGN KEY (RoleId) REFERENCES dbo.Roles(Id) ON DELETE CASCADE
-);
-
--- Employee: Extended profile for users who are employees
--- Contains HR-specific information not in base User table
-CREATE TABLE dbo.Employee (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key (different from UserId for flexibility)
-    UserId UNIQUEIDENTIFIER NOT NULL,                       -- FK to Users (1:1 relationship)
-    EnterpriseId UNIQUEIDENTIFIER NOT NULL,                 -- FK to Enterprise (denormalized for queries)
-    EmployeeCode VARCHAR(50) NOT NULL,                      -- Unique employee ID within company (e.g., EMP001)
-    DepartmentId INT NOT NULL,                              -- FK to Department
-    Position NVARCHAR(200) NULL,                            -- Job title/position
-    HireDate DATETIME NULL,                                 -- Employment start date
-    TerminationDate DATETIME NULL,                          -- Employment end date (null if current)
-    EmploymentType VARCHAR(30) NOT NULL DEFAULT 'FullTime', -- FullTime, PartTime, Contract, Intern
-    ManagerId UNIQUEIDENTIFIER NULL,                        -- FK to Employee (direct manager)
-    Salary DECIMAL(18,2) NULL,                              -- Current salary (confidential)
-    IsTrainer BIT NOT NULL DEFAULT 0,                       -- Can create and manage training courses
-    Status VARCHAR(30) NOT NULL DEFAULT 'Active',           -- Active, OnLeave, Terminated, Probation
-    CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),       -- Record creation timestamp
-    UpdatedAt DATETIME NULL,                                -- Last modification timestamp
-    IsDeleted BIT NOT NULL DEFAULT 0,                       -- Soft delete flag
-    DeletedAt DATETIME NULL,                                -- Timestamp when soft deleted
-    CONSTRAINT PK_Employee PRIMARY KEY (Id),
-    CONSTRAINT UQ_Employee_UserId UNIQUE (UserId),
-    CONSTRAINT UQ_Employee_EnterpriseCode UNIQUE (EnterpriseId, EmployeeCode),
-    CONSTRAINT FK_Employee_User FOREIGN KEY (UserId) REFERENCES dbo.Users(Id),
-    CONSTRAINT FK_Employee_Enterprise FOREIGN KEY (EnterpriseId) REFERENCES dbo.Enterprise(Id),
-    CONSTRAINT FK_Employee_Department FOREIGN KEY (DepartmentId) REFERENCES dbo.Department(Id),
-    CONSTRAINT FK_Employee_Manager FOREIGN KEY (ManagerId) REFERENCES dbo.Employee(Id),
-    CONSTRAINT CK_Employee_EmploymentType CHECK (EmploymentType IN ('FullTime', 'PartTime', 'Contract', 'Intern', 'Temporary')),
-    CONSTRAINT CK_Employee_Status CHECK (Status IN ('Active', 'OnLeave', 'Terminated', 'Probation', 'Resigned'))
-);
-
--- Add FK from Department.ManagerId to Employee after Employee is created
-ALTER TABLE dbo.Department ADD CONSTRAINT FK_Department_Manager FOREIGN KEY (ManagerId) REFERENCES dbo.Employee(Id);
-
--- Add FK from Enterprise.CreatedById to Users after Users is created
-ALTER TABLE dbo.Enterprise ADD CONSTRAINT FK_Enterprise_CreatedBy FOREIGN KEY (CreatedById) REFERENCES dbo.Users(Id);
+ALTER DATABASE [ERMS] SET ANSI_NULL_DEFAULT OFF 
 GO
-
--- =============================================
--- SECTION 4: SKILL CATALOG (Shared)
--- =============================================
-
--- Skill: Master catalog of skills used in jobs and candidates
--- Shared across enterprise or global (based on EnterpriseId)
-CREATE TABLE dbo.Skill (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key
-    EnterpriseId UNIQUEIDENTIFIER NULL,                     -- FK to Enterprise (null = global skill)
-    SkillName NVARCHAR(200) NOT NULL,                       -- Skill display name
-    SkillCategory VARCHAR(100) NULL,                        -- Category: Technical, Soft, Language, etc.
-    Description NVARCHAR(500) NULL,                         -- Detailed description
-    IsActive BIT NOT NULL DEFAULT 1,                        -- Whether skill is available for use
-    CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),       -- Record creation timestamp
-    UpdatedAt DATETIME NULL,                                -- Last modification timestamp
-    IsDeleted BIT NOT NULL DEFAULT 0,                       -- Soft delete flag
-    DeletedAt DATETIME NULL,                                -- Timestamp when soft deleted
-    CONSTRAINT PK_Skill PRIMARY KEY (Id),
-    CONSTRAINT FK_Skill_Enterprise FOREIGN KEY (EnterpriseId) REFERENCES dbo.Enterprise(Id)
-);
+ALTER DATABASE [ERMS] SET ANSI_NULLS OFF 
 GO
-
--- =============================================
--- SECTION 5: RECRUITMENT FLOW
--- =============================================
-
--- RecruitmentPlan: Recruitment campaign/plan (e.g., "Q1/2026 Hiring")
--- Created by HR Manager, contains multiple hiring requests
-CREATE TABLE dbo.RecruitmentPlan (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key
-    EnterpriseId UNIQUEIDENTIFIER NOT NULL,                 -- FK to Enterprise
-    PlanName NVARCHAR(200) NOT NULL,                        -- Plan display name (e.g., "Q1 2026 Hiring Plan")
-    PlanCode VARCHAR(50) NOT NULL,                          -- Unique code within enterprise
-    Description NVARCHAR(MAX) NULL,                         -- Detailed description of the plan
-    StartDate DATETIME NOT NULL,                            -- Plan period start date
-    EndDate DATETIME NOT NULL,                              -- Plan period end date
-    TotalBudget DECIMAL(18,2) NULL,                         -- Total budget allocated for this plan
-    Status VARCHAR(30) NOT NULL DEFAULT 'Draft',            -- Draft, Active, Completed, Cancelled
-    CreatedById UNIQUEIDENTIFIER NOT NULL,                  -- FK to User (HR Manager who created)
-    ApprovedById UNIQUEIDENTIFIER NULL,                     -- FK to User (Director who approved)
-    ApprovedAt DATETIME NULL,                               -- When the plan was approved
-    CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),       -- Record creation timestamp
-    UpdatedAt DATETIME NULL,                                -- Last modification timestamp
-    IsDeleted BIT NOT NULL DEFAULT 0,                       -- Soft delete flag
-    DeletedAt DATETIME NULL,                                -- Timestamp when soft deleted
-    CONSTRAINT PK_RecruitmentPlan PRIMARY KEY (Id),
-    CONSTRAINT UQ_RecruitmentPlan_EnterpriseCode UNIQUE (EnterpriseId, PlanCode),
-    CONSTRAINT FK_RecruitmentPlan_Enterprise FOREIGN KEY (EnterpriseId) REFERENCES dbo.Enterprise(Id),
-    CONSTRAINT FK_RecruitmentPlan_CreatedBy FOREIGN KEY (CreatedById) REFERENCES dbo.Users(Id),
-    CONSTRAINT FK_RecruitmentPlan_ApprovedBy FOREIGN KEY (ApprovedById) REFERENCES dbo.Users(Id),
-    CONSTRAINT CK_RecruitmentPlan_Status CHECK (Status IN ('Draft', 'Active', 'Completed', 'Cancelled'))
-);
-
--- PlanDetail: Individual hiring request within a recruitment plan
--- Submitted by Department Head for specific positions needed
-CREATE TABLE dbo.PlanDetail (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key
-    RecruitmentPlanId UNIQUEIDENTIFIER NOT NULL,            -- FK to RecruitmentPlan
-    DepartmentId INT NOT NULL,                              -- FK to Department requesting the hire
-    RequestedById UNIQUEIDENTIFIER NOT NULL,                -- FK to User (Dept Head who requested)
-    PositionTitle NVARCHAR(200) NOT NULL,                   -- Job title to hire for
-    Quantity INT NOT NULL DEFAULT 1,                        -- Number of positions to fill
-    Priority VARCHAR(30) NOT NULL DEFAULT 'Normal',         -- Urgency: Low, Normal, High, Critical
-    Justification NVARCHAR(MAX) NULL,                       -- Business reason for the hire
-    RequiredSkills NVARCHAR(MAX) NULL,                      -- JSON array of required skill IDs
-    MinExperience INT NULL,                                 -- Minimum years of experience
-    MaxExperience INT NULL,                                 -- Maximum years of experience
-    EducationLevel VARCHAR(50) NULL,                        -- Required education: Bachelor, Master, etc.
-    SalaryRangeMin DECIMAL(18,2) NULL,                      -- Budget min salary
-    SalaryRangeMax DECIMAL(18,2) NULL,                      -- Budget max salary
-    ExpectedStartDate DATETIME NULL,                        -- When the new hire should start
-    Status VARCHAR(30) NOT NULL DEFAULT 'Draft',            -- Draft, PendingApproval, Approved, Rejected, Processing, Completed, Cancelled
-    ReviewerId UNIQUEIDENTIFIER NULL,                       -- FK to User who reviewed (Director)
-    ReviewedAt DATETIME NULL,                               -- When review decision was made
-    ReviewNote NVARCHAR(500) NULL,                          -- Reviewer's comments
-    CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),       -- Record creation timestamp
-    UpdatedAt DATETIME NULL,                                -- Last modification timestamp
-    IsDeleted BIT NOT NULL DEFAULT 0,                       -- Soft delete flag
-    DeletedAt DATETIME NULL,                                -- Timestamp when soft deleted
-    CONSTRAINT PK_PlanDetail PRIMARY KEY (Id),
-    CONSTRAINT FK_PlanDetail_RecruitmentPlan FOREIGN KEY (RecruitmentPlanId) REFERENCES dbo.RecruitmentPlan(Id),
-    CONSTRAINT FK_PlanDetail_Department FOREIGN KEY (DepartmentId) REFERENCES dbo.Department(Id),
-    CONSTRAINT FK_PlanDetail_RequestedBy FOREIGN KEY (RequestedById) REFERENCES dbo.Users(Id),
-    CONSTRAINT FK_PlanDetail_Reviewer FOREIGN KEY (ReviewerId) REFERENCES dbo.Users(Id),
-    CONSTRAINT CK_PlanDetail_Status CHECK (Status IN ('Draft', 'PendingApproval', 'Approved', 'Rejected', 'Processing', 'Completed', 'Cancelled')),
-    CONSTRAINT CK_PlanDetail_Priority CHECK (Priority IN ('Low', 'Normal', 'High', 'Critical'))
-);
-
--- ApprovalHistory: Audit trail for all approval/rejection actions
--- Tracks who approved/rejected what and when
-CREATE TABLE dbo.ApprovalHistory (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key
-    EntityType VARCHAR(50) NOT NULL,                        -- Type: PlanDetail, TrainingPlan, Offer, etc.
-    EntityId UNIQUEIDENTIFIER NOT NULL,                     -- FK to the entity being approved
-    Action VARCHAR(30) NOT NULL,                            -- Submit, Approve, Reject, Cancel, Revise
-    PreviousStatus VARCHAR(30) NULL,                        -- Status before this action
-    NewStatus VARCHAR(30) NOT NULL,                         -- Status after this action
-    PerformedById UNIQUEIDENTIFIER NOT NULL,                -- FK to User who performed the action
-    Note NVARCHAR(MAX) NULL,                                -- Comments/reason for the action
-    CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),       -- Action timestamp
-    CONSTRAINT PK_ApprovalHistory PRIMARY KEY (Id),
-    CONSTRAINT FK_ApprovalHistory_PerformedBy FOREIGN KEY (PerformedById) REFERENCES dbo.Users(Id),
-    CONSTRAINT CK_ApprovalHistory_Action CHECK (Action IN ('Submit', 'Approve', 'Reject', 'Cancel', 'Revise', 'Reopen'))
-);
-
--- JobPosting: Published job listings visible to candidates
--- Created from approved PlanDetail by HR Manager
-CREATE TABLE dbo.JobPosting (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key
-    EnterpriseId UNIQUEIDENTIFIER NOT NULL,                 -- FK to Enterprise
-    PlanDetailId UNIQUEIDENTIFIER NULL,                     -- FK to PlanDetail (optional if standalone job)
-    DepartmentId INT NOT NULL,                              -- FK to Department
-    JobTitle NVARCHAR(200) NOT NULL,                        -- Position title for display
-    JobCode VARCHAR(50) NULL,                               -- Internal job reference code
-    Description NVARCHAR(MAX) NOT NULL,                     -- Full job description (HTML/Markdown)
-    Requirements NVARCHAR(MAX) NULL,                        -- Job requirements section
-    Benefits NVARCHAR(MAX) NULL,                            -- Benefits and perks section
-    EmploymentType VARCHAR(30) NOT NULL DEFAULT 'FullTime', -- FullTime, PartTime, Contract, Intern
-    ExperienceLevel VARCHAR(30) NULL,                       -- Entry, Junior, Mid, Senior, Lead, Executive
-    EducationLevel VARCHAR(50) NULL,                        -- Required education level
-    SalaryRangeMin DECIMAL(18,2) NULL,                      -- Min salary (may be hidden from candidates)
-    SalaryRangeMax DECIMAL(18,2) NULL,                      -- Max salary (may be hidden from candidates)
-    ShowSalary BIT NOT NULL DEFAULT 0,                      -- Whether to display salary on job listing
-    Location NVARCHAR(200) NULL,                            -- Work location
-    RemoteOption VARCHAR(30) NULL,                          -- OnSite, Remote, Hybrid
-    Quantity INT NOT NULL DEFAULT 1,                        -- Number of openings
-    ApplicationDeadline DATETIME NULL,                      -- Last date to apply
-    Status VARCHAR(30) NOT NULL DEFAULT 'Draft',            -- Draft, Published, Closed, Filled, Cancelled
-    PublishedAt DATETIME NULL,                              -- When job was published
-    PublishedById UNIQUEIDENTIFIER NULL,                    -- FK to User who published
-    ClosedAt DATETIME NULL,                                 -- When job was closed
-    ViewCount INT NOT NULL DEFAULT 0,                       -- Number of times job was viewed
-    ApplicationCount INT NOT NULL DEFAULT 0,                -- Number of applications received
-    CreatedById UNIQUEIDENTIFIER NOT NULL,                  -- FK to User who created the job
-    CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),       -- Record creation timestamp
-    UpdatedAt DATETIME NULL,                                -- Last modification timestamp
-    IsDeleted BIT NOT NULL DEFAULT 0,                       -- Soft delete flag
-    DeletedAt DATETIME NULL,                                -- Timestamp when soft deleted
-    CONSTRAINT PK_JobPosting PRIMARY KEY (Id),
-    CONSTRAINT FK_JobPosting_Enterprise FOREIGN KEY (EnterpriseId) REFERENCES dbo.Enterprise(Id),
-    CONSTRAINT FK_JobPosting_PlanDetail FOREIGN KEY (PlanDetailId) REFERENCES dbo.PlanDetail(Id),
-    CONSTRAINT FK_JobPosting_Department FOREIGN KEY (DepartmentId) REFERENCES dbo.Department(Id),
-    CONSTRAINT FK_JobPosting_PublishedBy FOREIGN KEY (PublishedById) REFERENCES dbo.Users(Id),
-    CONSTRAINT FK_JobPosting_CreatedBy FOREIGN KEY (CreatedById) REFERENCES dbo.Users(Id),
-    CONSTRAINT CK_JobPosting_Status CHECK (Status IN ('Draft', 'Published', 'Closed', 'Filled', 'Cancelled')),
-    CONSTRAINT CK_JobPosting_EmploymentType CHECK (EmploymentType IN ('FullTime', 'PartTime', 'Contract', 'Intern', 'Temporary')),
-    CONSTRAINT CK_JobPosting_RemoteOption CHECK (RemoteOption IN ('OnSite', 'Remote', 'Hybrid'))
-);
-
--- JobSkill: Many-to-many relationship between JobPosting and Skill
--- Defines required skills for a job posting
-CREATE TABLE dbo.JobSkill (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key
-    JobPostingId UNIQUEIDENTIFIER NOT NULL,                 -- FK to JobPosting
-    SkillId UNIQUEIDENTIFIER NOT NULL,                      -- FK to Skill
-    IsRequired BIT NOT NULL DEFAULT 1,                      -- 1 = Required, 0 = Nice to have
-    MinLevel INT NULL,                                      -- Minimum proficiency level (1-5)
-    CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),       -- Record creation timestamp
-    CONSTRAINT PK_JobSkill PRIMARY KEY (Id),
-    CONSTRAINT UQ_JobSkill UNIQUE (JobPostingId, SkillId),
-    CONSTRAINT FK_JobSkill_JobPosting FOREIGN KEY (JobPostingId) REFERENCES dbo.JobPosting(Id) ON DELETE CASCADE,
-    CONSTRAINT FK_JobSkill_Skill FOREIGN KEY (SkillId) REFERENCES dbo.Skill(Id)
-);
+ALTER DATABASE [ERMS] SET ANSI_PADDING OFF 
 GO
-
--- =============================================
--- SECTION 6: CANDIDATE PROFILE
--- =============================================
-
--- Candidate: Profile for job seekers
--- Extends Users table with candidate-specific information
-CREATE TABLE dbo.Candidate (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key
-    UserId UNIQUEIDENTIFIER NOT NULL,                       -- FK to Users (1:1 relationship)
-    AboutMe NVARCHAR(MAX) NULL,                             -- Personal summary/bio
-    Headline NVARCHAR(200) NULL,                            -- Professional headline
-    CurrentPosition NVARCHAR(200) NULL,                     -- Current job title
-    CurrentCompany NVARCHAR(200) NULL,                      -- Current employer name
-    Location NVARCHAR(200) NULL,                            -- Current location
-    LinkedInUrl VARCHAR(500) NULL,                          -- LinkedIn profile URL
-    PortfolioUrl VARCHAR(500) NULL,                         -- Portfolio/personal website URL
-    ExpectedSalary DECIMAL(18,2) NULL,                      -- Expected salary
-    NoticePeriod INT NULL,                                  -- Notice period in days
-    IsOpenToWork BIT NOT NULL DEFAULT 1,                    -- Actively looking for jobs
-    PreferredJobTypes NVARCHAR(200) NULL,                   -- JSON array: FullTime, PartTime, etc.
-    PreferredLocations NVARCHAR(500) NULL,                  -- JSON array of preferred locations
-    CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),       -- Profile creation timestamp
-    UpdatedAt DATETIME NULL,                                -- Last profile update timestamp
-    IsDeleted BIT NOT NULL DEFAULT 0,                       -- Soft delete flag
-    DeletedAt DATETIME NULL,                                -- Timestamp when soft deleted
-    CONSTRAINT PK_Candidate PRIMARY KEY (Id),
-    CONSTRAINT UQ_Candidate_UserId UNIQUE (UserId),
-    CONSTRAINT FK_Candidate_User FOREIGN KEY (UserId) REFERENCES dbo.Users(Id)
-);
-
--- Education: Candidate's educational background
--- Multiple education records per candidate
-CREATE TABLE dbo.Education (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key
-    CandidateId UNIQUEIDENTIFIER NOT NULL,                  -- FK to Candidate
-    Institution NVARCHAR(300) NOT NULL,                     -- School/University name
-    Degree NVARCHAR(200) NOT NULL,                          -- Degree type: Bachelor, Master, PhD, etc.
-    FieldOfStudy NVARCHAR(200) NULL,                        -- Major/specialization
-    StartDate DATETIME NULL,                                -- Start date of study
-    EndDate DATETIME NULL,                                  -- End date (null if ongoing)
-    IsCurrent BIT NOT NULL DEFAULT 0,                       -- Currently studying here
-    Grade NVARCHAR(50) NULL,                                -- GPA or grade achieved
-    Description NVARCHAR(MAX) NULL,                         -- Additional details
-    CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),       -- Record creation timestamp
-    UpdatedAt DATETIME NULL,                                -- Last modification timestamp
-    CONSTRAINT PK_Education PRIMARY KEY (Id),
-    CONSTRAINT FK_Education_Candidate FOREIGN KEY (CandidateId) REFERENCES dbo.Candidate(Id) ON DELETE CASCADE
-);
-
--- WorkExperience: Candidate's work history
--- Multiple work experience records per candidate
-CREATE TABLE dbo.WorkExperience (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key
-    CandidateId UNIQUEIDENTIFIER NOT NULL,                  -- FK to Candidate
-    CompanyName NVARCHAR(300) NOT NULL,                     -- Employer name
-    Position NVARCHAR(200) NOT NULL,                        -- Job title held
-    Location NVARCHAR(200) NULL,                            -- Work location
-    StartDate DATETIME NOT NULL,                            -- Employment start date
-    EndDate DATETIME NULL,                                  -- Employment end date (null if current)
-    IsCurrent BIT NOT NULL DEFAULT 0,                       -- Currently working here
-    Description NVARCHAR(MAX) NULL,                         -- Job responsibilities and achievements
-    EmploymentType VARCHAR(30) NULL,                        -- FullTime, PartTime, Contract, etc.
-    CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),       -- Record creation timestamp
-    UpdatedAt DATETIME NULL,                                -- Last modification timestamp
-    CONSTRAINT PK_WorkExperience PRIMARY KEY (Id),
-    CONSTRAINT FK_WorkExperience_Candidate FOREIGN KEY (CandidateId) REFERENCES dbo.Candidate(Id) ON DELETE CASCADE
-);
-
--- CandidateSkill: Many-to-many relationship between Candidate and Skill
--- Tracks candidate's skills with proficiency levels
-CREATE TABLE dbo.CandidateSkill (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key
-    CandidateId UNIQUEIDENTIFIER NOT NULL,                  -- FK to Candidate
-    SkillId UNIQUEIDENTIFIER NOT NULL,                      -- FK to Skill
-    ProficiencyLevel INT NULL,                              -- Skill level: 1=Beginner to 5=Expert
-    YearsOfExperience INT NULL,                             -- Years using this skill
-    CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),       -- Record creation timestamp
-    CONSTRAINT PK_CandidateSkill PRIMARY KEY (Id),
-    CONSTRAINT UQ_CandidateSkill UNIQUE (CandidateId, SkillId),
-    CONSTRAINT FK_CandidateSkill_Candidate FOREIGN KEY (CandidateId) REFERENCES dbo.Candidate(Id) ON DELETE CASCADE,
-    CONSTRAINT FK_CandidateSkill_Skill FOREIGN KEY (SkillId) REFERENCES dbo.Skill(Id)
-);
-
--- Resume: Uploaded CV/resume files
--- Candidates can have multiple resume versions
-CREATE TABLE dbo.Resume (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key
-    CandidateId UNIQUEIDENTIFIER NOT NULL,                  -- FK to Candidate
-    FileName NVARCHAR(300) NOT NULL,                        -- Original file name
-    FileUrl VARCHAR(500) NOT NULL,                          -- Storage URL/path
-    FileSize INT NULL,                                      -- File size in bytes
-    FileType VARCHAR(50) NULL,                              -- MIME type: application/pdf, etc.
-    IsDefault BIT NOT NULL DEFAULT 0,                       -- Primary resume for applications
-    ParsedData NVARCHAR(MAX) NULL,                          -- AI-extracted data in JSON format
-    UploadedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),      -- Upload timestamp
-    IsDeleted BIT NOT NULL DEFAULT 0,                       -- Soft delete flag
-    DeletedAt DATETIME NULL,                                -- Timestamp when soft deleted
-    CONSTRAINT PK_Resume PRIMARY KEY (Id),
-    CONSTRAINT FK_Resume_Candidate FOREIGN KEY (CandidateId) REFERENCES dbo.Candidate(Id) ON DELETE CASCADE
-);
+ALTER DATABASE [ERMS] SET ANSI_WARNINGS OFF 
 GO
-
--- =============================================
--- SECTION 7: APPLICATION & INTERVIEW
--- =============================================
-
--- Application: Job application submitted by candidate
--- Tracks candidate through the hiring pipeline
-CREATE TABLE dbo.Application (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key
-    JobPostingId UNIQUEIDENTIFIER NOT NULL,                 -- FK to JobPosting
-    CandidateId UNIQUEIDENTIFIER NOT NULL,                  -- FK to Candidate
-    ResumeId UNIQUEIDENTIFIER NULL,                         -- FK to Resume used for application
-    CoverLetter NVARCHAR(MAX) NULL,                         -- Cover letter text
-    ExpectedSalary DECIMAL(18,2) NULL,                      -- Salary expectation for this job
-    AvailableStartDate DATETIME NULL,                       -- When candidate can start
-    Stage VARCHAR(50) NOT NULL DEFAULT 'Applied',           -- Pipeline stage: Applied, Screening, Interview, Offer, Hired, Rejected
-    StageUpdatedAt DATETIME NULL,                           -- When stage last changed
-    Status VARCHAR(30) NOT NULL DEFAULT 'Active',           -- Active, Withdrawn, Rejected, Hired
-    Source VARCHAR(50) NULL,                                -- How candidate found the job: Direct, LinkedIn, Referral
-    ReferredById UNIQUEIDENTIFIER NULL,                     -- FK to Employee (if referral)
-    Rating INT NULL,                                        -- Overall candidate rating (1-5)
-    HRNote NVARCHAR(MAX) NULL,                              -- Internal HR notes
-    RejectionReason NVARCHAR(500) NULL,                     -- Reason if rejected
-    RejectedById UNIQUEIDENTIFIER NULL,                     -- FK to User who rejected
-    RejectedAt DATETIME NULL,                               -- When rejected
-    AppliedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),       -- Application submission timestamp
-    UpdatedAt DATETIME NULL,                                -- Last modification timestamp
-    IsDeleted BIT NOT NULL DEFAULT 0,                       -- Soft delete flag
-    DeletedAt DATETIME NULL,                                -- Timestamp when soft deleted
-    CONSTRAINT PK_Application PRIMARY KEY (Id),
-    CONSTRAINT UQ_Application UNIQUE (JobPostingId, CandidateId), -- One application per job per candidate
-    CONSTRAINT FK_Application_JobPosting FOREIGN KEY (JobPostingId) REFERENCES dbo.JobPosting(Id),
-    CONSTRAINT FK_Application_Candidate FOREIGN KEY (CandidateId) REFERENCES dbo.Candidate(Id),
-    CONSTRAINT FK_Application_Resume FOREIGN KEY (ResumeId) REFERENCES dbo.Resume(Id),
-    CONSTRAINT FK_Application_ReferredBy FOREIGN KEY (ReferredById) REFERENCES dbo.Employee(Id),
-    CONSTRAINT FK_Application_RejectedBy FOREIGN KEY (RejectedById) REFERENCES dbo.Users(Id),
-    CONSTRAINT CK_Application_Stage CHECK (Stage IN ('Applied', 'Screening', 'Shortlisted', 'Interview', 'Assessment', 'Offer', 'Hired', 'Rejected', 'OnHold')),
-    CONSTRAINT CK_Application_Status CHECK (Status IN ('Active', 'Withdrawn', 'Rejected', 'Hired'))
-);
-
--- CVScreeningResult: AI-powered CV screening results
--- Stores automated screening scores and analysis
-CREATE TABLE dbo.CVScreeningResult (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key
-    ApplicationId UNIQUEIDENTIFIER NOT NULL,                -- FK to Application
-    OverallScore DECIMAL(5,2) NOT NULL,                     -- Overall match score (0-100)
-    SkillMatchScore DECIMAL(5,2) NULL,                      -- Skills match percentage
-    ExperienceMatchScore DECIMAL(5,2) NULL,                 -- Experience match percentage
-    EducationMatchScore DECIMAL(5,2) NULL,                  -- Education match percentage
-    KeywordMatchScore DECIMAL(5,2) NULL,                    -- Keyword relevance score
-    MatchedSkills NVARCHAR(MAX) NULL,                       -- JSON array of matched skill IDs
-    MissingSkills NVARCHAR(MAX) NULL,                       -- JSON array of missing required skill IDs
-    Strengths NVARCHAR(MAX) NULL,                           -- AI-identified strengths
-    Concerns NVARCHAR(MAX) NULL,                            -- AI-identified concerns
-    Summary NVARCHAR(MAX) NULL,                             -- AI-generated summary
-    RawResponse NVARCHAR(MAX) NULL,                         -- Full AI response for debugging
-    ProcessedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),     -- When screening was performed
-    AIModel VARCHAR(100) NULL,                              -- AI model used for screening
-    CONSTRAINT PK_CVScreeningResult PRIMARY KEY (Id),
-    CONSTRAINT UQ_CVScreeningResult_Application UNIQUE (ApplicationId),
-    CONSTRAINT FK_CVScreeningResult_Application FOREIGN KEY (ApplicationId) REFERENCES dbo.Application(Id) ON DELETE CASCADE
-);
-
--- Interview: Interview scheduling
--- Each application can have multiple interview rounds
-CREATE TABLE dbo.Interview (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key
-    ApplicationId UNIQUEIDENTIFIER NOT NULL,                -- FK to Application
-    InterviewType VARCHAR(50) NOT NULL,                     -- Phone, Video, OnSite, Technical, Behavioral, Final
-    RoundNumber INT NOT NULL DEFAULT 1,                     -- Interview round (1st, 2nd, 3rd...)
-    ScheduledAt DATETIME NOT NULL,                          -- Interview date and time
-    Duration INT NOT NULL DEFAULT 60,                       -- Duration in minutes
-    Location NVARCHAR(500) NULL,                            -- Physical location or video link
-    MeetingLink VARCHAR(500) NULL,                          -- Video conference URL
-    Status VARCHAR(30) NOT NULL DEFAULT 'Scheduled',        -- Scheduled, Confirmed, Completed, Cancelled, NoShow, Rescheduled
-    ScheduledById UNIQUEIDENTIFIER NOT NULL,                -- FK to User (HR who scheduled)
-    OverallRating INT NULL,                                 -- Combined rating (1-5)
-    OverallFeedback NVARCHAR(MAX) NULL,                     -- Combined feedback summary
-    Decision VARCHAR(30) NULL,                              -- Pass, Fail, OnHold, NeedsAnotherRound
-    Note NVARCHAR(MAX) NULL,                                -- Additional notes
-    CompletedAt DATETIME NULL,                              -- When interview was completed
-    CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),       -- Record creation timestamp
-    UpdatedAt DATETIME NULL,                                -- Last modification timestamp
-    IsDeleted BIT NOT NULL DEFAULT 0,                       -- Soft delete flag
-    DeletedAt DATETIME NULL,                                -- Timestamp when soft deleted
-    CONSTRAINT PK_Interview PRIMARY KEY (Id),
-    CONSTRAINT FK_Interview_Application FOREIGN KEY (ApplicationId) REFERENCES dbo.Application(Id),
-    CONSTRAINT FK_Interview_ScheduledBy FOREIGN KEY (ScheduledById) REFERENCES dbo.Users(Id),
-    CONSTRAINT CK_Interview_Type CHECK (InterviewType IN ('Phone', 'Video', 'OnSite', 'Technical', 'Behavioral', 'Panel', 'Final', 'HR')),
-    CONSTRAINT CK_Interview_Status CHECK (Status IN ('Scheduled', 'Confirmed', 'Completed', 'Cancelled', 'NoShow', 'Rescheduled')),
-    CONSTRAINT CK_Interview_Decision CHECK (Decision IN ('Pass', 'Fail', 'OnHold', 'NeedsAnotherRound'))
-);
-
--- InterviewParticipant: Interviewers assigned to each interview
--- Supports multiple interviewers per interview (panel interviews)
-CREATE TABLE dbo.InterviewParticipant (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key
-    InterviewId UNIQUEIDENTIFIER NOT NULL,                  -- FK to Interview
-    EmployeeId UNIQUEIDENTIFIER NOT NULL,                   -- FK to Employee (interviewer)
-    Role VARCHAR(50) NOT NULL DEFAULT 'Interviewer',        -- Interviewer, Lead, Observer
-    IsRequired BIT NOT NULL DEFAULT 1,                      -- Must attend or optional
-    ConfirmationStatus VARCHAR(30) NOT NULL DEFAULT 'Pending', -- Pending, Confirmed, Declined
-    Rating INT NULL,                                        -- Individual rating (1-5)
-    Feedback NVARCHAR(MAX) NULL,                            -- Individual feedback
-    Recommendation VARCHAR(30) NULL,                        -- StrongYes, Yes, Neutral, No, StrongNo
-    FeedbackSubmittedAt DATETIME NULL,                      -- When feedback was submitted
-    CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),       -- Record creation timestamp
-    CONSTRAINT PK_InterviewParticipant PRIMARY KEY (Id),
-    CONSTRAINT UQ_InterviewParticipant UNIQUE (InterviewId, EmployeeId),
-    CONSTRAINT FK_InterviewParticipant_Interview FOREIGN KEY (InterviewId) REFERENCES dbo.Interview(Id) ON DELETE CASCADE,
-    CONSTRAINT FK_InterviewParticipant_Employee FOREIGN KEY (EmployeeId) REFERENCES dbo.Employee(Id),
-    CONSTRAINT CK_InterviewParticipant_Role CHECK (Role IN ('Interviewer', 'Lead', 'Observer', 'Technical', 'HR')),
-    CONSTRAINT CK_InterviewParticipant_Status CHECK (ConfirmationStatus IN ('Pending', 'Confirmed', 'Declined', 'Tentative')),
-    CONSTRAINT CK_InterviewParticipant_Recommendation CHECK (Recommendation IN ('StrongYes', 'Yes', 'Neutral', 'No', 'StrongNo'))
-);
-
--- Offer: Job offers sent to candidates
--- Tracks offer details and acceptance status
-CREATE TABLE dbo.Offer (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key
-    ApplicationId UNIQUEIDENTIFIER NOT NULL,                -- FK to Application
-    OfferCode VARCHAR(50) NULL,                             -- Unique offer reference code
-    Position NVARCHAR(200) NOT NULL,                        -- Offered job title
-    DepartmentId INT NOT NULL,                              -- FK to Department
-    Salary DECIMAL(18,2) NOT NULL,                          -- Offered base salary
-    SalaryFrequency VARCHAR(30) NOT NULL DEFAULT 'Monthly', -- Monthly, Yearly, Hourly
-    Bonus NVARCHAR(500) NULL,                               -- Bonus details
-    Benefits NVARCHAR(MAX) NULL,                            -- Benefits package description
-    StartDate DATETIME NOT NULL,                            -- Expected start date
-    ExpirationDate DATETIME NOT NULL,                       -- Offer expires after this date
-    OfferLetterUrl VARCHAR(500) NULL,                       -- URL to offer letter document
-    Status VARCHAR(30) NOT NULL DEFAULT 'Draft',            -- Draft, PendingApproval, Sent, Accepted, Rejected, Expired, Withdrawn
-    CreatedById UNIQUEIDENTIFIER NOT NULL,                  -- FK to User who created the offer
-    ApprovedById UNIQUEIDENTIFIER NULL,                     -- FK to User who approved (Director)
-    ApprovedAt DATETIME NULL,                               -- When offer was approved
-    SentAt DATETIME NULL,                                   -- When offer was sent to candidate
-    SentById UNIQUEIDENTIFIER NULL,                         -- FK to User who sent the offer
-    RespondedAt DATETIME NULL,                              -- When candidate responded
-    CandidateNote NVARCHAR(MAX) NULL,                       -- Candidate's response note
-    CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),       -- Record creation timestamp
-    UpdatedAt DATETIME NULL,                                -- Last modification timestamp
-    IsDeleted BIT NOT NULL DEFAULT 0,                       -- Soft delete flag
-    DeletedAt DATETIME NULL,                                -- Timestamp when soft deleted
-    CONSTRAINT PK_Offer PRIMARY KEY (Id),
-    CONSTRAINT UQ_Offer_Application UNIQUE (ApplicationId), -- One active offer per application
-    CONSTRAINT FK_Offer_Application FOREIGN KEY (ApplicationId) REFERENCES dbo.Application(Id),
-    CONSTRAINT FK_Offer_Department FOREIGN KEY (DepartmentId) REFERENCES dbo.Department(Id),
-    CONSTRAINT FK_Offer_CreatedBy FOREIGN KEY (CreatedById) REFERENCES dbo.Users(Id),
-    CONSTRAINT FK_Offer_ApprovedBy FOREIGN KEY (ApprovedById) REFERENCES dbo.Users(Id),
-    CONSTRAINT FK_Offer_SentBy FOREIGN KEY (SentById) REFERENCES dbo.Users(Id),
-    CONSTRAINT CK_Offer_Status CHECK (Status IN ('Draft', 'PendingApproval', 'Approved', 'Sent', 'Accepted', 'Rejected', 'Expired', 'Withdrawn', 'Negotiating')),
-    CONSTRAINT CK_Offer_SalaryFrequency CHECK (SalaryFrequency IN ('Hourly', 'Daily', 'Weekly', 'BiWeekly', 'Monthly', 'Yearly'))
-);
+ALTER DATABASE [ERMS] SET ARITHABORT OFF 
 GO
-
--- =============================================
--- SECTION 8: TRAINING (LMS) MODULE
--- =============================================
-
--- TrainingPlan: Training plans submitted by Department Heads
--- Requires Director approval before trainers can create courses
-CREATE TABLE dbo.TrainingPlan (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key
-    EnterpriseId UNIQUEIDENTIFIER NOT NULL,                 -- FK to Enterprise
-    PlanName NVARCHAR(200) NOT NULL,                        -- Plan display name
-    PlanCode VARCHAR(50) NOT NULL,                          -- Unique code within enterprise
-    Description NVARCHAR(MAX) NULL,                         -- Detailed description
-    DepartmentId INT NOT NULL,                              -- FK to Department requesting training
-    RequestedById UNIQUEIDENTIFIER NOT NULL,                -- FK to User (Dept Head)
-    TrainingObjectives NVARCHAR(MAX) NULL,                  -- Goals to achieve
-    TargetAudience NVARCHAR(500) NULL,                      -- Who should take this training
-    EstimatedParticipants INT NULL,                         -- Expected number of trainees
-    EstimatedBudget DECIMAL(18,2) NULL,                     -- Budget for the training
-    StartDate DATETIME NULL,                                -- Planned start date
-    EndDate DATETIME NULL,                                  -- Planned end date
-    Status VARCHAR(30) NOT NULL DEFAULT 'Draft',            -- Draft, PendingApproval, Approved, Rejected, Active, Completed, Cancelled
-    ReviewerId UNIQUEIDENTIFIER NULL,                       -- FK to User who reviewed (Director)
-    ReviewedAt DATETIME NULL,                               -- When review decision was made
-    ReviewNote NVARCHAR(500) NULL,                          -- Reviewer's comments
-    CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),       -- Record creation timestamp
-    UpdatedAt DATETIME NULL,                                -- Last modification timestamp
-    IsDeleted BIT NOT NULL DEFAULT 0,                       -- Soft delete flag
-    DeletedAt DATETIME NULL,                                -- Timestamp when soft deleted
-    CONSTRAINT PK_TrainingPlan PRIMARY KEY (Id),
-    CONSTRAINT UQ_TrainingPlan_EnterpriseCode UNIQUE (EnterpriseId, PlanCode),
-    CONSTRAINT FK_TrainingPlan_Enterprise FOREIGN KEY (EnterpriseId) REFERENCES dbo.Enterprise(Id),
-    CONSTRAINT FK_TrainingPlan_Department FOREIGN KEY (DepartmentId) REFERENCES dbo.Department(Id),
-    CONSTRAINT FK_TrainingPlan_RequestedBy FOREIGN KEY (RequestedById) REFERENCES dbo.Users(Id),
-    CONSTRAINT FK_TrainingPlan_Reviewer FOREIGN KEY (ReviewerId) REFERENCES dbo.Users(Id),
-    CONSTRAINT CK_TrainingPlan_Status CHECK (Status IN ('Draft', 'PendingApproval', 'Approved', 'Rejected', 'Active', 'Completed', 'Cancelled'))
-);
-
--- Course: Training course created by Trainer
--- Contains lessons and quiz for employee learning
-CREATE TABLE dbo.Course (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key
-    EnterpriseId UNIQUEIDENTIFIER NOT NULL,                 -- FK to Enterprise
-    TrainingPlanId UNIQUEIDENTIFIER NULL,                   -- FK to TrainingPlan (optional if standalone)
-    CourseName NVARCHAR(200) NOT NULL,                      -- Course display name
-    CourseCode VARCHAR(50) NOT NULL,                        -- Unique code within enterprise
-    Description NVARCHAR(MAX) NULL,                         -- Course description
-    ThumbnailUrl VARCHAR(500) NULL,                         -- Course thumbnail image URL
-    TrainerId UNIQUEIDENTIFIER NOT NULL,                    -- FK to Employee (trainer who created)
-    DurationMinutes INT NULL,                               -- Estimated total duration
-    Level VARCHAR(30) NULL,                                 -- Beginner, Intermediate, Advanced
-    Status VARCHAR(30) NOT NULL DEFAULT 'Draft',            -- Draft, Published, Archived
-    IsMandatory BIT NOT NULL DEFAULT 0,                     -- Required for all employees
-    MaxEnrollments INT NULL,                                -- Max participants (null = unlimited)
-    EnrollmentDeadline DATETIME NULL,                       -- Last date to enroll
-    PublishedAt DATETIME NULL,                              -- When course was published
-    CompletionCriteria VARCHAR(30) NOT NULL DEFAULT 'Quiz', -- Quiz, AllLessons, Both
-    CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),       -- Record creation timestamp
-    UpdatedAt DATETIME NULL,                                -- Last modification timestamp
-    IsDeleted BIT NOT NULL DEFAULT 0,                       -- Soft delete flag
-    DeletedAt DATETIME NULL,                                -- Timestamp when soft deleted
-    CONSTRAINT PK_Course PRIMARY KEY (Id),
-    CONSTRAINT UQ_Course_EnterpriseCode UNIQUE (EnterpriseId, CourseCode),
-    CONSTRAINT FK_Course_Enterprise FOREIGN KEY (EnterpriseId) REFERENCES dbo.Enterprise(Id),
-    CONSTRAINT FK_Course_TrainingPlan FOREIGN KEY (TrainingPlanId) REFERENCES dbo.TrainingPlan(Id),
-    CONSTRAINT FK_Course_Trainer FOREIGN KEY (TrainerId) REFERENCES dbo.Employee(Id),
-    CONSTRAINT CK_Course_Status CHECK (Status IN ('Draft', 'Published', 'Archived')),
-    CONSTRAINT CK_Course_Level CHECK (Level IN ('Beginner', 'Intermediate', 'Advanced', 'Expert')),
-    CONSTRAINT CK_Course_CompletionCriteria CHECK (CompletionCriteria IN ('Quiz', 'AllLessons', 'Both'))
-);
-
--- CourseSkill: Many-to-many relationship between Course and Skill
--- Skills that this course teaches
-CREATE TABLE dbo.CourseSkill (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key
-    CourseId UNIQUEIDENTIFIER NOT NULL,                     -- FK to Course
-    SkillId UNIQUEIDENTIFIER NOT NULL,                      -- FK to Skill
-    SkillLevelGained INT NULL,                              -- Level gained after course (1-5)
-    CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),       -- Record creation timestamp
-    CONSTRAINT PK_CourseSkill PRIMARY KEY (Id),
-    CONSTRAINT UQ_CourseSkill UNIQUE (CourseId, SkillId),
-    CONSTRAINT FK_CourseSkill_Course FOREIGN KEY (CourseId) REFERENCES dbo.Course(Id) ON DELETE CASCADE,
-    CONSTRAINT FK_CourseSkill_Skill FOREIGN KEY (SkillId) REFERENCES dbo.Skill(Id)
-);
-
--- Lesson: Individual lessons within a course
--- Must be completed sequentially (OrderIndex determines order)
-CREATE TABLE dbo.Lesson (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key
-    CourseId UNIQUEIDENTIFIER NOT NULL,                     -- FK to Course
-    LessonTitle NVARCHAR(300) NOT NULL,                     -- Lesson display title
-    Description NVARCHAR(MAX) NULL,                         -- Lesson description
-    OrderIndex INT NOT NULL,                                -- Sequence order (1, 2, 3...) - determines unlock sequence
-    ContentType VARCHAR(30) NOT NULL DEFAULT 'Video',       -- Video, Document, Link, Interactive
-    VideoUrl VARCHAR(500) NULL,                             -- URL to video (YouTube, Vimeo, etc.)
-    VideoDurationMinutes INT NULL,                          -- Video length in minutes
-    DocumentUrl VARCHAR(500) NULL,                          -- URL to downloadable document
-    ExternalLinkUrl VARCHAR(500) NULL,                      -- External resource link
-    Content NVARCHAR(MAX) NULL,                             -- Text/HTML content
-    IsPreview BIT NOT NULL DEFAULT 0,                       -- Free preview (accessible before enrollment)
-    EstimatedMinutes INT NULL,                              -- Estimated time to complete
-    CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),       -- Record creation timestamp
-    UpdatedAt DATETIME NULL,                                -- Last modification timestamp
-    IsDeleted BIT NOT NULL DEFAULT 0,                       -- Soft delete flag
-    DeletedAt DATETIME NULL,                                -- Timestamp when soft deleted
-    CONSTRAINT PK_Lesson PRIMARY KEY (Id),
-    CONSTRAINT UQ_Lesson_CourseOrder UNIQUE (CourseId, OrderIndex), -- Unique order per course
-    CONSTRAINT FK_Lesson_Course FOREIGN KEY (CourseId) REFERENCES dbo.Course(Id) ON DELETE CASCADE,
-    CONSTRAINT CK_Lesson_ContentType CHECK (ContentType IN ('Video', 'Document', 'Link', 'Interactive', 'Text', 'Quiz'))
-);
-
--- Enrollment: Employee enrollment in a course
--- Tracks progress from start to completion
-CREATE TABLE dbo.Enrollment (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key
-    CourseId UNIQUEIDENTIFIER NOT NULL,                     -- FK to Course
-    EmployeeId UNIQUEIDENTIFIER NOT NULL,                   -- FK to Employee
-    EnrolledAt DATETIME NOT NULL DEFAULT GETUTCDATE(),      -- When employee enrolled
-    EnrolledById UNIQUEIDENTIFIER NULL,                     -- FK to User who enrolled them (HR or self)
-    StartedAt DATETIME NULL,                                -- When employee first started
-    CompletedAt DATETIME NULL,                              -- When employee completed
-    Status VARCHAR(30) NOT NULL DEFAULT 'NotStarted',       -- NotStarted, InProgress, Completed, Failed, Dropped
-    Progress INT NOT NULL DEFAULT 0,                        -- Overall progress percentage (0-100)
-    LastAccessedAt DATETIME NULL,                           -- Last time employee accessed course
-    CertificateUrl VARCHAR(500) NULL,                       -- URL to completion certificate
-    CertificateIssuedAt DATETIME NULL,                      -- When certificate was issued
-    Note NVARCHAR(500) NULL,                                -- Additional notes
-    CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),       -- Record creation timestamp
-    UpdatedAt DATETIME NULL,                                -- Last modification timestamp
-    IsDeleted BIT NOT NULL DEFAULT 0,                       -- Soft delete flag
-    DeletedAt DATETIME NULL,                                -- Timestamp when soft deleted
-    CONSTRAINT PK_Enrollment PRIMARY KEY (Id),
-    CONSTRAINT UQ_Enrollment UNIQUE (CourseId, EmployeeId), -- One enrollment per course per employee
-    CONSTRAINT FK_Enrollment_Course FOREIGN KEY (CourseId) REFERENCES dbo.Course(Id),
-    CONSTRAINT FK_Enrollment_Employee FOREIGN KEY (EmployeeId) REFERENCES dbo.Employee(Id),
-    CONSTRAINT FK_Enrollment_EnrolledBy FOREIGN KEY (EnrolledById) REFERENCES dbo.Users(Id),
-    CONSTRAINT CK_Enrollment_Status CHECK (Status IN ('NotStarted', 'InProgress', 'Completed', 'Failed', 'Dropped'))
-);
-
--- LessonProgress: Tracks individual lesson completion per employee
--- WatchPercentage must reach 100% to unlock next lesson
-CREATE TABLE dbo.LessonProgress (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key
-    EnrollmentId UNIQUEIDENTIFIER NOT NULL,                 -- FK to Enrollment
-    LessonId UNIQUEIDENTIFIER NOT NULL,                     -- FK to Lesson
-    StartedAt DATETIME NULL,                                -- When employee started this lesson
-    CompletedAt DATETIME NULL,                              -- When employee completed this lesson
-    WatchPercentage INT NOT NULL DEFAULT 0,                 -- Video/content completion (0-100) - 100% unlocks next lesson
-    LastPosition INT NULL,                                  -- Video resume position in seconds
-    TimeSpentMinutes INT NOT NULL DEFAULT 0,                -- Total time spent on this lesson
-    Status VARCHAR(30) NOT NULL DEFAULT 'NotStarted',       -- NotStarted, InProgress, Completed
-    CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),       -- Record creation timestamp
-    UpdatedAt DATETIME NULL,                                -- Last modification timestamp
-    CONSTRAINT PK_LessonProgress PRIMARY KEY (Id),
-    CONSTRAINT UQ_LessonProgress UNIQUE (EnrollmentId, LessonId),
-    CONSTRAINT FK_LessonProgress_Enrollment FOREIGN KEY (EnrollmentId) REFERENCES dbo.Enrollment(Id) ON DELETE CASCADE,
-    CONSTRAINT FK_LessonProgress_Lesson FOREIGN KEY (LessonId) REFERENCES dbo.Lesson(Id),
-    CONSTRAINT CK_LessonProgress_WatchPercentage CHECK (WatchPercentage >= 0 AND WatchPercentage <= 100),
-    CONSTRAINT CK_LessonProgress_Status CHECK (Status IN ('NotStarted', 'InProgress', 'Completed'))
-);
-
--- Quiz: End-of-course assessment
--- Employee must pass (default 80%) to complete the course
-CREATE TABLE dbo.Quiz (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key
-    CourseId UNIQUEIDENTIFIER NOT NULL,                     -- FK to Course (one quiz per course)
-    QuizTitle NVARCHAR(300) NOT NULL,                       -- Quiz display title
-    Description NVARCHAR(MAX) NULL,                         -- Quiz instructions
-    TimeLimitMinutes INT NULL,                              -- Time limit in minutes (null = unlimited)
-    PassingScore INT NOT NULL DEFAULT 80,                   -- Minimum score to pass (percentage) - default 80%
-    MaxAttempts INT NULL,                                   -- Maximum attempts allowed (null = unlimited)
-    ShuffleQuestions BIT NOT NULL DEFAULT 1,                -- Randomize question order
-    ShuffleAnswers BIT NOT NULL DEFAULT 1,                  -- Randomize answer options
-    ShowCorrectAnswers BIT NOT NULL DEFAULT 0,              -- Show correct answers after submission
-    IsActive BIT NOT NULL DEFAULT 1,                        -- Whether quiz is active
-    CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),       -- Record creation timestamp
-    UpdatedAt DATETIME NULL,                                -- Last modification timestamp
-    IsDeleted BIT NOT NULL DEFAULT 0,                       -- Soft delete flag
-    DeletedAt DATETIME NULL,                                -- Timestamp when soft deleted
-    CONSTRAINT PK_Quiz PRIMARY KEY (Id),
-    CONSTRAINT UQ_Quiz_Course UNIQUE (CourseId),            -- One quiz per course
-    CONSTRAINT FK_Quiz_Course FOREIGN KEY (CourseId) REFERENCES dbo.Course(Id) ON DELETE CASCADE,
-    CONSTRAINT CK_Quiz_PassingScore CHECK (PassingScore >= 0 AND PassingScore <= 100)
-);
-
--- QuizQuestion: Questions within a quiz
--- Supports multiple choice and true/false
-CREATE TABLE dbo.QuizQuestion (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key
-    QuizId UNIQUEIDENTIFIER NOT NULL,                       -- FK to Quiz
-    QuestionText NVARCHAR(MAX) NOT NULL,                    -- Question content (can include HTML/Markdown)
-    QuestionType VARCHAR(30) NOT NULL DEFAULT 'MultipleChoice', -- MultipleChoice, TrueFalse, MultiSelect
-    Options NVARCHAR(MAX) NOT NULL,                         -- JSON array of answer options
-    CorrectAnswer NVARCHAR(500) NOT NULL,                   -- Correct answer(s) - single value or JSON array for MultiSelect
-    Explanation NVARCHAR(MAX) NULL,                         -- Explanation shown after answering
-    Points INT NOT NULL DEFAULT 1,                          -- Points for correct answer
-    OrderIndex INT NOT NULL,                                -- Question order in quiz
-    ImageUrl VARCHAR(500) NULL,                             -- Optional question image
-    IsActive BIT NOT NULL DEFAULT 1,                        -- Whether question is active
-    CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),       -- Record creation timestamp
-    UpdatedAt DATETIME NULL,                                -- Last modification timestamp
-    CONSTRAINT PK_QuizQuestion PRIMARY KEY (Id),
-    CONSTRAINT FK_QuizQuestion_Quiz FOREIGN KEY (QuizId) REFERENCES dbo.Quiz(Id) ON DELETE CASCADE,
-    CONSTRAINT CK_QuizQuestion_Type CHECK (QuestionType IN ('MultipleChoice', 'TrueFalse', 'MultiSelect'))
-);
-
--- QuizAttempt: Employee's quiz attempt record
--- Each attempt stores the score and pass/fail status
-CREATE TABLE dbo.QuizAttempt (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key
-    EnrollmentId UNIQUEIDENTIFIER NOT NULL,                 -- FK to Enrollment
-    QuizId UNIQUEIDENTIFIER NOT NULL,                       -- FK to Quiz
-    AttemptNumber INT NOT NULL DEFAULT 1,                   -- Attempt sequence (1st, 2nd, 3rd...)
-    StartedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),       -- When attempt started
-    CompletedAt DATETIME NULL,                              -- When attempt was submitted
-    Score DECIMAL(5,2) NULL,                                -- Score achieved (percentage 0-100)
-    IsPassed BIT NULL,                                      -- Whether passed (Score >= Quiz.PassingScore)
-    TotalQuestions INT NOT NULL,                            -- Number of questions in this attempt
-    CorrectAnswers INT NULL,                                -- Number of correct answers
-    TimeTakenMinutes INT NULL,                              -- Time taken to complete
-    Status VARCHAR(30) NOT NULL DEFAULT 'InProgress',       -- InProgress, Completed, TimedOut, Abandoned
-    CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),       -- Record creation timestamp
-    CONSTRAINT PK_QuizAttempt PRIMARY KEY (Id),
-    CONSTRAINT FK_QuizAttempt_Enrollment FOREIGN KEY (EnrollmentId) REFERENCES dbo.Enrollment(Id),
-    CONSTRAINT FK_QuizAttempt_Quiz FOREIGN KEY (QuizId) REFERENCES dbo.Quiz(Id),
-    CONSTRAINT CK_QuizAttempt_Status CHECK (Status IN ('InProgress', 'Completed', 'TimedOut', 'Abandoned'))
-);
-
--- QuizAnswer: Individual question answers for each attempt
--- Records what the employee answered
-CREATE TABLE dbo.QuizAnswer (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key
-    QuizAttemptId UNIQUEIDENTIFIER NOT NULL,                -- FK to QuizAttempt
-    QuizQuestionId UNIQUEIDENTIFIER NOT NULL,               -- FK to QuizQuestion
-    SelectedAnswer NVARCHAR(500) NULL,                      -- Employee's answer
-    IsCorrect BIT NULL,                                     -- Whether answer was correct
-    PointsEarned INT NOT NULL DEFAULT 0,                    -- Points earned for this answer
-    AnsweredAt DATETIME NOT NULL DEFAULT GETUTCDATE(),      -- When answer was submitted
-    CONSTRAINT PK_QuizAnswer PRIMARY KEY (Id),
-    CONSTRAINT UQ_QuizAnswer UNIQUE (QuizAttemptId, QuizQuestionId),
-    CONSTRAINT FK_QuizAnswer_Attempt FOREIGN KEY (QuizAttemptId) REFERENCES dbo.QuizAttempt(Id) ON DELETE CASCADE,
-    CONSTRAINT FK_QuizAnswer_Question FOREIGN KEY (QuizQuestionId) REFERENCES dbo.QuizQuestion(Id)
-);
+ALTER DATABASE [ERMS] SET AUTO_CLOSE OFF 
 GO
-
--- =============================================
--- SECTION 9: SYSTEM TABLES
--- =============================================
-
--- Notification: User notifications
--- System-generated alerts and messages
-CREATE TABLE dbo.Notification (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key
-    UserId UNIQUEIDENTIFIER NOT NULL,                       -- FK to Users (recipient)
-    Title NVARCHAR(300) NOT NULL,                           -- Notification title
-    Message NVARCHAR(MAX) NOT NULL,                         -- Notification body
-    NotificationType VARCHAR(50) NOT NULL,                  -- Type: Application, Interview, Offer, Training, System
-    EntityType VARCHAR(50) NULL,                            -- Related entity type (Application, Course, etc.)
-    EntityId UNIQUEIDENTIFIER NULL,                         -- Related entity ID
-    ActionUrl VARCHAR(500) NULL,                            -- Deep link to related page
-    IsRead BIT NOT NULL DEFAULT 0,                          -- Whether notification was read
-    ReadAt DATETIME NULL,                                   -- When notification was read
-    IsSent BIT NOT NULL DEFAULT 0,                          -- Whether email/push was sent
-    SentAt DATETIME NULL,                                   -- When notification was sent
-    CreatedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),       -- Notification creation timestamp
-    CONSTRAINT PK_Notification PRIMARY KEY (Id),
-    CONSTRAINT FK_Notification_User FOREIGN KEY (UserId) REFERENCES dbo.Users(Id) ON DELETE CASCADE,
-    CONSTRAINT CK_Notification_Type CHECK (NotificationType IN ('Application', 'Interview', 'Offer', 'Training', 'Approval', 'System', 'Reminder'))
-);
-
--- SavedJob: Jobs saved by candidates
--- Allows candidates to bookmark jobs for later
-CREATE TABLE dbo.SavedJob (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key
-    CandidateId UNIQUEIDENTIFIER NOT NULL,                  -- FK to Candidate
-    JobPostingId UNIQUEIDENTIFIER NOT NULL,                 -- FK to JobPosting
-    SavedAt DATETIME NOT NULL DEFAULT GETUTCDATE(),         -- When job was saved
-    Note NVARCHAR(500) NULL,                                -- Candidate's private note
-    CONSTRAINT PK_SavedJob PRIMARY KEY (Id),
-    CONSTRAINT UQ_SavedJob UNIQUE (CandidateId, JobPostingId),
-    CONSTRAINT FK_SavedJob_Candidate FOREIGN KEY (CandidateId) REFERENCES dbo.Candidate(Id) ON DELETE CASCADE,
-    CONSTRAINT FK_SavedJob_JobPosting FOREIGN KEY (JobPostingId) REFERENCES dbo.JobPosting(Id)
-);
-
--- OwnershipTransfer: Audit log for enterprise ownership changes
--- Tracks when Director transfers ownership to another employee
-CREATE TABLE dbo.OwnershipTransfer (
-    Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),           -- Primary key
-    EnterpriseId UNIQUEIDENTIFIER NOT NULL,                 -- FK to Enterprise
-    FromUserId UNIQUEIDENTIFIER NOT NULL,                   -- FK to previous owner (old Director)
-    ToUserId UNIQUEIDENTIFIER NOT NULL,                     -- FK to new owner (new Director)
-    Reason NVARCHAR(500) NULL,                              -- Reason for transfer
-    TransferredAt DATETIME NOT NULL DEFAULT GETUTCDATE(),   -- When transfer occurred
-    ApprovedById UNIQUEIDENTIFIER NULL,                     -- FK to User who approved (if approval required)
-    Note NVARCHAR(MAX) NULL,                                -- Additional notes
-    CONSTRAINT PK_OwnershipTransfer PRIMARY KEY (Id),
-    CONSTRAINT FK_OwnershipTransfer_Enterprise FOREIGN KEY (EnterpriseId) REFERENCES dbo.Enterprise(Id),
-    CONSTRAINT FK_OwnershipTransfer_FromUser FOREIGN KEY (FromUserId) REFERENCES dbo.Users(Id),
-    CONSTRAINT FK_OwnershipTransfer_ToUser FOREIGN KEY (ToUserId) REFERENCES dbo.Users(Id)
-);
+ALTER DATABASE [ERMS] SET AUTO_SHRINK OFF 
 GO
-
--- =============================================
--- SECTION 10: INDEXES FOR PERFORMANCE
--- =============================================
-
--- Enterprise indexes
-CREATE INDEX IX_Enterprise_SubscriptionPlanId ON dbo.Enterprise(SubscriptionPlanId);
-CREATE INDEX IX_Enterprise_SubscriptionStatus ON dbo.Enterprise(SubscriptionStatus);
-CREATE INDEX IX_Enterprise_IsDeleted ON dbo.Enterprise(IsDeleted);
-
--- Users indexes
-CREATE INDEX IX_Users_EnterpriseId ON dbo.Users(EnterpriseId);
-CREATE INDEX IX_Users_DepartmentId ON dbo.Users(DepartmentId);
-CREATE INDEX IX_Users_Status ON dbo.Users(Status);
-CREATE INDEX IX_Users_Email ON dbo.Users(Email);
-CREATE INDEX IX_Users_IsDeleted ON dbo.Users(IsDeleted);
-
--- Employee indexes
-CREATE INDEX IX_Employee_EnterpriseId ON dbo.Employee(EnterpriseId);
-CREATE INDEX IX_Employee_DepartmentId ON dbo.Employee(DepartmentId);
-CREATE INDEX IX_Employee_ManagerId ON dbo.Employee(ManagerId);
-CREATE INDEX IX_Employee_Status ON dbo.Employee(Status);
-CREATE INDEX IX_Employee_IsDeleted ON dbo.Employee(IsDeleted);
-
--- Department indexes
-CREATE INDEX IX_Department_EnterpriseId ON dbo.Department(EnterpriseId);
-CREATE INDEX IX_Department_ManagerId ON dbo.Department(ManagerId);
-CREATE INDEX IX_Department_IsDeleted ON dbo.Department(IsDeleted);
-
--- RecruitmentPlan indexes
-CREATE INDEX IX_RecruitmentPlan_EnterpriseId ON dbo.RecruitmentPlan(EnterpriseId);
-CREATE INDEX IX_RecruitmentPlan_Status ON dbo.RecruitmentPlan(Status);
-CREATE INDEX IX_RecruitmentPlan_IsDeleted ON dbo.RecruitmentPlan(IsDeleted);
-
--- PlanDetail indexes
-CREATE INDEX IX_PlanDetail_RecruitmentPlanId ON dbo.PlanDetail(RecruitmentPlanId);
-CREATE INDEX IX_PlanDetail_DepartmentId ON dbo.PlanDetail(DepartmentId);
-CREATE INDEX IX_PlanDetail_Status ON dbo.PlanDetail(Status);
-CREATE INDEX IX_PlanDetail_IsDeleted ON dbo.PlanDetail(IsDeleted);
-
--- JobPosting indexes
-CREATE INDEX IX_JobPosting_EnterpriseId ON dbo.JobPosting(EnterpriseId);
-CREATE INDEX IX_JobPosting_DepartmentId ON dbo.JobPosting(DepartmentId);
-CREATE INDEX IX_JobPosting_Status ON dbo.JobPosting(Status);
-CREATE INDEX IX_JobPosting_PublishedAt ON dbo.JobPosting(PublishedAt);
-CREATE INDEX IX_JobPosting_IsDeleted ON dbo.JobPosting(IsDeleted);
-
--- Application indexes
-CREATE INDEX IX_Application_JobPostingId ON dbo.Application(JobPostingId);
-CREATE INDEX IX_Application_CandidateId ON dbo.Application(CandidateId);
-CREATE INDEX IX_Application_Stage ON dbo.Application(Stage);
-CREATE INDEX IX_Application_Status ON dbo.Application(Status);
-CREATE INDEX IX_Application_AppliedAt ON dbo.Application(AppliedAt);
-CREATE INDEX IX_Application_IsDeleted ON dbo.Application(IsDeleted);
-
--- Interview indexes
-CREATE INDEX IX_Interview_ApplicationId ON dbo.Interview(ApplicationId);
-CREATE INDEX IX_Interview_ScheduledAt ON dbo.Interview(ScheduledAt);
-CREATE INDEX IX_Interview_Status ON dbo.Interview(Status);
-CREATE INDEX IX_Interview_IsDeleted ON dbo.Interview(IsDeleted);
-
--- Candidate indexes
-CREATE INDEX IX_Candidate_IsDeleted ON dbo.Candidate(IsDeleted);
-
--- TrainingPlan indexes
-CREATE INDEX IX_TrainingPlan_EnterpriseId ON dbo.TrainingPlan(EnterpriseId);
-CREATE INDEX IX_TrainingPlan_DepartmentId ON dbo.TrainingPlan(DepartmentId);
-CREATE INDEX IX_TrainingPlan_Status ON dbo.TrainingPlan(Status);
-CREATE INDEX IX_TrainingPlan_IsDeleted ON dbo.TrainingPlan(IsDeleted);
-
--- Course indexes
-CREATE INDEX IX_Course_EnterpriseId ON dbo.Course(EnterpriseId);
-CREATE INDEX IX_Course_TrainerId ON dbo.Course(TrainerId);
-CREATE INDEX IX_Course_Status ON dbo.Course(Status);
-CREATE INDEX IX_Course_IsDeleted ON dbo.Course(IsDeleted);
-
--- Enrollment indexes
-CREATE INDEX IX_Enrollment_CourseId ON dbo.Enrollment(CourseId);
-CREATE INDEX IX_Enrollment_EmployeeId ON dbo.Enrollment(EmployeeId);
-CREATE INDEX IX_Enrollment_Status ON dbo.Enrollment(Status);
-CREATE INDEX IX_Enrollment_IsDeleted ON dbo.Enrollment(IsDeleted);
-
--- LessonProgress indexes
-CREATE INDEX IX_LessonProgress_EnrollmentId ON dbo.LessonProgress(EnrollmentId);
-CREATE INDEX IX_LessonProgress_LessonId ON dbo.LessonProgress(LessonId);
-CREATE INDEX IX_LessonProgress_Status ON dbo.LessonProgress(Status);
-
--- QuizAttempt indexes
-CREATE INDEX IX_QuizAttempt_EnrollmentId ON dbo.QuizAttempt(EnrollmentId);
-CREATE INDEX IX_QuizAttempt_QuizId ON dbo.QuizAttempt(QuizId);
-CREATE INDEX IX_QuizAttempt_IsPassed ON dbo.QuizAttempt(IsPassed);
-
--- Notification indexes
-CREATE INDEX IX_Notification_UserId ON dbo.Notification(UserId);
-CREATE INDEX IX_Notification_IsRead ON dbo.Notification(IsRead);
-CREATE INDEX IX_Notification_CreatedAt ON dbo.Notification(CreatedAt);
-
--- ApprovalHistory indexes
-CREATE INDEX IX_ApprovalHistory_EntityType_EntityId ON dbo.ApprovalHistory(EntityType, EntityId);
-CREATE INDEX IX_ApprovalHistory_PerformedById ON dbo.ApprovalHistory(PerformedById);
-CREATE INDEX IX_ApprovalHistory_CreatedAt ON dbo.ApprovalHistory(CreatedAt);
+ALTER DATABASE [ERMS] SET AUTO_UPDATE_STATISTICS ON 
 GO
-
--- =============================================
--- SECTION 11: SEED DATA - Default Roles
--- =============================================
-
--- Insert default system roles
-INSERT INTO dbo.Roles (Id, Name, NormalizedName, ConcurrencyStamp, Description, IsSystemRole)
-VALUES
-    (NEWID(), 'Admin', 'ADMIN', NEWID(), 'System administrator with full access to all features', 1),
-    (NEWID(), 'Director', 'DIRECTOR', NEWID(), 'Enterprise owner/director - approves recruitment plans and training plans', 1),
-    (NEWID(), 'HRManager', 'HRMANAGER', NEWID(), 'HR Manager - manages recruitment process, job postings, and applications', 1),
-    (NEWID(), 'DepartmentHead', 'DEPARTMENTHEAD', NEWID(), 'Department Head - submits hiring requests and training plans for their department', 1),
-    (NEWID(), 'Interviewer', 'INTERVIEWER', NEWID(), 'Interviewer - participates in interviews and provides feedback', 1),
-    (NEWID(), 'Trainer', 'TRAINER', NEWID(), 'Trainer - creates and manages training courses and content', 1),
-    (NEWID(), 'Employee', 'EMPLOYEE', NEWID(), 'Regular employee - can enroll in courses and take training', 1),
-    (NEWID(), 'Candidate', 'CANDIDATE', NEWID(), 'Job candidate - can apply for jobs and manage their profile', 1);
+ALTER DATABASE [ERMS] SET CURSOR_CLOSE_ON_COMMIT OFF 
 GO
-
--- =============================================
--- SECTION 12: SEED DATA - Default Subscription Plans
--- =============================================
-
--- Insert default subscription plans
-INSERT INTO dbo.SubscriptionPlan (Id, PlanName, PlanCode, Description, MaxUsers, MaxJobPostings, MaxCourses, PriceMonthly, PriceYearly, Features, IsActive, DisplayOrder)
-VALUES
-    (NEWID(), 'Basic', 'basic', 'Perfect for small teams getting started', 10, 5, 10, 29.00, 290.00,
-     '["job_posting","basic_applicant_tracking","email_support"]', 1, 1),
-
-    (NEWID(), 'Pro', 'pro', 'For growing businesses with advanced needs', 50, 20, 50, 99.00, 990.00,
-     '["job_posting","advanced_applicant_tracking","ai_cv_screening","training_module","priority_support"]', 1, 2),
-
-    (NEWID(), 'Enterprise', 'enterprise', 'For large organizations with custom requirements', 999999, 999999, 999999, 299.00, 2990.00,
-     '["job_posting","advanced_applicant_tracking","ai_cv_screening","training_module","custom_integrations","dedicated_support","sso","api_access"]', 1, 3);
+ALTER DATABASE [ERMS] SET CURSOR_DEFAULT  GLOBAL 
 GO
-
--- =============================================
--- END OF SCHEMA
--- =============================================
-
-PRINT 'ERMS Schema created successfully!';
-PRINT 'Tables created: 37';
-PRINT 'Indexes created: 45';
-PRINT 'Default roles seeded: 8';
-PRINT 'Default subscription plans seeded: 3';
+ALTER DATABASE [ERMS] SET CONCAT_NULL_YIELDS_NULL OFF 
+GO
+ALTER DATABASE [ERMS] SET NUMERIC_ROUNDABORT OFF 
+GO
+ALTER DATABASE [ERMS] SET QUOTED_IDENTIFIER OFF 
+GO
+ALTER DATABASE [ERMS] SET RECURSIVE_TRIGGERS OFF 
+GO
+ALTER DATABASE [ERMS] SET  ENABLE_BROKER 
+GO
+ALTER DATABASE [ERMS] SET AUTO_UPDATE_STATISTICS_ASYNC OFF 
+GO
+ALTER DATABASE [ERMS] SET DATE_CORRELATION_OPTIMIZATION OFF 
+GO
+ALTER DATABASE [ERMS] SET TRUSTWORTHY OFF 
+GO
+ALTER DATABASE [ERMS] SET ALLOW_SNAPSHOT_ISOLATION OFF 
+GO
+ALTER DATABASE [ERMS] SET PARAMETERIZATION SIMPLE 
+GO
+ALTER DATABASE [ERMS] SET READ_COMMITTED_SNAPSHOT ON 
+GO
+ALTER DATABASE [ERMS] SET HONOR_BROKER_PRIORITY OFF 
+GO
+ALTER DATABASE [ERMS] SET RECOVERY FULL 
+GO
+ALTER DATABASE [ERMS] SET  MULTI_USER 
+GO
+ALTER DATABASE [ERMS] SET PAGE_VERIFY CHECKSUM  
+GO
+ALTER DATABASE [ERMS] SET DB_CHAINING OFF 
+GO
+ALTER DATABASE [ERMS] SET FILESTREAM( NON_TRANSACTED_ACCESS = OFF ) 
+GO
+ALTER DATABASE [ERMS] SET TARGET_RECOVERY_TIME = 60 SECONDS 
+GO
+ALTER DATABASE [ERMS] SET DELAYED_DURABILITY = DISABLED 
+GO
+ALTER DATABASE [ERMS] SET ACCELERATED_DATABASE_RECOVERY = OFF  
+GO
+EXEC sys.sp_db_vardecimal_storage_format N'ERMS', N'ON'
+GO
+ALTER DATABASE [ERMS] SET QUERY_STORE = OFF
+GO
+USE [ERMS]
+GO
+/****** Object:  Table [dbo].[__EFMigrationsHistory]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[__EFMigrationsHistory](
+	[MigrationId] [nvarchar](150) NOT NULL,
+	[ProductVersion] [nvarchar](32) NOT NULL,
+ CONSTRAINT [PK___EFMigrationsHistory] PRIMARY KEY CLUSTERED 
+(
+	[MigrationId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[Applications]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Applications](
+	[Id] [uniqueidentifier] NOT NULL,
+	[JobPostingId] [uniqueidentifier] NOT NULL,
+	[CandidateId] [uniqueidentifier] NOT NULL,
+	[ResumeId] [uniqueidentifier] NULL,
+	[CoverLetter] [nvarchar](max) NULL,
+	[ExpectedSalary] [decimal](18, 2) NULL,
+	[AvailableStartDate] [datetime2](7) NULL,
+	[Stage] [nvarchar](max) NOT NULL,
+	[StageUpdatedAt] [datetime2](7) NULL,
+	[Status] [nvarchar](max) NOT NULL,
+	[Source] [nvarchar](max) NULL,
+	[ReferredById] [uniqueidentifier] NULL,
+	[Rating] [int] NULL,
+	[HRNote] [nvarchar](max) NULL,
+	[RejectionReason] [nvarchar](max) NULL,
+	[RejectedById] [uniqueidentifier] NULL,
+	[RejectedAt] [datetime2](7) NULL,
+	[AppliedAt] [datetime2](7) NOT NULL,
+	[IsDeleted] [bit] NOT NULL,
+	[DeletedAt] [datetime2](7) NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_Applications] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[ApprovalHistories]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[ApprovalHistories](
+	[Id] [uniqueidentifier] NOT NULL,
+	[EntityType] [nvarchar](max) NOT NULL,
+	[EntityId] [uniqueidentifier] NOT NULL,
+	[Action] [nvarchar](max) NOT NULL,
+	[PreviousStatus] [nvarchar](max) NULL,
+	[NewStatus] [nvarchar](max) NOT NULL,
+	[PerformedById] [uniqueidentifier] NOT NULL,
+	[Note] [nvarchar](max) NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_ApprovalHistories] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[AspNetRoleClaims]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[AspNetRoleClaims](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[RoleId] [uniqueidentifier] NOT NULL,
+	[ClaimType] [nvarchar](max) NULL,
+	[ClaimValue] [nvarchar](max) NULL,
+ CONSTRAINT [PK_AspNetRoleClaims] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[AspNetRoles]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[AspNetRoles](
+	[Id] [uniqueidentifier] NOT NULL,
+	[Name] [nvarchar](256) NULL,
+	[NormalizedName] [nvarchar](256) NULL,
+	[ConcurrencyStamp] [nvarchar](max) NULL,
+ CONSTRAINT [PK_AspNetRoles] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[AspNetUserClaims]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[AspNetUserClaims](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[UserId] [uniqueidentifier] NOT NULL,
+	[ClaimType] [nvarchar](max) NULL,
+	[ClaimValue] [nvarchar](max) NULL,
+ CONSTRAINT [PK_AspNetUserClaims] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[AspNetUserLogins]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[AspNetUserLogins](
+	[LoginProvider] [nvarchar](450) NOT NULL,
+	[ProviderKey] [nvarchar](450) NOT NULL,
+	[ProviderDisplayName] [nvarchar](max) NULL,
+	[UserId] [uniqueidentifier] NOT NULL,
+ CONSTRAINT [PK_AspNetUserLogins] PRIMARY KEY CLUSTERED 
+(
+	[LoginProvider] ASC,
+	[ProviderKey] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[AspNetUserRoles]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[AspNetUserRoles](
+	[UserId] [uniqueidentifier] NOT NULL,
+	[RoleId] [uniqueidentifier] NOT NULL,
+ CONSTRAINT [PK_AspNetUserRoles] PRIMARY KEY CLUSTERED 
+(
+	[UserId] ASC,
+	[RoleId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[AspNetUsers]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[AspNetUsers](
+	[Id] [uniqueidentifier] NOT NULL,
+	[FullName] [nvarchar](max) NOT NULL,
+	[Hometown] [nvarchar](max) NULL,
+	[DateOfBirth] [datetime2](7) NULL,
+	[AvatarUrl] [nvarchar](max) NULL,
+	[DateJoined] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+	[DepartmentId] [int] NULL,
+	[UserName] [nvarchar](256) NULL,
+	[NormalizedUserName] [nvarchar](256) NULL,
+	[Email] [nvarchar](256) NULL,
+	[NormalizedEmail] [nvarchar](256) NULL,
+	[EmailConfirmed] [bit] NOT NULL,
+	[PasswordHash] [nvarchar](max) NULL,
+	[SecurityStamp] [nvarchar](max) NULL,
+	[ConcurrencyStamp] [nvarchar](max) NULL,
+	[PhoneNumber] [nvarchar](max) NULL,
+	[PhoneNumberConfirmed] [bit] NOT NULL,
+	[TwoFactorEnabled] [bit] NOT NULL,
+	[LockoutEnd] [datetimeoffset](7) NULL,
+	[LockoutEnabled] [bit] NOT NULL,
+	[AccessFailedCount] [int] NOT NULL,
+ CONSTRAINT [PK_AspNetUsers] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[AspNetUserTokens]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[AspNetUserTokens](
+	[UserId] [uniqueidentifier] NOT NULL,
+	[LoginProvider] [nvarchar](450) NOT NULL,
+	[Name] [nvarchar](450) NOT NULL,
+	[Value] [nvarchar](max) NULL,
+ CONSTRAINT [PK_AspNetUserTokens] PRIMARY KEY CLUSTERED 
+(
+	[UserId] ASC,
+	[LoginProvider] ASC,
+	[Name] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[Candidates]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Candidates](
+	[Id] [uniqueidentifier] NOT NULL,
+	[UserId] [uniqueidentifier] NOT NULL,
+	[AboutMe] [nvarchar](max) NULL,
+	[Headline] [nvarchar](max) NULL,
+	[CurrentPosition] [nvarchar](max) NULL,
+	[CurrentCompany] [nvarchar](max) NULL,
+	[Location] [nvarchar](max) NULL,
+	[LinkedInUrl] [nvarchar](max) NULL,
+	[PortfolioUrl] [nvarchar](max) NULL,
+	[ExpectedSalary] [decimal](18, 2) NULL,
+	[NoticePeriod] [int] NULL,
+	[IsOpenToWork] [bit] NOT NULL,
+	[PreferredJobTypes] [nvarchar](max) NULL,
+	[PreferredLocations] [nvarchar](max) NULL,
+	[IsDeleted] [bit] NOT NULL,
+	[DeletedAt] [datetime2](7) NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_Candidates] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[CandidateSkills]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[CandidateSkills](
+	[Id] [uniqueidentifier] NOT NULL,
+	[CandidateId] [uniqueidentifier] NOT NULL,
+	[SkillId] [uniqueidentifier] NOT NULL,
+	[ProficiencyLevel] [int] NULL,
+	[YearsOfExperience] [int] NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_CandidateSkills] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[Courses]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Courses](
+	[Id] [uniqueidentifier] NOT NULL,
+	[EnterpriseId] [uniqueidentifier] NOT NULL,
+	[TrainingPlanId] [uniqueidentifier] NULL,
+	[CourseName] [nvarchar](max) NOT NULL,
+	[CourseCode] [nvarchar](max) NOT NULL,
+	[Description] [nvarchar](max) NULL,
+	[ThumbnailUrl] [nvarchar](max) NULL,
+	[TrainerId] [uniqueidentifier] NOT NULL,
+	[DurationMinutes] [int] NULL,
+	[Level] [nvarchar](max) NULL,
+	[Status] [nvarchar](max) NOT NULL,
+	[IsMandatory] [bit] NOT NULL,
+	[MaxEnrollments] [int] NULL,
+	[EnrollmentDeadline] [datetime2](7) NULL,
+	[PublishedAt] [datetime2](7) NULL,
+	[CompletionCriteria] [nvarchar](max) NOT NULL,
+	[IsDeleted] [bit] NOT NULL,
+	[DeletedAt] [datetime2](7) NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_Courses] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[CourseSkills]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[CourseSkills](
+	[Id] [uniqueidentifier] NOT NULL,
+	[CourseId] [uniqueidentifier] NOT NULL,
+	[SkillId] [uniqueidentifier] NOT NULL,
+	[SkillLevelGained] [int] NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_CourseSkills] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[CVScreeningResults]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[CVScreeningResults](
+	[Id] [uniqueidentifier] NOT NULL,
+	[ApplicationId] [uniqueidentifier] NOT NULL,
+	[OverallScore] [decimal](18, 2) NOT NULL,
+	[SkillMatchScore] [decimal](18, 2) NULL,
+	[ExperienceMatchScore] [decimal](18, 2) NULL,
+	[EducationMatchScore] [decimal](18, 2) NULL,
+	[KeywordMatchScore] [decimal](18, 2) NULL,
+	[MatchedSkills] [nvarchar](max) NULL,
+	[MissingSkills] [nvarchar](max) NULL,
+	[Strengths] [nvarchar](max) NULL,
+	[Concerns] [nvarchar](max) NULL,
+	[Summary] [nvarchar](max) NULL,
+	[RawResponse] [nvarchar](max) NULL,
+	[ProcessedAt] [datetime2](7) NOT NULL,
+	[AIModel] [nvarchar](max) NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_CVScreeningResults] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[Departments]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Departments](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[EnterpriseId] [uniqueidentifier] NOT NULL,
+	[DepartmentName] [nvarchar](max) NOT NULL,
+	[DepartmentCode] [nvarchar](max) NULL,
+	[Description] [nvarchar](max) NULL,
+	[ManagerId] [uniqueidentifier] NULL,
+	[ParentDepartmentId] [int] NULL,
+	[IsActive] [bit] NOT NULL,
+	[IsDeleted] [bit] NOT NULL,
+	[DeletedAt] [datetime2](7) NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_Departments] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[Educations]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Educations](
+	[Id] [uniqueidentifier] NOT NULL,
+	[CandidateId] [uniqueidentifier] NOT NULL,
+	[Institution] [nvarchar](max) NOT NULL,
+	[Degree] [nvarchar](max) NOT NULL,
+	[FieldOfStudy] [nvarchar](max) NULL,
+	[StartDate] [datetime2](7) NULL,
+	[EndDate] [datetime2](7) NULL,
+	[IsCurrent] [bit] NOT NULL,
+	[Grade] [nvarchar](max) NULL,
+	[Description] [nvarchar](max) NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_Educations] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[Employees]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Employees](
+	[Id] [uniqueidentifier] NOT NULL,
+	[UserId] [uniqueidentifier] NOT NULL,
+	[EnterpriseId] [uniqueidentifier] NOT NULL,
+	[EmployeeCode] [nvarchar](max) NOT NULL,
+	[DepartmentId] [int] NOT NULL,
+	[Position] [nvarchar](max) NULL,
+	[JobPositionId] [uniqueidentifier] NULL,
+	[HireDate] [datetime2](7) NULL,
+	[TerminationDate] [datetime2](7) NULL,
+	[EmploymentType] [nvarchar](max) NOT NULL,
+	[ManagerId] [uniqueidentifier] NULL,
+	[Salary] [decimal](18, 2) NULL,
+	[IsTrainer] [bit] NOT NULL,
+	[Status] [nvarchar](max) NOT NULL,
+	[IsDeleted] [bit] NOT NULL,
+	[DeletedAt] [datetime2](7) NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_Employees] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[Enrollments]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Enrollments](
+	[Id] [uniqueidentifier] NOT NULL,
+	[CourseId] [uniqueidentifier] NOT NULL,
+	[EmployeeId] [uniqueidentifier] NOT NULL,
+	[EnrolledAt] [datetime2](7) NOT NULL,
+	[EnrolledById] [uniqueidentifier] NULL,
+	[StartedAt] [datetime2](7) NULL,
+	[CompletedAt] [datetime2](7) NULL,
+	[Status] [nvarchar](max) NOT NULL,
+	[Progress] [int] NOT NULL,
+	[LastAccessedAt] [datetime2](7) NULL,
+	[CertificateUrl] [nvarchar](max) NULL,
+	[CertificateIssuedAt] [datetime2](7) NULL,
+	[Note] [nvarchar](max) NULL,
+	[IsDeleted] [bit] NOT NULL,
+	[DeletedAt] [datetime2](7) NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_Enrollments] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[Enterprises]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Enterprises](
+	[Id] [uniqueidentifier] NOT NULL,
+	[EnterpriseName] [nvarchar](max) NOT NULL,
+	[EnterpriseCode] [nvarchar](max) NOT NULL,
+	[TaxCode] [nvarchar](max) NULL,
+	[Address] [nvarchar](max) NULL,
+	[Phone] [nvarchar](max) NULL,
+	[Email] [nvarchar](max) NULL,
+	[Website] [nvarchar](max) NULL,
+	[LogoUrl] [nvarchar](max) NULL,
+	[SubscriptionPlanId] [uniqueidentifier] NOT NULL,
+	[SubscriptionStartDate] [datetime2](7) NOT NULL,
+	[SubscriptionEndDate] [datetime2](7) NOT NULL,
+	[SubscriptionStatus] [nvarchar](max) NOT NULL,
+	[CreatedById] [uniqueidentifier] NULL,
+	[IsDeleted] [bit] NOT NULL,
+	[DeletedAt] [datetime2](7) NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_Enterprises] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[InterviewParticipants]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[InterviewParticipants](
+	[Id] [uniqueidentifier] NOT NULL,
+	[InterviewId] [uniqueidentifier] NOT NULL,
+	[EmployeeId] [uniqueidentifier] NOT NULL,
+	[Role] [nvarchar](max) NOT NULL,
+	[IsRequired] [bit] NOT NULL,
+	[ConfirmationStatus] [nvarchar](max) NOT NULL,
+	[Rating] [int] NULL,
+	[Feedback] [nvarchar](max) NULL,
+	[Recommendation] [nvarchar](max) NULL,
+	[FeedbackSubmittedAt] [datetime2](7) NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_InterviewParticipants] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[Interviews]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Interviews](
+	[Id] [uniqueidentifier] NOT NULL,
+	[ApplicationId] [uniqueidentifier] NOT NULL,
+	[InterviewType] [nvarchar](max) NOT NULL,
+	[RoundNumber] [int] NOT NULL,
+	[ScheduledAt] [datetime2](7) NOT NULL,
+	[Duration] [int] NOT NULL,
+	[Location] [nvarchar](max) NULL,
+	[MeetingLink] [nvarchar](max) NULL,
+	[Status] [nvarchar](max) NOT NULL,
+	[ScheduledById] [uniqueidentifier] NOT NULL,
+	[OverallRating] [int] NULL,
+	[OverallFeedback] [nvarchar](max) NULL,
+	[Decision] [nvarchar](max) NULL,
+	[Note] [nvarchar](max) NULL,
+	[CompletedAt] [datetime2](7) NULL,
+	[IsDeleted] [bit] NOT NULL,
+	[DeletedAt] [datetime2](7) NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_Interviews] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[JobCompetencies]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[JobCompetencies](
+	[Id] [uniqueidentifier] NOT NULL,
+	[JobPositionId] [uniqueidentifier] NOT NULL,
+	[SkillId] [uniqueidentifier] NOT NULL,
+	[RequiredLevel] [int] NOT NULL,
+	[Importance] [nvarchar](max) NOT NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_JobCompetencies] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[JobPositions]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[JobPositions](
+	[Id] [uniqueidentifier] NOT NULL,
+	[EnterpriseId] [uniqueidentifier] NOT NULL,
+	[PositionName] [nvarchar](max) NOT NULL,
+	[Description] [nvarchar](max) NULL,
+	[IsActive] [bit] NOT NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_JobPositions] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[JobPostings]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[JobPostings](
+	[Id] [uniqueidentifier] NOT NULL,
+	[EnterpriseId] [uniqueidentifier] NOT NULL,
+	[PlanDetailId] [uniqueidentifier] NULL,
+	[DepartmentId] [int] NOT NULL,
+	[JobTitle] [nvarchar](max) NOT NULL,
+	[JobCode] [nvarchar](max) NULL,
+	[Description] [nvarchar](max) NOT NULL,
+	[Requirements] [nvarchar](max) NULL,
+	[Benefits] [nvarchar](max) NULL,
+	[EmploymentType] [nvarchar](max) NOT NULL,
+	[ExperienceLevel] [nvarchar](max) NULL,
+	[EducationLevel] [nvarchar](max) NULL,
+	[SalaryRangeMin] [decimal](18, 2) NULL,
+	[SalaryRangeMax] [decimal](18, 2) NULL,
+	[ShowSalary] [bit] NOT NULL,
+	[Location] [nvarchar](max) NULL,
+	[RemoteOption] [nvarchar](max) NULL,
+	[Quantity] [int] NOT NULL,
+	[ApplicationDeadline] [datetime2](7) NULL,
+	[Status] [nvarchar](max) NOT NULL,
+	[PublishedAt] [datetime2](7) NULL,
+	[PublishedById] [uniqueidentifier] NULL,
+	[ClosedAt] [datetime2](7) NULL,
+	[ViewCount] [int] NOT NULL,
+	[ApplicationCount] [int] NOT NULL,
+	[CreatedById] [uniqueidentifier] NOT NULL,
+	[IsDeleted] [bit] NOT NULL,
+	[DeletedAt] [datetime2](7) NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_JobPostings] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[JobSkills]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[JobSkills](
+	[Id] [uniqueidentifier] NOT NULL,
+	[JobPostingId] [uniqueidentifier] NOT NULL,
+	[SkillId] [uniqueidentifier] NOT NULL,
+	[IsRequired] [bit] NOT NULL,
+	[MinLevel] [int] NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_JobSkills] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[LessonProgresses]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[LessonProgresses](
+	[Id] [uniqueidentifier] NOT NULL,
+	[EnrollmentId] [uniqueidentifier] NOT NULL,
+	[LessonId] [uniqueidentifier] NOT NULL,
+	[StartedAt] [datetime2](7) NULL,
+	[CompletedAt] [datetime2](7) NULL,
+	[WatchPercentage] [int] NOT NULL,
+	[LastPosition] [int] NULL,
+	[TimeSpentMinutes] [int] NOT NULL,
+	[Status] [nvarchar](max) NOT NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_LessonProgresses] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[Lessons]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Lessons](
+	[Id] [uniqueidentifier] NOT NULL,
+	[CourseId] [uniqueidentifier] NOT NULL,
+	[LessonTitle] [nvarchar](max) NOT NULL,
+	[Description] [nvarchar](max) NULL,
+	[OrderIndex] [int] NOT NULL,
+	[ContentType] [nvarchar](max) NOT NULL,
+	[VideoUrl] [nvarchar](max) NULL,
+	[VideoDurationMinutes] [int] NULL,
+	[DocumentUrl] [nvarchar](max) NULL,
+	[ExternalLinkUrl] [nvarchar](max) NULL,
+	[Content] [nvarchar](max) NULL,
+	[IsPreview] [bit] NOT NULL,
+	[EstimatedMinutes] [int] NULL,
+	[IsDeleted] [bit] NOT NULL,
+	[DeletedAt] [datetime2](7) NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_Lessons] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[Notifications]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Notifications](
+	[Id] [uniqueidentifier] NOT NULL,
+	[UserId] [uniqueidentifier] NOT NULL,
+	[Title] [nvarchar](max) NOT NULL,
+	[Message] [nvarchar](max) NOT NULL,
+	[NotificationType] [nvarchar](max) NOT NULL,
+	[EntityType] [nvarchar](max) NULL,
+	[EntityId] [uniqueidentifier] NULL,
+	[ActionUrl] [nvarchar](max) NULL,
+	[IsRead] [bit] NOT NULL,
+	[ReadAt] [datetime2](7) NULL,
+	[IsSent] [bit] NOT NULL,
+	[SentAt] [datetime2](7) NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_Notifications] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[Offers]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Offers](
+	[Id] [uniqueidentifier] NOT NULL,
+	[ApplicationId] [uniqueidentifier] NOT NULL,
+	[OfferCode] [nvarchar](max) NULL,
+	[Position] [nvarchar](max) NOT NULL,
+	[DepartmentId] [int] NOT NULL,
+	[Salary] [decimal](18, 2) NOT NULL,
+	[SalaryFrequency] [nvarchar](max) NOT NULL,
+	[Bonus] [nvarchar](max) NULL,
+	[Benefits] [nvarchar](max) NULL,
+	[StartDate] [datetime2](7) NOT NULL,
+	[ExpirationDate] [datetime2](7) NOT NULL,
+	[OfferLetterUrl] [nvarchar](max) NULL,
+	[Status] [nvarchar](max) NOT NULL,
+	[CreatedById] [uniqueidentifier] NOT NULL,
+	[ApprovedById] [uniqueidentifier] NULL,
+	[ApprovedAt] [datetime2](7) NULL,
+	[SentAt] [datetime2](7) NULL,
+	[SentById] [uniqueidentifier] NULL,
+	[RespondedAt] [datetime2](7) NULL,
+	[CandidateNote] [nvarchar](max) NULL,
+	[IsDeleted] [bit] NOT NULL,
+	[DeletedAt] [datetime2](7) NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_Offers] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[OwnershipTransfers]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[OwnershipTransfers](
+	[Id] [uniqueidentifier] NOT NULL,
+	[EnterpriseId] [uniqueidentifier] NOT NULL,
+	[FromUserId] [uniqueidentifier] NOT NULL,
+	[ToUserId] [uniqueidentifier] NOT NULL,
+	[Reason] [nvarchar](max) NULL,
+	[TransferredAt] [datetime2](7) NOT NULL,
+	[ApprovedById] [uniqueidentifier] NULL,
+	[Note] [nvarchar](max) NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_OwnershipTransfers] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[PlanDetails]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[PlanDetails](
+	[Id] [uniqueidentifier] NOT NULL,
+	[RecruitmentPlanId] [uniqueidentifier] NOT NULL,
+	[DepartmentId] [int] NOT NULL,
+	[RequestedById] [uniqueidentifier] NOT NULL,
+	[PositionTitle] [nvarchar](max) NOT NULL,
+	[Quantity] [int] NOT NULL,
+	[Priority] [nvarchar](max) NOT NULL,
+	[Justification] [nvarchar](max) NULL,
+	[RequiredSkills] [nvarchar](max) NULL,
+	[MinExperience] [int] NULL,
+	[MaxExperience] [int] NULL,
+	[EducationLevel] [nvarchar](max) NULL,
+	[SalaryRangeMin] [decimal](18, 2) NULL,
+	[SalaryRangeMax] [decimal](18, 2) NULL,
+	[ExpectedStartDate] [datetime2](7) NULL,
+	[Status] [nvarchar](max) NOT NULL,
+	[ReviewerId] [uniqueidentifier] NULL,
+	[ReviewedAt] [datetime2](7) NULL,
+	[ReviewNote] [nvarchar](max) NULL,
+	[IsDeleted] [bit] NOT NULL,
+	[DeletedAt] [datetime2](7) NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_PlanDetails] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[QuizAnswers]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[QuizAnswers](
+	[Id] [uniqueidentifier] NOT NULL,
+	[QuizAttemptId] [uniqueidentifier] NOT NULL,
+	[QuizQuestionId] [uniqueidentifier] NOT NULL,
+	[SelectedAnswer] [nvarchar](max) NULL,
+	[IsCorrect] [bit] NULL,
+	[PointsEarned] [int] NOT NULL,
+	[AnsweredAt] [datetime2](7) NOT NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_QuizAnswers] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[QuizAttempts]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[QuizAttempts](
+	[Id] [uniqueidentifier] NOT NULL,
+	[EnrollmentId] [uniqueidentifier] NOT NULL,
+	[QuizId] [uniqueidentifier] NOT NULL,
+	[AttemptNumber] [int] NOT NULL,
+	[StartedAt] [datetime2](7) NOT NULL,
+	[CompletedAt] [datetime2](7) NULL,
+	[Score] [decimal](18, 2) NULL,
+	[IsPassed] [bit] NULL,
+	[TotalQuestions] [int] NOT NULL,
+	[CorrectAnswers] [int] NULL,
+	[TimeTakenMinutes] [int] NULL,
+	[Status] [nvarchar](max) NOT NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_QuizAttempts] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[QuizQuestions]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[QuizQuestions](
+	[Id] [uniqueidentifier] NOT NULL,
+	[QuizId] [uniqueidentifier] NOT NULL,
+	[QuestionText] [nvarchar](max) NOT NULL,
+	[QuestionType] [nvarchar](max) NOT NULL,
+	[Options] [nvarchar](max) NOT NULL,
+	[CorrectAnswer] [nvarchar](max) NOT NULL,
+	[Explanation] [nvarchar](max) NULL,
+	[Points] [int] NOT NULL,
+	[OrderIndex] [int] NOT NULL,
+	[ImageUrl] [nvarchar](max) NULL,
+	[IsActive] [bit] NOT NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_QuizQuestions] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[Quizzes]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Quizzes](
+	[Id] [uniqueidentifier] NOT NULL,
+	[CourseId] [uniqueidentifier] NOT NULL,
+	[QuizTitle] [nvarchar](max) NOT NULL,
+	[Description] [nvarchar](max) NULL,
+	[TimeLimitMinutes] [int] NULL,
+	[PassingScore] [int] NOT NULL,
+	[MaxAttempts] [int] NULL,
+	[ShuffleQuestions] [bit] NOT NULL,
+	[ShuffleAnswers] [bit] NOT NULL,
+	[ShowCorrectAnswers] [bit] NOT NULL,
+	[IsActive] [bit] NOT NULL,
+	[IsDeleted] [bit] NOT NULL,
+	[DeletedAt] [datetime2](7) NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_Quizzes] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[RecruitmentPlans]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[RecruitmentPlans](
+	[Id] [uniqueidentifier] NOT NULL,
+	[EnterpriseId] [uniqueidentifier] NOT NULL,
+	[PlanName] [nvarchar](max) NOT NULL,
+	[PlanCode] [nvarchar](max) NOT NULL,
+	[Description] [nvarchar](max) NULL,
+	[StartDate] [datetime2](7) NOT NULL,
+	[EndDate] [datetime2](7) NOT NULL,
+	[TotalBudget] [decimal](18, 2) NULL,
+	[Status] [nvarchar](max) NOT NULL,
+	[CreatedById] [uniqueidentifier] NOT NULL,
+	[ApprovedById] [uniqueidentifier] NULL,
+	[ApprovedAt] [datetime2](7) NULL,
+	[IsDeleted] [bit] NOT NULL,
+	[DeletedAt] [datetime2](7) NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_RecruitmentPlans] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[Resumes]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Resumes](
+	[Id] [uniqueidentifier] NOT NULL,
+	[CandidateId] [uniqueidentifier] NOT NULL,
+	[FileName] [nvarchar](max) NOT NULL,
+	[FileUrl] [nvarchar](max) NOT NULL,
+	[FileSize] [int] NULL,
+	[FileType] [nvarchar](max) NULL,
+	[IsDefault] [bit] NOT NULL,
+	[ParsedData] [nvarchar](max) NULL,
+	[UploadedAt] [datetime2](7) NOT NULL,
+	[IsDeleted] [bit] NOT NULL,
+	[DeletedAt] [datetime2](7) NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_Resumes] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[SavedJobs]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[SavedJobs](
+	[Id] [uniqueidentifier] NOT NULL,
+	[CandidateId] [uniqueidentifier] NOT NULL,
+	[JobPostingId] [uniqueidentifier] NOT NULL,
+	[SavedAt] [datetime2](7) NOT NULL,
+	[Note] [nvarchar](max) NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_SavedJobs] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[Skills]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Skills](
+	[Id] [uniqueidentifier] NOT NULL,
+	[EnterpriseId] [uniqueidentifier] NULL,
+	[SkillName] [nvarchar](max) NOT NULL,
+	[SkillCategory] [nvarchar](max) NULL,
+	[Description] [nvarchar](max) NULL,
+	[IsActive] [bit] NOT NULL,
+	[IsDeleted] [bit] NOT NULL,
+	[DeletedAt] [datetime2](7) NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_Skills] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[SubscriptionHistories]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[SubscriptionHistories](
+	[Id] [uniqueidentifier] NOT NULL,
+	[EnterpriseId] [uniqueidentifier] NOT NULL,
+	[SubscriptionPlanId] [uniqueidentifier] NOT NULL,
+	[ActionType] [nvarchar](max) NOT NULL,
+	[PreviousPlanId] [uniqueidentifier] NULL,
+	[Amount] [decimal](18, 2) NOT NULL,
+	[Currency] [nvarchar](max) NOT NULL,
+	[PaymentMethod] [nvarchar](max) NULL,
+	[PaymentReference] [nvarchar](max) NULL,
+	[PeriodStartDate] [datetime2](7) NOT NULL,
+	[PeriodEndDate] [datetime2](7) NOT NULL,
+	[Note] [nvarchar](max) NULL,
+	[CreatedById] [uniqueidentifier] NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_SubscriptionHistories] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[SubscriptionPlans]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[SubscriptionPlans](
+	[Id] [uniqueidentifier] NOT NULL,
+	[PlanName] [nvarchar](max) NOT NULL,
+	[PlanCode] [nvarchar](max) NOT NULL,
+	[Description] [nvarchar](max) NULL,
+	[MaxUsers] [int] NOT NULL,
+	[MaxJobPostings] [int] NOT NULL,
+	[MaxCourses] [int] NOT NULL,
+	[PriceMonthly] [decimal](18, 2) NOT NULL,
+	[PriceYearly] [decimal](18, 2) NOT NULL,
+	[Features] [nvarchar](max) NULL,
+	[IsActive] [bit] NOT NULL,
+	[DisplayOrder] [int] NOT NULL,
+	[IsDeleted] [bit] NOT NULL,
+	[DeletedAt] [datetime2](7) NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_SubscriptionPlans] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[TrainingPlans]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[TrainingPlans](
+	[Id] [uniqueidentifier] NOT NULL,
+	[EnterpriseId] [uniqueidentifier] NOT NULL,
+	[PlanName] [nvarchar](max) NOT NULL,
+	[PlanCode] [nvarchar](max) NOT NULL,
+	[Description] [nvarchar](max) NULL,
+	[StartDate] [datetime2](7) NOT NULL,
+	[EndDate] [datetime2](7) NOT NULL,
+	[TotalBudget] [decimal](18, 2) NULL,
+	[Status] [nvarchar](max) NOT NULL,
+	[CreatedById] [uniqueidentifier] NOT NULL,
+	[ApprovedById] [uniqueidentifier] NULL,
+	[ApprovedAt] [datetime2](7) NULL,
+	[ReviewNote] [nvarchar](max) NULL,
+	[IsDeleted] [bit] NOT NULL,
+	[DeletedAt] [datetime2](7) NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_TrainingPlans] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[TrainingRequests]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[TrainingRequests](
+	[Id] [uniqueidentifier] NOT NULL,
+	[EnterpriseId] [uniqueidentifier] NOT NULL,
+	[TrainingPlanId] [uniqueidentifier] NULL,
+	[DepartmentId] [int] NOT NULL,
+	[RequestedById] [uniqueidentifier] NOT NULL,
+	[Subject] [nvarchar](max) NOT NULL,
+	[Urgency] [nvarchar](max) NOT NULL,
+	[Description] [nvarchar](max) NULL,
+	[TargetAudience] [nvarchar](max) NULL,
+	[EstimatedParticipants] [int] NULL,
+	[EstimatedBudget] [decimal](18, 2) NULL,
+	[Status] [nvarchar](max) NOT NULL,
+	[ReviewNote] [nvarchar](max) NULL,
+	[IsDeleted] [bit] NOT NULL,
+	[DeletedAt] [datetime2](7) NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_TrainingRequests] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[WorkExperiences]    Script Date: 24/01/2026 3:13:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[WorkExperiences](
+	[Id] [uniqueidentifier] NOT NULL,
+	[CandidateId] [uniqueidentifier] NOT NULL,
+	[CompanyName] [nvarchar](max) NOT NULL,
+	[Position] [nvarchar](max) NOT NULL,
+	[Location] [nvarchar](max) NULL,
+	[StartDate] [datetime2](7) NOT NULL,
+	[EndDate] [datetime2](7) NULL,
+	[IsCurrent] [bit] NOT NULL,
+	[Description] [nvarchar](max) NULL,
+	[EmploymentType] [nvarchar](max) NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_WorkExperiences] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+INSERT [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260123092541_InitialCreate', N'10.0.1')
+GO
+INSERT [dbo].[AspNetRoles] ([Id], [Name], [NormalizedName], [ConcurrencyStamp]) VALUES (N'9d066231-42d6-4e83-ba40-08de5b120cc8', N'Candidate', N'CANDIDATE', N'b23c4292-95ae-40cc-a4a2-0a3de5193ef4')
+GO
+INSERT [dbo].[AspNetUserRoles] ([UserId], [RoleId]) VALUES (N'a5424253-9af6-4f12-bceb-08de5b120c42', N'9d066231-42d6-4e83-ba40-08de5b120cc8')
+GO
+INSERT [dbo].[AspNetUsers] ([Id], [FullName], [Hometown], [DateOfBirth], [AvatarUrl], [DateJoined], [UpdatedAt], [DepartmentId], [UserName], [NormalizedUserName], [Email], [NormalizedEmail], [EmailConfirmed], [PasswordHash], [SecurityStamp], [ConcurrencyStamp], [PhoneNumber], [PhoneNumberConfirmed], [TwoFactorEnabled], [LockoutEnd], [LockoutEnabled], [AccessFailedCount]) VALUES (N'25b16122-c9c6-438b-4a6d-08de5b0cddb9', N'Quang Minh', NULL, NULL, NULL, CAST(N'2026-01-24T05:53:14.9456304' AS DateTime2), NULL, NULL, N'quangminh@gmail.com', N'QUANGMINH@GMAIL.COM', N'quangminh@gmail.com', N'QUANGMINH@GMAIL.COM', 0, N'AQAAAAIAAYagAAAAELLtfmtJ1yepW8m1T4JwsedTDwTbgKiPfPLuRHpQqGxuMTMSfuZTB/AfR3Csn00c0g==', N'RJ4QSCL2HDCBL665RLTRSY7OXV7GNKRL', N'0eb8b2f2-41e6-4802-a5f9-68b61a8899d3', NULL, 0, 0, NULL, 1, 0)
+INSERT [dbo].[AspNetUsers] ([Id], [FullName], [Hometown], [DateOfBirth], [AvatarUrl], [DateJoined], [UpdatedAt], [DepartmentId], [UserName], [NormalizedUserName], [Email], [NormalizedEmail], [EmailConfirmed], [PasswordHash], [SecurityStamp], [ConcurrencyStamp], [PhoneNumber], [PhoneNumberConfirmed], [TwoFactorEnabled], [LockoutEnd], [LockoutEnabled], [AccessFailedCount]) VALUES (N'a5424253-9af6-4f12-bceb-08de5b120c42', N'ERMS', NULL, NULL, NULL, CAST(N'2026-01-24T06:30:20.3913293' AS DateTime2), NULL, NULL, N'erms2026@gmail.com', N'ERMS2026@GMAIL.COM', N'erms2026@gmail.com', N'ERMS2026@GMAIL.COM', 1, NULL, N'EC65HYDIP3LHQKQTCRR4UVAY5SZBCG4I', N'e00a0ded-db36-4064-aa1c-5b9558c7221a', NULL, 0, 0, NULL, 1, 0)
+GO
+/****** Object:  Index [IX_Applications_CandidateId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_Applications_CandidateId] ON [dbo].[Applications]
+(
+	[CandidateId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Applications_JobPostingId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_Applications_JobPostingId] ON [dbo].[Applications]
+(
+	[JobPostingId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Applications_ReferredById]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_Applications_ReferredById] ON [dbo].[Applications]
+(
+	[ReferredById] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Applications_RejectedById]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_Applications_RejectedById] ON [dbo].[Applications]
+(
+	[RejectedById] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Applications_ResumeId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_Applications_ResumeId] ON [dbo].[Applications]
+(
+	[ResumeId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_ApprovalHistories_PerformedById]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_ApprovalHistories_PerformedById] ON [dbo].[ApprovalHistories]
+(
+	[PerformedById] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_AspNetRoleClaims_RoleId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_AspNetRoleClaims_RoleId] ON [dbo].[AspNetRoleClaims]
+(
+	[RoleId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+/****** Object:  Index [RoleNameIndex]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE UNIQUE NONCLUSTERED INDEX [RoleNameIndex] ON [dbo].[AspNetRoles]
+(
+	[NormalizedName] ASC
+)
+WHERE ([NormalizedName] IS NOT NULL)
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_AspNetUserClaims_UserId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_AspNetUserClaims_UserId] ON [dbo].[AspNetUserClaims]
+(
+	[UserId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_AspNetUserLogins_UserId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_AspNetUserLogins_UserId] ON [dbo].[AspNetUserLogins]
+(
+	[UserId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_AspNetUserRoles_RoleId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_AspNetUserRoles_RoleId] ON [dbo].[AspNetUserRoles]
+(
+	[RoleId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+/****** Object:  Index [EmailIndex]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [EmailIndex] ON [dbo].[AspNetUsers]
+(
+	[NormalizedEmail] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_AspNetUsers_DepartmentId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_AspNetUsers_DepartmentId] ON [dbo].[AspNetUsers]
+(
+	[DepartmentId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+/****** Object:  Index [UserNameIndex]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE UNIQUE NONCLUSTERED INDEX [UserNameIndex] ON [dbo].[AspNetUsers]
+(
+	[NormalizedUserName] ASC
+)
+WHERE ([NormalizedUserName] IS NOT NULL)
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Candidates_UserId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE UNIQUE NONCLUSTERED INDEX [IX_Candidates_UserId] ON [dbo].[Candidates]
+(
+	[UserId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_CandidateSkills_CandidateId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_CandidateSkills_CandidateId] ON [dbo].[CandidateSkills]
+(
+	[CandidateId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_CandidateSkills_SkillId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_CandidateSkills_SkillId] ON [dbo].[CandidateSkills]
+(
+	[SkillId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Courses_EnterpriseId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_Courses_EnterpriseId] ON [dbo].[Courses]
+(
+	[EnterpriseId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Courses_TrainerId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_Courses_TrainerId] ON [dbo].[Courses]
+(
+	[TrainerId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Courses_TrainingPlanId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_Courses_TrainingPlanId] ON [dbo].[Courses]
+(
+	[TrainingPlanId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_CourseSkills_CourseId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_CourseSkills_CourseId] ON [dbo].[CourseSkills]
+(
+	[CourseId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_CourseSkills_SkillId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_CourseSkills_SkillId] ON [dbo].[CourseSkills]
+(
+	[SkillId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_CVScreeningResults_ApplicationId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE UNIQUE NONCLUSTERED INDEX [IX_CVScreeningResults_ApplicationId] ON [dbo].[CVScreeningResults]
+(
+	[ApplicationId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Departments_EnterpriseId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_Departments_EnterpriseId] ON [dbo].[Departments]
+(
+	[EnterpriseId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Departments_ManagerId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_Departments_ManagerId] ON [dbo].[Departments]
+(
+	[ManagerId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Departments_ParentDepartmentId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_Departments_ParentDepartmentId] ON [dbo].[Departments]
+(
+	[ParentDepartmentId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Educations_CandidateId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_Educations_CandidateId] ON [dbo].[Educations]
+(
+	[CandidateId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Employees_DepartmentId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_Employees_DepartmentId] ON [dbo].[Employees]
+(
+	[DepartmentId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Employees_EnterpriseId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_Employees_EnterpriseId] ON [dbo].[Employees]
+(
+	[EnterpriseId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Employees_JobPositionId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_Employees_JobPositionId] ON [dbo].[Employees]
+(
+	[JobPositionId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Employees_ManagerId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_Employees_ManagerId] ON [dbo].[Employees]
+(
+	[ManagerId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Employees_UserId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE UNIQUE NONCLUSTERED INDEX [IX_Employees_UserId] ON [dbo].[Employees]
+(
+	[UserId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Enrollments_CourseId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_Enrollments_CourseId] ON [dbo].[Enrollments]
+(
+	[CourseId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Enrollments_EmployeeId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_Enrollments_EmployeeId] ON [dbo].[Enrollments]
+(
+	[EmployeeId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Enrollments_EnrolledById]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_Enrollments_EnrolledById] ON [dbo].[Enrollments]
+(
+	[EnrolledById] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Enterprises_CreatedById]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_Enterprises_CreatedById] ON [dbo].[Enterprises]
+(
+	[CreatedById] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Enterprises_SubscriptionPlanId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_Enterprises_SubscriptionPlanId] ON [dbo].[Enterprises]
+(
+	[SubscriptionPlanId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_InterviewParticipants_EmployeeId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_InterviewParticipants_EmployeeId] ON [dbo].[InterviewParticipants]
+(
+	[EmployeeId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_InterviewParticipants_InterviewId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_InterviewParticipants_InterviewId] ON [dbo].[InterviewParticipants]
+(
+	[InterviewId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Interviews_ApplicationId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_Interviews_ApplicationId] ON [dbo].[Interviews]
+(
+	[ApplicationId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Interviews_ScheduledById]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_Interviews_ScheduledById] ON [dbo].[Interviews]
+(
+	[ScheduledById] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_JobCompetencies_JobPositionId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_JobCompetencies_JobPositionId] ON [dbo].[JobCompetencies]
+(
+	[JobPositionId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_JobCompetencies_SkillId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_JobCompetencies_SkillId] ON [dbo].[JobCompetencies]
+(
+	[SkillId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_JobPositions_EnterpriseId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_JobPositions_EnterpriseId] ON [dbo].[JobPositions]
+(
+	[EnterpriseId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_JobPostings_CreatedById]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_JobPostings_CreatedById] ON [dbo].[JobPostings]
+(
+	[CreatedById] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_JobPostings_DepartmentId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_JobPostings_DepartmentId] ON [dbo].[JobPostings]
+(
+	[DepartmentId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_JobPostings_EnterpriseId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_JobPostings_EnterpriseId] ON [dbo].[JobPostings]
+(
+	[EnterpriseId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_JobPostings_PlanDetailId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_JobPostings_PlanDetailId] ON [dbo].[JobPostings]
+(
+	[PlanDetailId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_JobPostings_PublishedById]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_JobPostings_PublishedById] ON [dbo].[JobPostings]
+(
+	[PublishedById] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_JobSkills_JobPostingId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_JobSkills_JobPostingId] ON [dbo].[JobSkills]
+(
+	[JobPostingId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_JobSkills_SkillId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_JobSkills_SkillId] ON [dbo].[JobSkills]
+(
+	[SkillId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_LessonProgresses_EnrollmentId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_LessonProgresses_EnrollmentId] ON [dbo].[LessonProgresses]
+(
+	[EnrollmentId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_LessonProgresses_LessonId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_LessonProgresses_LessonId] ON [dbo].[LessonProgresses]
+(
+	[LessonId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Lessons_CourseId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_Lessons_CourseId] ON [dbo].[Lessons]
+(
+	[CourseId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Notifications_UserId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_Notifications_UserId] ON [dbo].[Notifications]
+(
+	[UserId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Offers_ApplicationId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE UNIQUE NONCLUSTERED INDEX [IX_Offers_ApplicationId] ON [dbo].[Offers]
+(
+	[ApplicationId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Offers_ApprovedById]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_Offers_ApprovedById] ON [dbo].[Offers]
+(
+	[ApprovedById] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Offers_CreatedById]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_Offers_CreatedById] ON [dbo].[Offers]
+(
+	[CreatedById] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Offers_DepartmentId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_Offers_DepartmentId] ON [dbo].[Offers]
+(
+	[DepartmentId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Offers_SentById]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_Offers_SentById] ON [dbo].[Offers]
+(
+	[SentById] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_OwnershipTransfers_ApprovedById]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_OwnershipTransfers_ApprovedById] ON [dbo].[OwnershipTransfers]
+(
+	[ApprovedById] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_OwnershipTransfers_EnterpriseId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_OwnershipTransfers_EnterpriseId] ON [dbo].[OwnershipTransfers]
+(
+	[EnterpriseId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_OwnershipTransfers_FromUserId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_OwnershipTransfers_FromUserId] ON [dbo].[OwnershipTransfers]
+(
+	[FromUserId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_OwnershipTransfers_ToUserId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_OwnershipTransfers_ToUserId] ON [dbo].[OwnershipTransfers]
+(
+	[ToUserId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_PlanDetails_DepartmentId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_PlanDetails_DepartmentId] ON [dbo].[PlanDetails]
+(
+	[DepartmentId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_PlanDetails_RecruitmentPlanId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_PlanDetails_RecruitmentPlanId] ON [dbo].[PlanDetails]
+(
+	[RecruitmentPlanId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_PlanDetails_RequestedById]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_PlanDetails_RequestedById] ON [dbo].[PlanDetails]
+(
+	[RequestedById] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_PlanDetails_ReviewerId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_PlanDetails_ReviewerId] ON [dbo].[PlanDetails]
+(
+	[ReviewerId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_QuizAnswers_QuizAttemptId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_QuizAnswers_QuizAttemptId] ON [dbo].[QuizAnswers]
+(
+	[QuizAttemptId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_QuizAnswers_QuizQuestionId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_QuizAnswers_QuizQuestionId] ON [dbo].[QuizAnswers]
+(
+	[QuizQuestionId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_QuizAttempts_EnrollmentId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_QuizAttempts_EnrollmentId] ON [dbo].[QuizAttempts]
+(
+	[EnrollmentId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_QuizAttempts_QuizId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_QuizAttempts_QuizId] ON [dbo].[QuizAttempts]
+(
+	[QuizId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_QuizQuestions_QuizId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_QuizQuestions_QuizId] ON [dbo].[QuizQuestions]
+(
+	[QuizId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Quizzes_CourseId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE UNIQUE NONCLUSTERED INDEX [IX_Quizzes_CourseId] ON [dbo].[Quizzes]
+(
+	[CourseId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_RecruitmentPlans_ApprovedById]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_RecruitmentPlans_ApprovedById] ON [dbo].[RecruitmentPlans]
+(
+	[ApprovedById] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_RecruitmentPlans_CreatedById]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_RecruitmentPlans_CreatedById] ON [dbo].[RecruitmentPlans]
+(
+	[CreatedById] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_RecruitmentPlans_EnterpriseId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_RecruitmentPlans_EnterpriseId] ON [dbo].[RecruitmentPlans]
+(
+	[EnterpriseId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Resumes_CandidateId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_Resumes_CandidateId] ON [dbo].[Resumes]
+(
+	[CandidateId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_SavedJobs_CandidateId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_SavedJobs_CandidateId] ON [dbo].[SavedJobs]
+(
+	[CandidateId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_SavedJobs_JobPostingId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_SavedJobs_JobPostingId] ON [dbo].[SavedJobs]
+(
+	[JobPostingId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_Skills_EnterpriseId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_Skills_EnterpriseId] ON [dbo].[Skills]
+(
+	[EnterpriseId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_SubscriptionHistories_EnterpriseId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_SubscriptionHistories_EnterpriseId] ON [dbo].[SubscriptionHistories]
+(
+	[EnterpriseId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_SubscriptionHistories_PreviousPlanId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_SubscriptionHistories_PreviousPlanId] ON [dbo].[SubscriptionHistories]
+(
+	[PreviousPlanId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_SubscriptionHistories_SubscriptionPlanId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_SubscriptionHistories_SubscriptionPlanId] ON [dbo].[SubscriptionHistories]
+(
+	[SubscriptionPlanId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_TrainingPlans_ApprovedById]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_TrainingPlans_ApprovedById] ON [dbo].[TrainingPlans]
+(
+	[ApprovedById] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_TrainingPlans_CreatedById]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_TrainingPlans_CreatedById] ON [dbo].[TrainingPlans]
+(
+	[CreatedById] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_TrainingPlans_EnterpriseId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_TrainingPlans_EnterpriseId] ON [dbo].[TrainingPlans]
+(
+	[EnterpriseId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_TrainingRequests_DepartmentId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_TrainingRequests_DepartmentId] ON [dbo].[TrainingRequests]
+(
+	[DepartmentId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_TrainingRequests_EnterpriseId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_TrainingRequests_EnterpriseId] ON [dbo].[TrainingRequests]
+(
+	[EnterpriseId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_TrainingRequests_RequestedById]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_TrainingRequests_RequestedById] ON [dbo].[TrainingRequests]
+(
+	[RequestedById] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_TrainingRequests_TrainingPlanId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_TrainingRequests_TrainingPlanId] ON [dbo].[TrainingRequests]
+(
+	[TrainingPlanId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+/****** Object:  Index [IX_WorkExperiences_CandidateId]    Script Date: 24/01/2026 3:13:48 PM ******/
+CREATE NONCLUSTERED INDEX [IX_WorkExperiences_CandidateId] ON [dbo].[WorkExperiences]
+(
+	[CandidateId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[Applications]  WITH CHECK ADD  CONSTRAINT [FK_Applications_AspNetUsers_RejectedById] FOREIGN KEY([RejectedById])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+GO
+ALTER TABLE [dbo].[Applications] CHECK CONSTRAINT [FK_Applications_AspNetUsers_RejectedById]
+GO
+ALTER TABLE [dbo].[Applications]  WITH CHECK ADD  CONSTRAINT [FK_Applications_Candidates_CandidateId] FOREIGN KEY([CandidateId])
+REFERENCES [dbo].[Candidates] ([Id])
+GO
+ALTER TABLE [dbo].[Applications] CHECK CONSTRAINT [FK_Applications_Candidates_CandidateId]
+GO
+ALTER TABLE [dbo].[Applications]  WITH CHECK ADD  CONSTRAINT [FK_Applications_Employees_ReferredById] FOREIGN KEY([ReferredById])
+REFERENCES [dbo].[Employees] ([Id])
+GO
+ALTER TABLE [dbo].[Applications] CHECK CONSTRAINT [FK_Applications_Employees_ReferredById]
+GO
+ALTER TABLE [dbo].[Applications]  WITH CHECK ADD  CONSTRAINT [FK_Applications_JobPostings_JobPostingId] FOREIGN KEY([JobPostingId])
+REFERENCES [dbo].[JobPostings] ([Id])
+GO
+ALTER TABLE [dbo].[Applications] CHECK CONSTRAINT [FK_Applications_JobPostings_JobPostingId]
+GO
+ALTER TABLE [dbo].[Applications]  WITH CHECK ADD  CONSTRAINT [FK_Applications_Resumes_ResumeId] FOREIGN KEY([ResumeId])
+REFERENCES [dbo].[Resumes] ([Id])
+GO
+ALTER TABLE [dbo].[Applications] CHECK CONSTRAINT [FK_Applications_Resumes_ResumeId]
+GO
+ALTER TABLE [dbo].[ApprovalHistories]  WITH CHECK ADD  CONSTRAINT [FK_ApprovalHistories_AspNetUsers_PerformedById] FOREIGN KEY([PerformedById])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+GO
+ALTER TABLE [dbo].[ApprovalHistories] CHECK CONSTRAINT [FK_ApprovalHistories_AspNetUsers_PerformedById]
+GO
+ALTER TABLE [dbo].[AspNetRoleClaims]  WITH CHECK ADD  CONSTRAINT [FK_AspNetRoleClaims_AspNetRoles_RoleId] FOREIGN KEY([RoleId])
+REFERENCES [dbo].[AspNetRoles] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[AspNetRoleClaims] CHECK CONSTRAINT [FK_AspNetRoleClaims_AspNetRoles_RoleId]
+GO
+ALTER TABLE [dbo].[AspNetUserClaims]  WITH CHECK ADD  CONSTRAINT [FK_AspNetUserClaims_AspNetUsers_UserId] FOREIGN KEY([UserId])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[AspNetUserClaims] CHECK CONSTRAINT [FK_AspNetUserClaims_AspNetUsers_UserId]
+GO
+ALTER TABLE [dbo].[AspNetUserLogins]  WITH CHECK ADD  CONSTRAINT [FK_AspNetUserLogins_AspNetUsers_UserId] FOREIGN KEY([UserId])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[AspNetUserLogins] CHECK CONSTRAINT [FK_AspNetUserLogins_AspNetUsers_UserId]
+GO
+ALTER TABLE [dbo].[AspNetUserRoles]  WITH CHECK ADD  CONSTRAINT [FK_AspNetUserRoles_AspNetRoles_RoleId] FOREIGN KEY([RoleId])
+REFERENCES [dbo].[AspNetRoles] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[AspNetUserRoles] CHECK CONSTRAINT [FK_AspNetUserRoles_AspNetRoles_RoleId]
+GO
+ALTER TABLE [dbo].[AspNetUserRoles]  WITH CHECK ADD  CONSTRAINT [FK_AspNetUserRoles_AspNetUsers_UserId] FOREIGN KEY([UserId])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[AspNetUserRoles] CHECK CONSTRAINT [FK_AspNetUserRoles_AspNetUsers_UserId]
+GO
+ALTER TABLE [dbo].[AspNetUsers]  WITH CHECK ADD  CONSTRAINT [FK_AspNetUsers_Departments_DepartmentId] FOREIGN KEY([DepartmentId])
+REFERENCES [dbo].[Departments] ([Id])
+GO
+ALTER TABLE [dbo].[AspNetUsers] CHECK CONSTRAINT [FK_AspNetUsers_Departments_DepartmentId]
+GO
+ALTER TABLE [dbo].[AspNetUserTokens]  WITH CHECK ADD  CONSTRAINT [FK_AspNetUserTokens_AspNetUsers_UserId] FOREIGN KEY([UserId])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[AspNetUserTokens] CHECK CONSTRAINT [FK_AspNetUserTokens_AspNetUsers_UserId]
+GO
+ALTER TABLE [dbo].[Candidates]  WITH CHECK ADD  CONSTRAINT [FK_Candidates_AspNetUsers_UserId] FOREIGN KEY([UserId])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[Candidates] CHECK CONSTRAINT [FK_Candidates_AspNetUsers_UserId]
+GO
+ALTER TABLE [dbo].[CandidateSkills]  WITH CHECK ADD  CONSTRAINT [FK_CandidateSkills_Candidates_CandidateId] FOREIGN KEY([CandidateId])
+REFERENCES [dbo].[Candidates] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[CandidateSkills] CHECK CONSTRAINT [FK_CandidateSkills_Candidates_CandidateId]
+GO
+ALTER TABLE [dbo].[CandidateSkills]  WITH CHECK ADD  CONSTRAINT [FK_CandidateSkills_Skills_SkillId] FOREIGN KEY([SkillId])
+REFERENCES [dbo].[Skills] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[CandidateSkills] CHECK CONSTRAINT [FK_CandidateSkills_Skills_SkillId]
+GO
+ALTER TABLE [dbo].[Courses]  WITH CHECK ADD  CONSTRAINT [FK_Courses_Employees_TrainerId] FOREIGN KEY([TrainerId])
+REFERENCES [dbo].[Employees] ([Id])
+GO
+ALTER TABLE [dbo].[Courses] CHECK CONSTRAINT [FK_Courses_Employees_TrainerId]
+GO
+ALTER TABLE [dbo].[Courses]  WITH CHECK ADD  CONSTRAINT [FK_Courses_Enterprises_EnterpriseId] FOREIGN KEY([EnterpriseId])
+REFERENCES [dbo].[Enterprises] ([Id])
+GO
+ALTER TABLE [dbo].[Courses] CHECK CONSTRAINT [FK_Courses_Enterprises_EnterpriseId]
+GO
+ALTER TABLE [dbo].[Courses]  WITH CHECK ADD  CONSTRAINT [FK_Courses_TrainingPlans_TrainingPlanId] FOREIGN KEY([TrainingPlanId])
+REFERENCES [dbo].[TrainingPlans] ([Id])
+GO
+ALTER TABLE [dbo].[Courses] CHECK CONSTRAINT [FK_Courses_TrainingPlans_TrainingPlanId]
+GO
+ALTER TABLE [dbo].[CourseSkills]  WITH CHECK ADD  CONSTRAINT [FK_CourseSkills_Courses_CourseId] FOREIGN KEY([CourseId])
+REFERENCES [dbo].[Courses] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[CourseSkills] CHECK CONSTRAINT [FK_CourseSkills_Courses_CourseId]
+GO
+ALTER TABLE [dbo].[CourseSkills]  WITH CHECK ADD  CONSTRAINT [FK_CourseSkills_Skills_SkillId] FOREIGN KEY([SkillId])
+REFERENCES [dbo].[Skills] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[CourseSkills] CHECK CONSTRAINT [FK_CourseSkills_Skills_SkillId]
+GO
+ALTER TABLE [dbo].[CVScreeningResults]  WITH CHECK ADD  CONSTRAINT [FK_CVScreeningResults_Applications_ApplicationId] FOREIGN KEY([ApplicationId])
+REFERENCES [dbo].[Applications] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[CVScreeningResults] CHECK CONSTRAINT [FK_CVScreeningResults_Applications_ApplicationId]
+GO
+ALTER TABLE [dbo].[Departments]  WITH CHECK ADD  CONSTRAINT [FK_Departments_Departments_ParentDepartmentId] FOREIGN KEY([ParentDepartmentId])
+REFERENCES [dbo].[Departments] ([Id])
+GO
+ALTER TABLE [dbo].[Departments] CHECK CONSTRAINT [FK_Departments_Departments_ParentDepartmentId]
+GO
+ALTER TABLE [dbo].[Departments]  WITH CHECK ADD  CONSTRAINT [FK_Departments_Employees_ManagerId] FOREIGN KEY([ManagerId])
+REFERENCES [dbo].[Employees] ([Id])
+GO
+ALTER TABLE [dbo].[Departments] CHECK CONSTRAINT [FK_Departments_Employees_ManagerId]
+GO
+ALTER TABLE [dbo].[Departments]  WITH CHECK ADD  CONSTRAINT [FK_Departments_Enterprises_EnterpriseId] FOREIGN KEY([EnterpriseId])
+REFERENCES [dbo].[Enterprises] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[Departments] CHECK CONSTRAINT [FK_Departments_Enterprises_EnterpriseId]
+GO
+ALTER TABLE [dbo].[Educations]  WITH CHECK ADD  CONSTRAINT [FK_Educations_Candidates_CandidateId] FOREIGN KEY([CandidateId])
+REFERENCES [dbo].[Candidates] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[Educations] CHECK CONSTRAINT [FK_Educations_Candidates_CandidateId]
+GO
+ALTER TABLE [dbo].[Employees]  WITH CHECK ADD  CONSTRAINT [FK_Employees_AspNetUsers_UserId] FOREIGN KEY([UserId])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[Employees] CHECK CONSTRAINT [FK_Employees_AspNetUsers_UserId]
+GO
+ALTER TABLE [dbo].[Employees]  WITH CHECK ADD  CONSTRAINT [FK_Employees_Departments_DepartmentId] FOREIGN KEY([DepartmentId])
+REFERENCES [dbo].[Departments] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[Employees] CHECK CONSTRAINT [FK_Employees_Departments_DepartmentId]
+GO
+ALTER TABLE [dbo].[Employees]  WITH CHECK ADD  CONSTRAINT [FK_Employees_Employees_ManagerId] FOREIGN KEY([ManagerId])
+REFERENCES [dbo].[Employees] ([Id])
+GO
+ALTER TABLE [dbo].[Employees] CHECK CONSTRAINT [FK_Employees_Employees_ManagerId]
+GO
+ALTER TABLE [dbo].[Employees]  WITH CHECK ADD  CONSTRAINT [FK_Employees_Enterprises_EnterpriseId] FOREIGN KEY([EnterpriseId])
+REFERENCES [dbo].[Enterprises] ([Id])
+GO
+ALTER TABLE [dbo].[Employees] CHECK CONSTRAINT [FK_Employees_Enterprises_EnterpriseId]
+GO
+ALTER TABLE [dbo].[Employees]  WITH CHECK ADD  CONSTRAINT [FK_Employees_JobPositions_JobPositionId] FOREIGN KEY([JobPositionId])
+REFERENCES [dbo].[JobPositions] ([Id])
+GO
+ALTER TABLE [dbo].[Employees] CHECK CONSTRAINT [FK_Employees_JobPositions_JobPositionId]
+GO
+ALTER TABLE [dbo].[Enrollments]  WITH CHECK ADD  CONSTRAINT [FK_Enrollments_AspNetUsers_EnrolledById] FOREIGN KEY([EnrolledById])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+GO
+ALTER TABLE [dbo].[Enrollments] CHECK CONSTRAINT [FK_Enrollments_AspNetUsers_EnrolledById]
+GO
+ALTER TABLE [dbo].[Enrollments]  WITH CHECK ADD  CONSTRAINT [FK_Enrollments_Courses_CourseId] FOREIGN KEY([CourseId])
+REFERENCES [dbo].[Courses] ([Id])
+GO
+ALTER TABLE [dbo].[Enrollments] CHECK CONSTRAINT [FK_Enrollments_Courses_CourseId]
+GO
+ALTER TABLE [dbo].[Enrollments]  WITH CHECK ADD  CONSTRAINT [FK_Enrollments_Employees_EmployeeId] FOREIGN KEY([EmployeeId])
+REFERENCES [dbo].[Employees] ([Id])
+GO
+ALTER TABLE [dbo].[Enrollments] CHECK CONSTRAINT [FK_Enrollments_Employees_EmployeeId]
+GO
+ALTER TABLE [dbo].[Enterprises]  WITH CHECK ADD  CONSTRAINT [FK_Enterprises_AspNetUsers_CreatedById] FOREIGN KEY([CreatedById])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+GO
+ALTER TABLE [dbo].[Enterprises] CHECK CONSTRAINT [FK_Enterprises_AspNetUsers_CreatedById]
+GO
+ALTER TABLE [dbo].[Enterprises]  WITH CHECK ADD  CONSTRAINT [FK_Enterprises_SubscriptionPlans_SubscriptionPlanId] FOREIGN KEY([SubscriptionPlanId])
+REFERENCES [dbo].[SubscriptionPlans] ([Id])
+GO
+ALTER TABLE [dbo].[Enterprises] CHECK CONSTRAINT [FK_Enterprises_SubscriptionPlans_SubscriptionPlanId]
+GO
+ALTER TABLE [dbo].[InterviewParticipants]  WITH CHECK ADD  CONSTRAINT [FK_InterviewParticipants_Employees_EmployeeId] FOREIGN KEY([EmployeeId])
+REFERENCES [dbo].[Employees] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[InterviewParticipants] CHECK CONSTRAINT [FK_InterviewParticipants_Employees_EmployeeId]
+GO
+ALTER TABLE [dbo].[InterviewParticipants]  WITH CHECK ADD  CONSTRAINT [FK_InterviewParticipants_Interviews_InterviewId] FOREIGN KEY([InterviewId])
+REFERENCES [dbo].[Interviews] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[InterviewParticipants] CHECK CONSTRAINT [FK_InterviewParticipants_Interviews_InterviewId]
+GO
+ALTER TABLE [dbo].[Interviews]  WITH CHECK ADD  CONSTRAINT [FK_Interviews_Applications_ApplicationId] FOREIGN KEY([ApplicationId])
+REFERENCES [dbo].[Applications] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[Interviews] CHECK CONSTRAINT [FK_Interviews_Applications_ApplicationId]
+GO
+ALTER TABLE [dbo].[Interviews]  WITH CHECK ADD  CONSTRAINT [FK_Interviews_AspNetUsers_ScheduledById] FOREIGN KEY([ScheduledById])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+GO
+ALTER TABLE [dbo].[Interviews] CHECK CONSTRAINT [FK_Interviews_AspNetUsers_ScheduledById]
+GO
+ALTER TABLE [dbo].[JobCompetencies]  WITH CHECK ADD  CONSTRAINT [FK_JobCompetencies_JobPositions_JobPositionId] FOREIGN KEY([JobPositionId])
+REFERENCES [dbo].[JobPositions] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[JobCompetencies] CHECK CONSTRAINT [FK_JobCompetencies_JobPositions_JobPositionId]
+GO
+ALTER TABLE [dbo].[JobCompetencies]  WITH CHECK ADD  CONSTRAINT [FK_JobCompetencies_Skills_SkillId] FOREIGN KEY([SkillId])
+REFERENCES [dbo].[Skills] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[JobCompetencies] CHECK CONSTRAINT [FK_JobCompetencies_Skills_SkillId]
+GO
+ALTER TABLE [dbo].[JobPositions]  WITH CHECK ADD  CONSTRAINT [FK_JobPositions_Enterprises_EnterpriseId] FOREIGN KEY([EnterpriseId])
+REFERENCES [dbo].[Enterprises] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[JobPositions] CHECK CONSTRAINT [FK_JobPositions_Enterprises_EnterpriseId]
+GO
+ALTER TABLE [dbo].[JobPostings]  WITH CHECK ADD  CONSTRAINT [FK_JobPostings_AspNetUsers_CreatedById] FOREIGN KEY([CreatedById])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+GO
+ALTER TABLE [dbo].[JobPostings] CHECK CONSTRAINT [FK_JobPostings_AspNetUsers_CreatedById]
+GO
+ALTER TABLE [dbo].[JobPostings]  WITH CHECK ADD  CONSTRAINT [FK_JobPostings_AspNetUsers_PublishedById] FOREIGN KEY([PublishedById])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+GO
+ALTER TABLE [dbo].[JobPostings] CHECK CONSTRAINT [FK_JobPostings_AspNetUsers_PublishedById]
+GO
+ALTER TABLE [dbo].[JobPostings]  WITH CHECK ADD  CONSTRAINT [FK_JobPostings_Departments_DepartmentId] FOREIGN KEY([DepartmentId])
+REFERENCES [dbo].[Departments] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[JobPostings] CHECK CONSTRAINT [FK_JobPostings_Departments_DepartmentId]
+GO
+ALTER TABLE [dbo].[JobPostings]  WITH CHECK ADD  CONSTRAINT [FK_JobPostings_Enterprises_EnterpriseId] FOREIGN KEY([EnterpriseId])
+REFERENCES [dbo].[Enterprises] ([Id])
+GO
+ALTER TABLE [dbo].[JobPostings] CHECK CONSTRAINT [FK_JobPostings_Enterprises_EnterpriseId]
+GO
+ALTER TABLE [dbo].[JobPostings]  WITH CHECK ADD  CONSTRAINT [FK_JobPostings_PlanDetails_PlanDetailId] FOREIGN KEY([PlanDetailId])
+REFERENCES [dbo].[PlanDetails] ([Id])
+GO
+ALTER TABLE [dbo].[JobPostings] CHECK CONSTRAINT [FK_JobPostings_PlanDetails_PlanDetailId]
+GO
+ALTER TABLE [dbo].[JobSkills]  WITH CHECK ADD  CONSTRAINT [FK_JobSkills_JobPostings_JobPostingId] FOREIGN KEY([JobPostingId])
+REFERENCES [dbo].[JobPostings] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[JobSkills] CHECK CONSTRAINT [FK_JobSkills_JobPostings_JobPostingId]
+GO
+ALTER TABLE [dbo].[JobSkills]  WITH CHECK ADD  CONSTRAINT [FK_JobSkills_Skills_SkillId] FOREIGN KEY([SkillId])
+REFERENCES [dbo].[Skills] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[JobSkills] CHECK CONSTRAINT [FK_JobSkills_Skills_SkillId]
+GO
+ALTER TABLE [dbo].[LessonProgresses]  WITH CHECK ADD  CONSTRAINT [FK_LessonProgresses_Enrollments_EnrollmentId] FOREIGN KEY([EnrollmentId])
+REFERENCES [dbo].[Enrollments] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[LessonProgresses] CHECK CONSTRAINT [FK_LessonProgresses_Enrollments_EnrollmentId]
+GO
+ALTER TABLE [dbo].[LessonProgresses]  WITH CHECK ADD  CONSTRAINT [FK_LessonProgresses_Lessons_LessonId] FOREIGN KEY([LessonId])
+REFERENCES [dbo].[Lessons] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[LessonProgresses] CHECK CONSTRAINT [FK_LessonProgresses_Lessons_LessonId]
+GO
+ALTER TABLE [dbo].[Lessons]  WITH CHECK ADD  CONSTRAINT [FK_Lessons_Courses_CourseId] FOREIGN KEY([CourseId])
+REFERENCES [dbo].[Courses] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[Lessons] CHECK CONSTRAINT [FK_Lessons_Courses_CourseId]
+GO
+ALTER TABLE [dbo].[Notifications]  WITH CHECK ADD  CONSTRAINT [FK_Notifications_AspNetUsers_UserId] FOREIGN KEY([UserId])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[Notifications] CHECK CONSTRAINT [FK_Notifications_AspNetUsers_UserId]
+GO
+ALTER TABLE [dbo].[Offers]  WITH CHECK ADD  CONSTRAINT [FK_Offers_Applications_ApplicationId] FOREIGN KEY([ApplicationId])
+REFERENCES [dbo].[Applications] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[Offers] CHECK CONSTRAINT [FK_Offers_Applications_ApplicationId]
+GO
+ALTER TABLE [dbo].[Offers]  WITH CHECK ADD  CONSTRAINT [FK_Offers_AspNetUsers_ApprovedById] FOREIGN KEY([ApprovedById])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+GO
+ALTER TABLE [dbo].[Offers] CHECK CONSTRAINT [FK_Offers_AspNetUsers_ApprovedById]
+GO
+ALTER TABLE [dbo].[Offers]  WITH CHECK ADD  CONSTRAINT [FK_Offers_AspNetUsers_CreatedById] FOREIGN KEY([CreatedById])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+GO
+ALTER TABLE [dbo].[Offers] CHECK CONSTRAINT [FK_Offers_AspNetUsers_CreatedById]
+GO
+ALTER TABLE [dbo].[Offers]  WITH CHECK ADD  CONSTRAINT [FK_Offers_AspNetUsers_SentById] FOREIGN KEY([SentById])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+GO
+ALTER TABLE [dbo].[Offers] CHECK CONSTRAINT [FK_Offers_AspNetUsers_SentById]
+GO
+ALTER TABLE [dbo].[Offers]  WITH CHECK ADD  CONSTRAINT [FK_Offers_Departments_DepartmentId] FOREIGN KEY([DepartmentId])
+REFERENCES [dbo].[Departments] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[Offers] CHECK CONSTRAINT [FK_Offers_Departments_DepartmentId]
+GO
+ALTER TABLE [dbo].[OwnershipTransfers]  WITH CHECK ADD  CONSTRAINT [FK_OwnershipTransfers_AspNetUsers_ApprovedById] FOREIGN KEY([ApprovedById])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+GO
+ALTER TABLE [dbo].[OwnershipTransfers] CHECK CONSTRAINT [FK_OwnershipTransfers_AspNetUsers_ApprovedById]
+GO
+ALTER TABLE [dbo].[OwnershipTransfers]  WITH CHECK ADD  CONSTRAINT [FK_OwnershipTransfers_AspNetUsers_FromUserId] FOREIGN KEY([FromUserId])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+GO
+ALTER TABLE [dbo].[OwnershipTransfers] CHECK CONSTRAINT [FK_OwnershipTransfers_AspNetUsers_FromUserId]
+GO
+ALTER TABLE [dbo].[OwnershipTransfers]  WITH CHECK ADD  CONSTRAINT [FK_OwnershipTransfers_AspNetUsers_ToUserId] FOREIGN KEY([ToUserId])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+GO
+ALTER TABLE [dbo].[OwnershipTransfers] CHECK CONSTRAINT [FK_OwnershipTransfers_AspNetUsers_ToUserId]
+GO
+ALTER TABLE [dbo].[OwnershipTransfers]  WITH CHECK ADD  CONSTRAINT [FK_OwnershipTransfers_Enterprises_EnterpriseId] FOREIGN KEY([EnterpriseId])
+REFERENCES [dbo].[Enterprises] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[OwnershipTransfers] CHECK CONSTRAINT [FK_OwnershipTransfers_Enterprises_EnterpriseId]
+GO
+ALTER TABLE [dbo].[PlanDetails]  WITH CHECK ADD  CONSTRAINT [FK_PlanDetails_AspNetUsers_RequestedById] FOREIGN KEY([RequestedById])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+GO
+ALTER TABLE [dbo].[PlanDetails] CHECK CONSTRAINT [FK_PlanDetails_AspNetUsers_RequestedById]
+GO
+ALTER TABLE [dbo].[PlanDetails]  WITH CHECK ADD  CONSTRAINT [FK_PlanDetails_AspNetUsers_ReviewerId] FOREIGN KEY([ReviewerId])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+GO
+ALTER TABLE [dbo].[PlanDetails] CHECK CONSTRAINT [FK_PlanDetails_AspNetUsers_ReviewerId]
+GO
+ALTER TABLE [dbo].[PlanDetails]  WITH CHECK ADD  CONSTRAINT [FK_PlanDetails_Departments_DepartmentId] FOREIGN KEY([DepartmentId])
+REFERENCES [dbo].[Departments] ([Id])
+GO
+ALTER TABLE [dbo].[PlanDetails] CHECK CONSTRAINT [FK_PlanDetails_Departments_DepartmentId]
+GO
+ALTER TABLE [dbo].[PlanDetails]  WITH CHECK ADD  CONSTRAINT [FK_PlanDetails_RecruitmentPlans_RecruitmentPlanId] FOREIGN KEY([RecruitmentPlanId])
+REFERENCES [dbo].[RecruitmentPlans] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[PlanDetails] CHECK CONSTRAINT [FK_PlanDetails_RecruitmentPlans_RecruitmentPlanId]
+GO
+ALTER TABLE [dbo].[QuizAnswers]  WITH CHECK ADD  CONSTRAINT [FK_QuizAnswers_QuizAttempts_QuizAttemptId] FOREIGN KEY([QuizAttemptId])
+REFERENCES [dbo].[QuizAttempts] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[QuizAnswers] CHECK CONSTRAINT [FK_QuizAnswers_QuizAttempts_QuizAttemptId]
+GO
+ALTER TABLE [dbo].[QuizAnswers]  WITH CHECK ADD  CONSTRAINT [FK_QuizAnswers_QuizQuestions_QuizQuestionId] FOREIGN KEY([QuizQuestionId])
+REFERENCES [dbo].[QuizQuestions] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[QuizAnswers] CHECK CONSTRAINT [FK_QuizAnswers_QuizQuestions_QuizQuestionId]
+GO
+ALTER TABLE [dbo].[QuizAttempts]  WITH CHECK ADD  CONSTRAINT [FK_QuizAttempts_Enrollments_EnrollmentId] FOREIGN KEY([EnrollmentId])
+REFERENCES [dbo].[Enrollments] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[QuizAttempts] CHECK CONSTRAINT [FK_QuizAttempts_Enrollments_EnrollmentId]
+GO
+ALTER TABLE [dbo].[QuizAttempts]  WITH CHECK ADD  CONSTRAINT [FK_QuizAttempts_Quizzes_QuizId] FOREIGN KEY([QuizId])
+REFERENCES [dbo].[Quizzes] ([Id])
+GO
+ALTER TABLE [dbo].[QuizAttempts] CHECK CONSTRAINT [FK_QuizAttempts_Quizzes_QuizId]
+GO
+ALTER TABLE [dbo].[QuizQuestions]  WITH CHECK ADD  CONSTRAINT [FK_QuizQuestions_Quizzes_QuizId] FOREIGN KEY([QuizId])
+REFERENCES [dbo].[Quizzes] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[QuizQuestions] CHECK CONSTRAINT [FK_QuizQuestions_Quizzes_QuizId]
+GO
+ALTER TABLE [dbo].[Quizzes]  WITH CHECK ADD  CONSTRAINT [FK_Quizzes_Courses_CourseId] FOREIGN KEY([CourseId])
+REFERENCES [dbo].[Courses] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[Quizzes] CHECK CONSTRAINT [FK_Quizzes_Courses_CourseId]
+GO
+ALTER TABLE [dbo].[RecruitmentPlans]  WITH CHECK ADD  CONSTRAINT [FK_RecruitmentPlans_AspNetUsers_ApprovedById] FOREIGN KEY([ApprovedById])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+GO
+ALTER TABLE [dbo].[RecruitmentPlans] CHECK CONSTRAINT [FK_RecruitmentPlans_AspNetUsers_ApprovedById]
+GO
+ALTER TABLE [dbo].[RecruitmentPlans]  WITH CHECK ADD  CONSTRAINT [FK_RecruitmentPlans_AspNetUsers_CreatedById] FOREIGN KEY([CreatedById])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+GO
+ALTER TABLE [dbo].[RecruitmentPlans] CHECK CONSTRAINT [FK_RecruitmentPlans_AspNetUsers_CreatedById]
+GO
+ALTER TABLE [dbo].[RecruitmentPlans]  WITH CHECK ADD  CONSTRAINT [FK_RecruitmentPlans_Enterprises_EnterpriseId] FOREIGN KEY([EnterpriseId])
+REFERENCES [dbo].[Enterprises] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[RecruitmentPlans] CHECK CONSTRAINT [FK_RecruitmentPlans_Enterprises_EnterpriseId]
+GO
+ALTER TABLE [dbo].[Resumes]  WITH CHECK ADD  CONSTRAINT [FK_Resumes_Candidates_CandidateId] FOREIGN KEY([CandidateId])
+REFERENCES [dbo].[Candidates] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[Resumes] CHECK CONSTRAINT [FK_Resumes_Candidates_CandidateId]
+GO
+ALTER TABLE [dbo].[SavedJobs]  WITH CHECK ADD  CONSTRAINT [FK_SavedJobs_Candidates_CandidateId] FOREIGN KEY([CandidateId])
+REFERENCES [dbo].[Candidates] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[SavedJobs] CHECK CONSTRAINT [FK_SavedJobs_Candidates_CandidateId]
+GO
+ALTER TABLE [dbo].[SavedJobs]  WITH CHECK ADD  CONSTRAINT [FK_SavedJobs_JobPostings_JobPostingId] FOREIGN KEY([JobPostingId])
+REFERENCES [dbo].[JobPostings] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[SavedJobs] CHECK CONSTRAINT [FK_SavedJobs_JobPostings_JobPostingId]
+GO
+ALTER TABLE [dbo].[Skills]  WITH CHECK ADD  CONSTRAINT [FK_Skills_Enterprises_EnterpriseId] FOREIGN KEY([EnterpriseId])
+REFERENCES [dbo].[Enterprises] ([Id])
+GO
+ALTER TABLE [dbo].[Skills] CHECK CONSTRAINT [FK_Skills_Enterprises_EnterpriseId]
+GO
+ALTER TABLE [dbo].[SubscriptionHistories]  WITH CHECK ADD  CONSTRAINT [FK_SubscriptionHistories_Enterprises_EnterpriseId] FOREIGN KEY([EnterpriseId])
+REFERENCES [dbo].[Enterprises] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[SubscriptionHistories] CHECK CONSTRAINT [FK_SubscriptionHistories_Enterprises_EnterpriseId]
+GO
+ALTER TABLE [dbo].[SubscriptionHistories]  WITH CHECK ADD  CONSTRAINT [FK_SubscriptionHistories_SubscriptionPlans_PreviousPlanId] FOREIGN KEY([PreviousPlanId])
+REFERENCES [dbo].[SubscriptionPlans] ([Id])
+GO
+ALTER TABLE [dbo].[SubscriptionHistories] CHECK CONSTRAINT [FK_SubscriptionHistories_SubscriptionPlans_PreviousPlanId]
+GO
+ALTER TABLE [dbo].[SubscriptionHistories]  WITH CHECK ADD  CONSTRAINT [FK_SubscriptionHistories_SubscriptionPlans_SubscriptionPlanId] FOREIGN KEY([SubscriptionPlanId])
+REFERENCES [dbo].[SubscriptionPlans] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[SubscriptionHistories] CHECK CONSTRAINT [FK_SubscriptionHistories_SubscriptionPlans_SubscriptionPlanId]
+GO
+ALTER TABLE [dbo].[TrainingPlans]  WITH CHECK ADD  CONSTRAINT [FK_TrainingPlans_AspNetUsers_ApprovedById] FOREIGN KEY([ApprovedById])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+GO
+ALTER TABLE [dbo].[TrainingPlans] CHECK CONSTRAINT [FK_TrainingPlans_AspNetUsers_ApprovedById]
+GO
+ALTER TABLE [dbo].[TrainingPlans]  WITH CHECK ADD  CONSTRAINT [FK_TrainingPlans_AspNetUsers_CreatedById] FOREIGN KEY([CreatedById])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+GO
+ALTER TABLE [dbo].[TrainingPlans] CHECK CONSTRAINT [FK_TrainingPlans_AspNetUsers_CreatedById]
+GO
+ALTER TABLE [dbo].[TrainingPlans]  WITH CHECK ADD  CONSTRAINT [FK_TrainingPlans_Enterprises_EnterpriseId] FOREIGN KEY([EnterpriseId])
+REFERENCES [dbo].[Enterprises] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[TrainingPlans] CHECK CONSTRAINT [FK_TrainingPlans_Enterprises_EnterpriseId]
+GO
+ALTER TABLE [dbo].[TrainingRequests]  WITH CHECK ADD  CONSTRAINT [FK_TrainingRequests_AspNetUsers_RequestedById] FOREIGN KEY([RequestedById])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+GO
+ALTER TABLE [dbo].[TrainingRequests] CHECK CONSTRAINT [FK_TrainingRequests_AspNetUsers_RequestedById]
+GO
+ALTER TABLE [dbo].[TrainingRequests]  WITH CHECK ADD  CONSTRAINT [FK_TrainingRequests_Departments_DepartmentId] FOREIGN KEY([DepartmentId])
+REFERENCES [dbo].[Departments] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[TrainingRequests] CHECK CONSTRAINT [FK_TrainingRequests_Departments_DepartmentId]
+GO
+ALTER TABLE [dbo].[TrainingRequests]  WITH CHECK ADD  CONSTRAINT [FK_TrainingRequests_Enterprises_EnterpriseId] FOREIGN KEY([EnterpriseId])
+REFERENCES [dbo].[Enterprises] ([Id])
+GO
+ALTER TABLE [dbo].[TrainingRequests] CHECK CONSTRAINT [FK_TrainingRequests_Enterprises_EnterpriseId]
+GO
+ALTER TABLE [dbo].[TrainingRequests]  WITH CHECK ADD  CONSTRAINT [FK_TrainingRequests_TrainingPlans_TrainingPlanId] FOREIGN KEY([TrainingPlanId])
+REFERENCES [dbo].[TrainingPlans] ([Id])
+GO
+ALTER TABLE [dbo].[TrainingRequests] CHECK CONSTRAINT [FK_TrainingRequests_TrainingPlans_TrainingPlanId]
+GO
+ALTER TABLE [dbo].[WorkExperiences]  WITH CHECK ADD  CONSTRAINT [FK_WorkExperiences_Candidates_CandidateId] FOREIGN KEY([CandidateId])
+REFERENCES [dbo].[Candidates] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[WorkExperiences] CHECK CONSTRAINT [FK_WorkExperiences_Candidates_CandidateId]
+GO
+USE [master]
+GO
+ALTER DATABASE [ERMS] SET  READ_WRITE 
 GO
