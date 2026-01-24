@@ -14,159 +14,97 @@ namespace ERMS.Application.Features.Auth.Commands.GoogleLogin
     public class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, string>
     {
         private readonly UserManager<User> _userManager;
-        private readonly ITokenService _tokenService;
-        private readonly IConfiguration _configuration;
         private readonly RoleManager<IdentityRole<Guid>> _roleManager;
-        private readonly ILogger<GoogleLoginHandler> _logger;
+        private readonly ITokenService _tokenService;
+        private readonly IConfiguration _config;
 
+        private const string Provider = "Google";
         private const string DefaultRole = AppRoles.Candidate;
 
         public GoogleLoginHandler(
             UserManager<User> userManager,
-            ITokenService tokenService,
-            IConfiguration configuration,
             RoleManager<IdentityRole<Guid>> roleManager,
-            ILogger<GoogleLoginHandler> logger)
+            ITokenService tokenService,
+            IConfiguration config)
         {
             _userManager = userManager;
-            _tokenService = tokenService;
-            _configuration = configuration;
             _roleManager = roleManager;
-            _logger = logger;
+            _tokenService = tokenService;
+            _config = config;
         }
 
         public async Task<string> Handle(GoogleLoginCommand request, CancellationToken cancellationToken)
         {
-            if (string.IsNullOrWhiteSpace(request.IdToken))
-            {
-                _logger.LogWarning("Google login attempt with empty ID token");
-                throw new UnauthorizedAccessException("Google ID token không hợp lệ.");
-            }
-
-            // Validate Google ID token
-            GoogleJsonWebSignature.Payload? payload;
-            try
-            {
-                var settings = new GoogleJsonWebSignature.ValidationSettings
+            // 1️⃣ Validate Google token
+            var payload = await GoogleJsonWebSignature.ValidateAsync(
+                request.IdToken,
+                new GoogleJsonWebSignature.ValidationSettings
                 {
-                    Audience = new[] { _configuration["GoogleAuth:ClientId"] }
-                };
+                    Audience = new[] { _config["GoogleAuth:ClientId"] }
+                });
 
-                payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, settings);
-                
-                if (payload == null)
-                {
-                    _logger.LogWarning("Google token validation returned null payload");
-                    throw new UnauthorizedAccessException("Không thể xác thực token Google.");
-                }
-            }
-            catch (InvalidJwtException ex)
-            {
-                _logger.LogWarning(ex, "Invalid Google ID token");
-                throw new UnauthorizedAccessException("Google ID token không hợp lệ hoặc đã hết hạn.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error validating Google ID token");
-                throw new UnauthorizedAccessException("Lỗi xác thực Google. Vui lòng thử lại.");
-            }
+            if (payload == null || !payload.EmailVerified)
+                throw new UnauthorizedAccessException("Google token không hợp lệ.");
 
-            // Validate email
-            if (string.IsNullOrWhiteSpace(payload.Email))
-            {
-                _logger.LogWarning("Google token missing email claim");
-                throw new UnauthorizedAccessException("Email không được cung cấp từ Google.");
-            }
+            // 2️⃣ Tạo LoginInfo
+            var loginInfo = new UserLoginInfo(
+                Provider,
+                payload.Subject, // sub
+                Provider
+            );
 
-            // Check if email is verified
-            if (!payload.EmailVerified)
-            {
-                _logger.LogWarning("Google email not verified for {Email}", payload.Email);
-                throw new UnauthorizedAccessException("Email chưa được xác thực bởi Google.");
-            }
+            // 3️⃣ ƯU TIÊN tìm theo provider
+            var user = await _userManager.FindByLoginAsync(
+                loginInfo.LoginProvider,
+                loginInfo.ProviderKey);
 
-            // Find or create user
-            var user = await _userManager.FindByEmailAsync(payload.Email);
-
+            // 4️⃣ Nếu chưa có → tìm theo email
             if (user == null)
             {
-                // Create new user
-                _logger.LogInformation("Creating new user from Google login: {Email}", payload.Email);
-                
+                user = await _userManager.FindByEmailAsync(payload.Email);
+
+                if (user != null)
+                {
+                    // 🔗 Link Google vào user cũ (đăng ký bằng password)
+                    var linkResult = await _userManager.AddLoginAsync(user, loginInfo);
+                    if (!linkResult.Succeeded)
+                        throw new Exception("Không thể liên kết Google account.");
+                }
+            }
+
+            // 5️⃣ Nếu email cũng chưa tồn tại → tạo user mới
+            if (user == null)
+            {
                 user = new User
                 {
                     UserName = payload.Email,
                     Email = payload.Email,
                     FullName = payload.Name ?? payload.Email.Split('@')[0],
+                    AvatarUrl = payload.Picture,
                     EmailConfirmed = true,
-                    DateJoined = DateTime.UtcNow,
-                    AvatarUrl = payload.Picture
+                    DateJoined = DateTime.UtcNow
                 };
 
                 var createResult = await _userManager.CreateAsync(user);
                 if (!createResult.Succeeded)
                 {
-                    var errors = string.Join(", ", createResult.Errors.Select(e => e.Description));
-                    _logger.LogError("Failed to create user from Google login: {Errors}", errors);
-                    throw new Exception($"Không thể tạo tài khoản: {errors}");
+                    throw new Exception(string.Join(", ",
+                        createResult.Errors.Select(e => e.Description)));
                 }
 
-                // Ensure default role exists
+                // 🔗 Link Google
+                await _userManager.AddLoginAsync(user, loginInfo);
+
+                // Role mặc định
                 if (!await _roleManager.RoleExistsAsync(DefaultRole))
-                {
                     await _roleManager.CreateAsync(new IdentityRole<Guid>(DefaultRole));
-                }
 
-                // Assign default role
-                var roleResult = await _userManager.AddToRoleAsync(user, DefaultRole);
-                if (!roleResult.Succeeded)
-                {
-                    _logger.LogWarning("Failed to assign default role to new user: {Errors}", 
-                        string.Join(", ", roleResult.Errors.Select(e => e.Description)));
-                }
-
-                _logger.LogInformation("Successfully created user from Google login: {UserId}, {Email}", 
-                    user.Id, user.Email);
-            }
-            else
-            {
-                // Update existing user info if needed
-                var updated = false;
-                
-                if (!string.IsNullOrWhiteSpace(payload.Name) && user.FullName != payload.Name)
-                {
-                    user.FullName = payload.Name;
-                    updated = true;
-                }
-
-                if (!string.IsNullOrWhiteSpace(payload.Picture) && user.AvatarUrl != payload.Picture)
-                {
-                    user.AvatarUrl = payload.Picture;
-                    updated = true;
-                }
-
-                if (!user.EmailConfirmed)
-                {
-                    user.EmailConfirmed = true;
-                    updated = true;
-                }
-
-                if (updated)
-                {
-                    user.UpdatedAt = DateTime.UtcNow;
-                    var updateResult = await _userManager.UpdateAsync(user);
-                    if (!updateResult.Succeeded)
-                    {
-                        _logger.LogWarning("Failed to update user info from Google login: {Errors}", 
-                            string.Join(", ", updateResult.Errors.Select(e => e.Description)));
-                    }
-                }
-
-                _logger.LogInformation("User logged in via Google: {UserId}, {Email}", user.Id, user.Email);
+                await _userManager.AddToRoleAsync(user, DefaultRole);
             }
 
-            // Generate JWT token
+            // 6️⃣ Generate JWT
             return await _tokenService.CreateToken(user);
         }
     }
+
 }
