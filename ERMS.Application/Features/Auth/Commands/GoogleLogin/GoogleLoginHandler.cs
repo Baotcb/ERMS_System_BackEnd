@@ -1,5 +1,6 @@
 ﻿using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Roles;
+using ERMS.Domain.Entities.Candidate;
 using ERMS.Domain.Entities.Identity;
 using Google.Apis.Auth;
 using MediatR;
@@ -17,6 +18,7 @@ namespace ERMS.Application.Features.Auth.Commands.GoogleLogin
         private readonly RoleManager<IdentityRole<Guid>> _roleManager;
         private readonly ITokenService _tokenService;
         private readonly IConfiguration _config;
+        private readonly ICandidateService _candidateService;
 
         private const string Provider = "Google";
         private const string DefaultRole = AppRoles.Candidate;
@@ -25,12 +27,14 @@ namespace ERMS.Application.Features.Auth.Commands.GoogleLogin
             UserManager<User> userManager,
             RoleManager<IdentityRole<Guid>> roleManager,
             ITokenService tokenService,
-            IConfiguration config)
+            IConfiguration config,
+            ICandidateService candidateService)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _tokenService = tokenService;
             _config = config;
+            _candidateService = candidateService;
         }
 
         public async Task<string> Handle(GoogleLoginCommand request, CancellationToken cancellationToken)
@@ -46,19 +50,18 @@ namespace ERMS.Application.Features.Auth.Commands.GoogleLogin
             if (payload == null || !payload.EmailVerified)
                 throw new UnauthorizedAccessException("Google token không hợp lệ.");
 
-            // 2️⃣ Tạo LoginInfo
+            
             var loginInfo = new UserLoginInfo(
                 Provider,
-                payload.Subject, // sub
+                payload.Subject, 
                 Provider
             );
 
-            // 3️⃣ ƯU TIÊN tìm theo provider
             var user = await _userManager.FindByLoginAsync(
                 loginInfo.LoginProvider,
                 loginInfo.ProviderKey);
 
-            // 4️⃣ Nếu chưa có → tìm theo email
+            
             if (user == null)
             {
                 user = await _userManager.FindByEmailAsync(payload.Email);
@@ -86,6 +89,7 @@ namespace ERMS.Application.Features.Auth.Commands.GoogleLogin
                 };
 
                 var createResult = await _userManager.CreateAsync(user);
+
                 if (!createResult.Succeeded)
                 {
                     throw new Exception(string.Join(", ",
@@ -95,12 +99,22 @@ namespace ERMS.Application.Features.Auth.Commands.GoogleLogin
                 // 🔗 Link Google
                 await _userManager.AddLoginAsync(user, loginInfo);
 
-                // Role mặc định
+                
                 if (!await _roleManager.RoleExistsAsync(DefaultRole))
                     await _roleManager.CreateAsync(new IdentityRole<Guid>(DefaultRole));
 
                 await _userManager.AddToRoleAsync(user, DefaultRole);
+                var c = new Candidate
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = user.Id,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                await _candidateService.AddCandidateAsync(c);
+                
             }
+
 
             // 6️⃣ Generate JWT
             return await _tokenService.CreateToken(user);

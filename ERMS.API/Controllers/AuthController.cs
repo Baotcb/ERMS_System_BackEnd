@@ -149,9 +149,7 @@ namespace ERMS.API.Controllers
             }
         }
 
-        /// <summary>
-        /// Đăng nhập bằng Google OAuth redirect flow (cho web browsers)
-        /// </summary>
+
         [HttpGet("google-login-redirect")]
         public IActionResult GoogleLoginRedirect()
         {
@@ -177,10 +175,10 @@ namespace ERMS.API.Controllers
                     return Unauthorized(new { message = "Xác thực Google không thành công." });
                 }
 
-                // Lấy ID token từ authentication properties
+                
                 var idToken = result.Properties?.GetTokenValue("id_token");
                 
-                // Nếu không có ID token, thử lấy từ claims (fallback)
+                
                 if (string.IsNullOrWhiteSpace(idToken))
                 {
                     idToken = result.Principal.FindFirstValue("id_token");
@@ -198,7 +196,7 @@ namespace ERMS.API.Controllers
                 
                 if (!string.IsNullOrWhiteSpace(idToken))
                 {
-                    // Sử dụng ID token để validate (cách an toàn nhất)
+                    
                     jwtToken = await _mediator.Send(new GoogleLoginCommand
                     {
                         IdToken = idToken

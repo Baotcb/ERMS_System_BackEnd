@@ -1,5 +1,7 @@
-﻿using ERMS.Domain.Constants.Roles;
+﻿using ERMS.Application.Interface;
+using ERMS.Domain.Constants.Roles;
 using ERMS.Domain.Entities;
+using ERMS.Domain.Entities.Candidate;
 using ERMS.Domain.Entities.Identity;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
@@ -13,10 +15,15 @@ namespace ERMS.Application.Features.Auth.Commands.Register
     {
         private readonly UserManager<User> _userManager;
         private readonly RoleManager<IdentityRole<Guid>> _roleManager;
-        public RegisterHandler(UserManager<User> userManager, RoleManager<IdentityRole<Guid>> roleManager)
+        private readonly ICandidateService _candidateService;
+        public RegisterHandler(UserManager<User> userManager, 
+            RoleManager<IdentityRole<Guid>> roleManager,
+            ICandidateService candidateService)
         {
             _userManager = userManager;
             _roleManager = roleManager;
+            _candidateService = candidateService;
+
         }
         public async Task<Guid> Handle(RegisterCommand request, CancellationToken cancellationToken)
         {
@@ -51,6 +58,14 @@ namespace ERMS.Application.Features.Auth.Commands.Register
             {
                 await _userManager.AddToRoleAsync(user, AppRoles.Candidate);
             }
+            var c = new Candidate
+            {
+                Id = Guid.NewGuid(),
+                UserId = user.Id,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _candidateService.AddCandidateAsync(c);
             return user.Id;
         }
 
