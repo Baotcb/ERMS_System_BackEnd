@@ -282,109 +282,99 @@ namespace ERMS.API.Controllers
             }
         }
 
-        [HttpPost("resend-confirmation")]
-        [AllowAnonymous]
-        public async Task<IActionResult> ResendConfirmation([FromBody] ResendConfirmationCommand command)
+        [HttpPost("confirm-email")]
+        [DisableRateLimiting]
+        public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailCommand command)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             try
             {
-                if (string.IsNullOrWhiteSpace(command.Email))
-                {
-                    return BadRequest(new { message = "Email là bắt buộc." });
-                }
-
                 var result = await _mediator.Send(command);
+
+                
+                var user = await _userManager.FindByIdAsync(command.UserId);
+                if (user != null)
+                {
+                    var token = await _tokenService.CreateToken(user);
+                    return Ok(new
+                    {
+                        message = result,
+                        success = true,
+                        token = token,
+                        email = user.Email,
+                        fullName = user.FullName
+                    });
+                }
 
                 return Ok(new
                 {
-                    message = "Email xác thực đã được gửi. Vui lòng kiểm tra hộp thư (kể cả thư mục spam).",
-                    email = command.Email
+                    message = result,
+                    success = true
                 });
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Có lỗi xảy ra khi gửi email. Vui lòng thử lại sau." });
-            }
-        }
-
-        [HttpPost("confirm-email")]
-        [AllowAnonymous]
-        public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailCommand command)
-        {
-            try
-            {
-                var message = await _mediator.Send(command);
-
-                return Ok(new { message = message });
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Có lỗi xảy ra khi xác thực email. Vui lòng thử lại sau." });
-            }
-        }
-        [HttpGet("email-status")]
-        [Authorize]
-        public async Task<IActionResult> GetEmailStatus()
-        {
-            try
-            {
-                var user = await _userManager.GetUserAsync(User);
-                if (user == null)
+                return BadRequest(new
                 {
-                    return NotFound(new { message = "Không tìm thấy thông tin người dùng." });
-                }
-
-                return Ok(new
-                {
-                    emailConfirmed = user.EmailConfirmed,
-                    email = user.Email,
-                    userId = user.Id,
-                    fullName = user.FullName
+                    message = ex.Message,
+                    success = false
                 });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Có lỗi xảy ra khi lấy thông tin." });
+                return BadRequest(new
+                {
+                    message = "Xác thực email thất bại. Vui lòng thử lại hoặc yêu cầu gửi lại email xác thực.",
+                    error = ex.Message,
+                    success = false
+                });
             }
         }
-        [HttpGet("confirm-email-redirect")]
-        [AllowAnonymous]
-        public async Task<IActionResult> ConfirmEmailRedirect([FromQuery] string userId, [FromQuery] string token)
+
+        [HttpPost("resend-confirmation")]
+        [DisableRateLimiting]
+        public async Task<IActionResult> ResendConfirmation([FromBody] ResendConfirmationCommand command)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             try
             {
-                var command = new ConfirmEmailCommand
-                {
-                    UserId = userId,
-                    Token = token
-                };
-
-                var message = await _mediator.Send(command);
-
-             
-                var frontendUrl = _config["ClientSettings:Url"] ?? "http://localhost:3000";
-                return Redirect($"{frontendUrl}/auth/email-confirmed?success=true&message={Uri.EscapeDataString(message)}");
-            }
-            catch (ArgumentException ex)
-            {
+                var result = await _sender.Send(command);
                 
-                var frontendUrl = _config["ClientSettings:Url"] ?? "http://localhost:3000";
-                return Redirect($"{frontendUrl}/auth/email-confirmed?success=false&message={Uri.EscapeDataString(ex.Message)}");
+
+                return Ok(new
+                {
+                    message = "Email xác thực đã được gửi. Vui lòng kiểm tra hộp thư của bạn (bao gồm cả thư mục spam).",
+                    success = result
+            });
             }
-            catch (Exception)
+            catch (InvalidOperationException ex)
             {
-                var frontendUrl = _config["ClientSettings:Url"] ?? "http://localhost:3000";
-                return Redirect($"{frontendUrl}/auth/email-confirmed?success=false&message={Uri.EscapeDataString("Có lỗi xảy ra khi xác thực email.")}");
+                return BadRequest(new
+                {
+                    message = ex.Message,
+                    success = false
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    message = "Không thể gửi email xác thực. Vui lòng thử lại sau.",
+                    error = ex.Message,
+                    success = false
+                });
             }
         }
+
+
 
 
     } 

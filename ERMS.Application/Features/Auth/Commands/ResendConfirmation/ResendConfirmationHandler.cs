@@ -1,10 +1,9 @@
-using ERMS.Domain.Entities;
+using ERMS.Application.Interface;
+using ERMS.Domain.Entities.Identity;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
-using ERMS.Application.Interface;
 using Microsoft.Extensions.Logging;
-using ERMS.Domain.Entities.Identity;
 
 namespace ERMS.Application.Features.Auth.Commands.ResendConfirmation
 {
@@ -29,14 +28,12 @@ namespace ERMS.Application.Features.Auth.Commands.ResendConfirmation
 
         public async Task<bool> Handle(ResendConfirmationCommand request, CancellationToken cancellationToken)
         {
-            try
+          try
             {
                 var user = await _userManager.FindByEmailAsync(request.Email);
                 if (user == null)
                 {
-                    // Không tiết lộ email có tồn tại hay không (security best practice)
-                    _logger.LogWarning("Resend confirmation attempted for non-existent email: {Email}", request.Email);
-                    return true;
+                    throw new InvalidOperationException("Email không tồn tại trong hệ thống.");
                 }
 
                 if (user.EmailConfirmed)
@@ -44,25 +41,23 @@ namespace ERMS.Application.Features.Auth.Commands.ResendConfirmation
                     throw new InvalidOperationException("Email đã được xác thực trước đó.");
                 }
 
-                // Tạo email confirmation token
                 var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
                 var clientUrl = _config["ClientSettings:Url"];
                 var encodedToken = Uri.EscapeDataString(token);
-                var confirmationUrl = $"{clientUrl}/auth/confirm-email?userId={user.Id}&token={encodedToken}";
+                
+                var confirmationUrl = $"{clientUrl}/auth/confirm-email?userId={user.Id}&token={encodedToken}&email={Uri.EscapeDataString(user.Email!)}";
 
-                // Template email
                 var subject = "Xác thực email tài khoản ERMS";
                 var body = CreateEmailTemplate(user.FullName, confirmationUrl);
 
-                // Gửi email
                 await _emailService.SendEmailAsync(user.Email!, subject, body);
 
-                _logger.LogInformation("Email confirmation sent to: {Email}", user.Email);
+                _logger.LogInformation("✅ Email confirmation sent successfully to: {Email}", user.Email);
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error sending email confirmation to: {Email}", request.Email);
+                _logger.LogError(ex, "❌ Error sending email confirmation to: {Email}", request.Email);
                 throw;
             }
         }
@@ -71,62 +66,262 @@ namespace ERMS.Application.Features.Auth.Commands.ResendConfirmation
         {
             return $@"
 <!DOCTYPE html>
-<html>
+<html lang='vi'>
+
 <head>
     <meta charset='utf-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <title>Xác thực Email - ERMS</title>
     <style>
-        body {{ font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 0; background-color: #f4f4f4; }}
-        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; background-color: #fff; border-radius: 10px; margin-top: 20px; }}
-        .header {{ background-color: #007bff; color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }}
-        .content {{ padding: 30px 20px; }}
-        .button {{ display: inline-block; background-color: #28a745; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; }}
-        .footer {{ text-align: center; padding: 20px; color: #666; font-size: 12px; }}
-        .warning {{ background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 5px; margin-top: 15px; }}
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        body {{
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f6f8ff;
+            color: #1a1e36;
+            -webkit-font-smoothing: antialiased;
+        }}
+
+        .wrapper {{
+            width: 100%;
+            background-color: #f6f8ff;
+            padding: 60px 20px;
+        }}
+
+        .container {{
+            max-width: 560px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border: 1px solid #e0e4f2;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.05);
+        }}
+
+        .accent-bar {{
+            height: 6px;
+            background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%);
+        }}
+
+        .brand-section {{
+            padding: 40px 45px 15px 45px;
+            text-align: left;
+        }}
+
+        .brand-logo {{
+            font-size: 20px;
+            font-weight: 700;
+            color: #4f46e5;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }}
+
+        .logo-icon {{
+            width: 32px;
+            height: 32px;
+            background: #eef2ff;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #4f46e5;
+            font-size: 18px;
+        }}
+
+        .main-content {{
+            padding: 15px 45px 45px 45px;
+        }}
+
+        .title {{
+            font-size: 26px;
+            font-weight: 700;
+            color: #1e1b4b;
+            margin: 0 0 18px 0;
+            letter-spacing: -0.5px;
+        }}
+
+        .greeting {{
+            font-size: 17px;
+            font-weight: 600;
+            color: #312e81;
+            margin-bottom: 12px;
+        }}
+
+        .text {{
+            font-size: 15px;
+            color: #4b5563;
+            margin-bottom: 30px;
+        }}
+
+        .cta-section {{
+            text-align: center;
+            margin: 35px 0;
+        }}
+
+        .button {{
+            display: inline-block;
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            color: #ffffff;
+            padding: 14px 34px;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.2);
+        }}
+
+        .expiry-text {{
+            display: block;
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 15px;
+        }}
+
+        .security-note {{
+            background-color: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            font-size: 13px;
+            color: #64748b;
+            border-left: 4px solid #e2e8f0;
+        }}
+
+        .security-item {{
+            margin-bottom: 8px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }}
+
+        .icon {{
+            color: #94a3b8;
+            font-size: 14px;
+        }}
+
+        .fallback-section {{
+            margin-top: 30px;
+        }}
+
+        .fallback-label {{
+            font-size: 12px;
+            color: #4f46e5;
+            margin-bottom: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }}
+
+        .fallback-link-box {{
+            padding: 14px;
+            background-color: #f5f7ff;
+            border-radius: 10px;
+            border: 1px dashed #c7d2fe;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 12px;
+            color: #4338ca;
+            word-break: break-all;
+            line-height: 1.4;
+        }}
+
+        .footer {{
+            text-align: center;
+            padding: 40px 45px;
+            background-color: #fcfdfe;
+            border-top: 1px solid #f1f5f9;
+        }}
+
+        .footer-text {{
+            font-size: 12px;
+            color: #94a3b8;
+            line-height: 2;
+        }}
+
+        .footer-links {{
+            margin: 15px 0 25px 0;
+        }}
+
+        .footer-links a {{
+            color: #4f46e5;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 0 10px;
+        }}
+
+        .copyright {{
+            font-size: 11px;
+            color: #cbd5e1;
+            font-weight: 500;
+        }}
     </style>
 </head>
+
 <body>
-    <div class='container'>
-        <div class='header'>
-            <h1>🔐 Xác Thực Email</h1>
-            <h2>ERMS - Employee Resource Management System</h2>
-        </div>
-        
-        <div class='content'>
-            <h3>Xin chào {fullName}!</h3>
-            
-            <p>Cảm ơn bạn đã đăng ký tài khoản ERMS. Để hoàn tất quá trình đăng ký và bảo mật tài khoản, vui lòng xác thực địa chỉ email của bạn.</p>
-            
-            <p style='text-align: center; margin: 30px 0;'>
-                <a href='{confirmationUrl}' class='button'>✅ Xác Thực Email Ngay</a>
-            </p>
-            
-            <div class='warning'>
-                <p><strong>⚠️ Quan trọng:</strong></p>
-                <ul>
-                    <li>Link này sẽ hết hạn sau <strong>24 giờ</strong></li>
-                    <li>Nếu không xác thực email, bạn sẽ không thể đăng nhập vào hệ thống</li>
-                    <li>Nếu link không hoạt động, hãy copy đường dẫn sau vào trình duyệt:</li>
-                </ul>
-                <p style='word-break: break-all; background: #f8f9fa; padding: 10px; border-radius: 3px; font-family: monospace; font-size: 11px;'>
-                    {confirmationUrl}
+    <div class='wrapper'>
+        <div class='container'>
+            <div class='accent-bar'></div>
+            <div class='brand-section'>
+                <div class='brand-logo'>
+                    <div class='logo-icon'>E</div>
+                    ERMS
+                </div>
+            </div>
+
+            <div class='main-content'>
+                <h1 class='title'>Xác thực tài khoản</h1>
+
+                <p class='greeting'>Chào {fullName},</p>
+
+                <p class='text'>
+                    Chào mừng bạn đến với ERMS! Chúng tôi rất vui khi bạn gia nhập cộng đồng quản trị nhân sự hiện đại.
+                    Để bắt đầu sử dụng đầy đủ tính năng, vui lòng xác nhận địa chỉ email của bạn.
+                </p>
+
+                <div class='cta-section'>
+                    <a href='{confirmationUrl}' class='button'>Xác thực ngay</a>
+                    <span class='expiry-text'>Liên kết hết hạn sau 24 giờ</span>
+                </div>
+
+                <div class='security-note'>
+                    <div class='security-item'>
+                        <span class='icon'>ⓘ</span>
+                        <span>Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email.</span>
+                    </div>
+                </div>
+
+                <div class='fallback-section'>
+                    <div class='fallback-label'>Sử dụng liên kết trực tiếp</div>
+                    <div class='fallback-link-box'>
+                        {confirmationUrl}
+                    </div>
+                </div>
+
+                <p style='margin-top: 35px; font-size: 14px; color: #64748b;'>
+                    Trân trọng,<br>
+                    <strong style='color: #4f46e5;'>Đội ngũ ERMS</strong>
                 </p>
             </div>
-            
-            <p style='margin-top: 30px;'>
-                Nếu bạn không tạo tài khoản này, vui lòng bỏ qua email này hoặc liên hệ với chúng tôi.
-            </p>
-        </div>
-        
-        <div class='footer'>
-            <p>Email này được gửi tự động từ hệ thống ERMS.</p>
-            <p>Vui lòng không trả lời email này.</p>
-            <hr>
-            <p>&copy; 2026 ERMS System. All rights reserved.</p>
+
+            <div class='footer'>
+                <div class='footer-text'>
+                    Bạn nhận được email này vì đã đăng ký tài khoản tại ERMS.<br>
+                    Vui lòng không phản hồi trực tiếp vào địa chỉ này.
+                </div>
+                <div class='footer-links'>
+                    <a href='#'>Hướng dẫn</a>
+                    <a href='#'>Trung tâm hỗ trợ</a>
+                    <a href='#'>Bảo mật</a>
+                </div>
+                <div class='copyright'>&copy; 2026 ERMS System. Built with trust and security.</div>
+            </div>
         </div>
     </div>
 </body>
+
 </html>";
         }
     }
