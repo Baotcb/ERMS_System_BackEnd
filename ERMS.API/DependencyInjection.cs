@@ -61,19 +61,6 @@ namespace ERMS.API
                        RoleClaimType = ClaimTypes.Role,
                        NameClaimType = ClaimTypes.Name
                    };
-               })
-               .AddGoogle(options =>
-               {
-                   options.ClientId = configuration["GoogleAuth:ClientId"];
-                   options.ClientSecret = configuration["GoogleAuth:ClientSecret"];
-                   options.CallbackPath = "/api/auth/google-response";
-                   
-                   // Save tokens để có thể lấy ID token trong callback
-                   options.SaveTokens = true;
-                   
-                   // Request thêm thông tin từ Google
-                   options.Scope.Add("profile");
-                   options.Scope.Add("email");
                });
 
             services.AddRateLimiter(options =>

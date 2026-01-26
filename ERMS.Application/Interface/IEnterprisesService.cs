@@ -14,5 +14,6 @@ namespace ERMS.Application.Interface
 
         Task<List<Enterprise>> GetPagedAsync(int pageNumber, int pageSize);
         Task<int> CountAsync();
+        Task<Enterprise?> GetByCodeAsync(string enterpriseCode);
     }
 }

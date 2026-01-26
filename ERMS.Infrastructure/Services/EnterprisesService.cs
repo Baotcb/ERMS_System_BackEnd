@@ -67,6 +67,10 @@ namespace ERMS.Infrastructure.Services
                 .CountAsync(x => !x.IsDeleted);
         }
 
-
+        public async Task<Enterprise?> GetByCodeAsync(string enterpriseCode)
+        {
+            return await _context.Enterprises
+                .FirstOrDefaultAsync(x => x.EnterpriseCode == enterpriseCode && !x.IsDeleted);
+        }
     }
 }

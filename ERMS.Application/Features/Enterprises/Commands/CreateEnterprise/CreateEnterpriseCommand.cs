@@ -16,8 +16,5 @@ namespace ERMS.Application.Features.Enterprises.Commands.CreateEnterprise
         public string? LogoUrl { get; set; }
 
         public Guid SubscriptionPlanId { get; set; }
-        public DateTime SubscriptionStartDate { get; set; }
-        public DateTime SubscriptionEndDate { get; set; }
-        public string SubscriptionStatus { get; set; }
     }
 }

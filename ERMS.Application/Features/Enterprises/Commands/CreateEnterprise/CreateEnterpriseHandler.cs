@@ -25,6 +25,14 @@ namespace ERMS.Application.Features.Enterprises.Commands.CreateEnterprise
             CreateEnterpriseCommand request,
             CancellationToken cancellationToken)
         {
+            var existingEnterprise = await _enterprisesService
+                .GetByCodeAsync(request.EnterpriseCode);
+
+            if (existingEnterprise != null)
+            {
+                throw new Exception("Mã doanh nghiệp đã tồn tại");
+            }
+
             var enterprise = new Enterprise
             {
                 Id = Guid.NewGuid(),
@@ -38,12 +46,13 @@ namespace ERMS.Application.Features.Enterprises.Commands.CreateEnterprise
                 LogoUrl = request.LogoUrl,
 
                 SubscriptionPlanId = request.SubscriptionPlanId,
-                SubscriptionStartDate = request.SubscriptionStartDate,
-                SubscriptionEndDate = request.SubscriptionEndDate,
-
+               SubscriptionStartDate = DateTime.UtcNow,
+                SubscriptionEndDate = DateTime.UtcNow.AddYears(1),
                 CreatedById = _currentUser.UserId,
                 CreatedAt = DateTime.UtcNow
             };
+
+
 
             await _enterprisesService.CreateAsync(enterprise);
             return enterprise.Id;
