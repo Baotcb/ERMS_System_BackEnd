@@ -1,4 +1,5 @@
-﻿using ERMS.Application.Interface;
+﻿using ERMS.Application.Features.Auth.Commands.ResendConfirmation;
+using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Roles;
 using ERMS.Domain.Entities;
 using ERMS.Domain.Entities.Candidate;
@@ -16,14 +17,16 @@ namespace ERMS.Application.Features.Auth.Commands.Register
         private readonly UserManager<User> _userManager;
         private readonly RoleManager<IdentityRole<Guid>> _roleManager;
         private readonly ICandidateService _candidateService;
+        private readonly IMediator _mediator;
         public RegisterHandler(UserManager<User> userManager, 
             RoleManager<IdentityRole<Guid>> roleManager,
-            ICandidateService candidateService)
+            ICandidateService candidateService,
+            IMediator mediator)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _candidateService = candidateService;
-
+            _mediator = mediator;
         }
         public async Task<Guid> Handle(RegisterCommand request, CancellationToken cancellationToken)
         {
@@ -66,6 +69,15 @@ namespace ERMS.Application.Features.Auth.Commands.Register
             };
 
             await _candidateService.AddCandidateAsync(c);
+            try
+            {
+                await _mediator.Send(new ResendConfirmationCommand { Email = user.Email }, cancellationToken);
+            }
+            catch (Exception)
+            {
+              
+            }
+    
             return user.Id;
         }
 

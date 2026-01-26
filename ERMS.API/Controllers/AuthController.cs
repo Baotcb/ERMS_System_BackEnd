@@ -1,8 +1,10 @@
 ﻿using ERMS.Application.Features.Auth.Commands.ChangePassword;
+using ERMS.Application.Features.Auth.Commands.ConfirmEmail;
 using ERMS.Application.Features.Auth.Commands.ForgotPassword;
 using ERMS.Application.Features.Auth.Commands.GoogleLogin;
 using ERMS.Application.Features.Auth.Commands.Login;
 using ERMS.Application.Features.Auth.Commands.Register;
+using ERMS.Application.Features.Auth.Commands.ResendConfirmation;
 using ERMS.Application.Features.Auth.Commands.ResetPassword;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Roles;
@@ -124,6 +126,7 @@ namespace ERMS.API.Controllers
 
         
         [HttpPost("google-login")]
+        [DisableRateLimiting]
         public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginCommand command)
         {
             try
@@ -151,6 +154,7 @@ namespace ERMS.API.Controllers
 
 
         [HttpGet("google-login-redirect")]
+        [DisableRateLimiting]
         public IActionResult GoogleLoginRedirect()
         {
             var redirectUrl = Url.Action("GoogleResponse", "Auth", null, Request.Scheme);
@@ -163,6 +167,7 @@ namespace ERMS.API.Controllers
         }
 
         [HttpGet("google-response")]
+        [DisableRateLimiting]
         public async Task<IActionResult> GoogleResponse()
         {
             try
@@ -276,6 +281,101 @@ namespace ERMS.API.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [HttpPost("confirm-email")]
+        [DisableRateLimiting]
+        public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailCommand command)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                var result = await _mediator.Send(command);
+
+                
+                var user = await _userManager.FindByIdAsync(command.UserId);
+                if (user != null)
+                {
+                    var token = await _tokenService.CreateToken(user);
+                    return Ok(new
+                    {
+                        message = result,
+                        success = true,
+                        token = token,
+                        email = user.Email,
+                        fullName = user.FullName
+                    });
+                }
+
+                return Ok(new
+                {
+                    message = result,
+                    success = true
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message,
+                    success = false
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    message = "Xác thực email thất bại. Vui lòng thử lại hoặc yêu cầu gửi lại email xác thực.",
+                    error = ex.Message,
+                    success = false
+                });
+            }
+        }
+
+        [HttpPost("resend-confirmation")]
+        [DisableRateLimiting]
+        public async Task<IActionResult> ResendConfirmation([FromBody] ResendConfirmationCommand command)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                var result = await _sender.Send(command);
+                
+
+                return Ok(new
+                {
+                    message = "Email xác thực đã được gửi. Vui lòng kiểm tra hộp thư của bạn (bao gồm cả thư mục spam).",
+                    success = result
+            });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message,
+                    success = false
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    message = "Không thể gửi email xác thực. Vui lòng thử lại sau.",
+                    error = ex.Message,
+                    success = false
+                });
+            }
+        }
+
+
+
 
     } 
 }

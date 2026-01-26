@@ -31,8 +31,8 @@ namespace ERMS.Infrastructure
             {
                 options.User.RequireUniqueEmail = true;
             })
-.AddEntityFrameworkStores<ERMSDbContext>()
-.AddDefaultTokenProviders();
+            .AddEntityFrameworkStores<ERMSDbContext>()
+            .AddDefaultTokenProviders();
 
 
 
