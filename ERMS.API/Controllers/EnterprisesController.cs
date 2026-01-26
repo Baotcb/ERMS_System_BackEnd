@@ -23,9 +23,6 @@ namespace ERMS.API.Controllers
             _mediator = mediator;
         }
 
-        /// <summary>
-        /// Tạo mới doanh nghiệp
-        /// </summary>
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateEnterpriseCommand command)
         {
@@ -52,9 +49,7 @@ namespace ERMS.API.Controllers
             }
         }
 
-        /// <summary>
-        /// Lấy chi tiết doanh nghiệp theo Id
-        /// </summary>
+        
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
