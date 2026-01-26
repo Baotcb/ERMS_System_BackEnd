@@ -29,6 +29,11 @@ namespace ERMS.Application.Features.Enterprises.Queries.GetEnterpriseById
                 throw new System.Exception("Không tìm thấy doanh nghiệp.");
             }
 
+            if(enterprise.IsDeleted)
+            {
+                throw new System.Exception("Doanh nghiệp đã bị xóa.");
+            }
+
             return new EnterpriseDto
             {
                 Id = enterprise.Id,
