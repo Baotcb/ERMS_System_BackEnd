@@ -1,8 +1,10 @@
 ﻿using ERMS.Application.Features.Auth.Commands.ChangePassword;
+using ERMS.Application.Features.Auth.Commands.ConfirmEmail;
 using ERMS.Application.Features.Auth.Commands.ForgotPassword;
 using ERMS.Application.Features.Auth.Commands.GoogleLogin;
 using ERMS.Application.Features.Auth.Commands.Login;
 using ERMS.Application.Features.Auth.Commands.Register;
+using ERMS.Application.Features.Auth.Commands.ResendConfirmation;
 using ERMS.Application.Features.Auth.Commands.ResetPassword;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Roles;
@@ -124,6 +126,7 @@ namespace ERMS.API.Controllers
 
         
         [HttpPost("google-login")]
+        [DisableRateLimiting]
         public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginCommand command)
         {
             try
@@ -151,6 +154,7 @@ namespace ERMS.API.Controllers
 
 
         [HttpGet("google-login-redirect")]
+        [DisableRateLimiting]
         public IActionResult GoogleLoginRedirect()
         {
             var redirectUrl = Url.Action("GoogleResponse", "Auth", null, Request.Scheme);
@@ -163,6 +167,7 @@ namespace ERMS.API.Controllers
         }
 
         [HttpGet("google-response")]
+        [DisableRateLimiting]
         public async Task<IActionResult> GoogleResponse()
         {
             try
@@ -276,6 +281,111 @@ namespace ERMS.API.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [HttpPost("resend-confirmation")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ResendConfirmation([FromBody] ResendConfirmationCommand command)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(command.Email))
+                {
+                    return BadRequest(new { message = "Email là bắt buộc." });
+                }
+
+                var result = await _mediator.Send(command);
+
+                return Ok(new
+                {
+                    message = "Email xác thực đã được gửi. Vui lòng kiểm tra hộp thư (kể cả thư mục spam).",
+                    email = command.Email
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Có lỗi xảy ra khi gửi email. Vui lòng thử lại sau." });
+            }
+        }
+
+        [HttpPost("confirm-email")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailCommand command)
+        {
+            try
+            {
+                var message = await _mediator.Send(command);
+
+                return Ok(new { message = message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Có lỗi xảy ra khi xác thực email. Vui lòng thử lại sau." });
+            }
+        }
+        [HttpGet("email-status")]
+        [Authorize]
+        public async Task<IActionResult> GetEmailStatus()
+        {
+            try
+            {
+                var user = await _userManager.GetUserAsync(User);
+                if (user == null)
+                {
+                    return NotFound(new { message = "Không tìm thấy thông tin người dùng." });
+                }
+
+                return Ok(new
+                {
+                    emailConfirmed = user.EmailConfirmed,
+                    email = user.Email,
+                    userId = user.Id,
+                    fullName = user.FullName
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Có lỗi xảy ra khi lấy thông tin." });
+            }
+        }
+        [HttpGet("confirm-email-redirect")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ConfirmEmailRedirect([FromQuery] string userId, [FromQuery] string token)
+        {
+            try
+            {
+                var command = new ConfirmEmailCommand
+                {
+                    UserId = userId,
+                    Token = token
+                };
+
+                var message = await _mediator.Send(command);
+
+             
+                var frontendUrl = _config["ClientSettings:Url"] ?? "http://localhost:3000";
+                return Redirect($"{frontendUrl}/auth/email-confirmed?success=true&message={Uri.EscapeDataString(message)}");
+            }
+            catch (ArgumentException ex)
+            {
+                
+                var frontendUrl = _config["ClientSettings:Url"] ?? "http://localhost:3000";
+                return Redirect($"{frontendUrl}/auth/email-confirmed?success=false&message={Uri.EscapeDataString(ex.Message)}");
+            }
+            catch (Exception)
+            {
+                var frontendUrl = _config["ClientSettings:Url"] ?? "http://localhost:3000";
+                return Redirect($"{frontendUrl}/auth/email-confirmed?success=false&message={Uri.EscapeDataString("Có lỗi xảy ra khi xác thực email.")}");
+            }
+        }
+
 
     } 
 }
