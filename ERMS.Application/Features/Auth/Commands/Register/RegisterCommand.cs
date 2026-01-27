@@ -20,6 +20,5 @@ namespace ERMS.Application.Features.Auth.Commands.Register
         [Required]
         public string FullName { get; set; } = string.Empty;
 
-        public string Role { get; set; } = AppRoles.Candidate;
     }
 }
