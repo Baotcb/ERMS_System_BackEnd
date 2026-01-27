@@ -49,9 +49,9 @@ namespace ERMS.Application.Features.Auth.Commands.Register
             }
 
 
-            if (await _roleManager.RoleExistsAsync(request.Role))
+            if (await _roleManager.RoleExistsAsync(AppRoles.Candidate.ToString()))
             {
-                await _userManager.AddToRoleAsync(user, request.Role);
+                await _userManager.AddToRoleAsync(user, AppRoles.Candidate.ToString());
                    
             }
             else

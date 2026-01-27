@@ -26,7 +26,6 @@ namespace ERMS.Domain.Entities.Enterprise
         public virtual SubscriptionPlan SubscriptionPlan { get; set; } = null!;
         public virtual Identity.User? CreatedBy { get; set; }
         
-        // Navigation properties for related data
         public virtual ICollection<Organization.Department> Departments { get; set; } = new List<Organization.Department>();
     }
 }
