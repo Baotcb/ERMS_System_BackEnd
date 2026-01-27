@@ -52,6 +52,7 @@ namespace ERMS.API.Controllers
             _roleManager = roleManager;
         }
         [HttpPost("register")]
+        [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody] RegisterCommand command)
         {
             try

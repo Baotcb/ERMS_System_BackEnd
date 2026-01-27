@@ -16,32 +16,32 @@ namespace ERMS.Application.Interface
 {
     public interface IERMSDbContext
     {
-        // Identity
+        
         DbSet<User> Users { get; set; }
 
-        // Enterprise
+       
         DbSet<SubscriptionPlan> SubscriptionPlans { get; set; }
         DbSet<Enterprise> Enterprises { get; set; }
         DbSet<SubscriptionHistory> SubscriptionHistories { get; set; }
         DbSet<OwnershipTransfer> OwnershipTransfers { get; set; }
 
-        // Organization
+      
         DbSet<Department> Departments { get; set; }
         DbSet<Employee> Employees { get; set; }
         DbSet<JobPosition> JobPositions { get; set; }
 
-        // Skill
+        // ================= Skill =================
         DbSet<Skill> Skills { get; set; }
         DbSet<JobCompetency> JobCompetencies { get; set; }
 
-        // Recruitment
+        // ================= Recruitment =================
         DbSet<RecruitmentPlan> RecruitmentPlans { get; set; }
         DbSet<PlanDetail> PlanDetails { get; set; }
         DbSet<JobPosting> JobPostings { get; set; }
         DbSet<JobSkill> JobSkills { get; set; }
         DbSet<ApprovalHistory> ApprovalHistories { get; set; }
 
-        // Candidate
+        // ================= Candidate =================
         DbSet<Candidate> Candidates { get; set; }
         DbSet<Education> Educations { get; set; }
         DbSet<WorkExperience> WorkExperiences { get; set; }
@@ -49,14 +49,14 @@ namespace ERMS.Application.Interface
         DbSet<Resume> Resumes { get; set; }
         DbSet<SavedJob> SavedJobs { get; set; }
 
-        // Application
+        // ================= Application =================
         DbSet<ApplicationEntity.Application> Applications { get; set; }
         DbSet<CVScreeningResult> CVScreeningResults { get; set; }
         DbSet<Interview> Interviews { get; set; }
         DbSet<InterviewParticipant> InterviewParticipants { get; set; }
         DbSet<Offer> Offers { get; set; }
 
-        // Training
+        
         DbSet<TrainingPlan> TrainingPlans { get; set; }
         DbSet<TrainingRequest> TrainingRequests { get; set; }
         DbSet<Course> Courses { get; set; }
@@ -69,9 +69,10 @@ namespace ERMS.Application.Interface
         DbSet<QuizAttempt> QuizAttempts { get; set; }
         DbSet<QuizAnswer> QuizAnswers { get; set; }
 
-        // System
+      
         DbSet<Notification> Notifications { get; set; }
 
+        
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     }
 }

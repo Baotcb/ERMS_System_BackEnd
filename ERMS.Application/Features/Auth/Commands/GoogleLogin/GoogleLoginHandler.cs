@@ -7,6 +7,7 @@ using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Linq;
 
@@ -18,7 +19,8 @@ namespace ERMS.Application.Features.Auth.Commands.GoogleLogin
         private readonly RoleManager<IdentityRole<Guid>> _roleManager;
         private readonly ITokenService _tokenService;
         private readonly IConfiguration _config;
-        private readonly ICandidateService _candidateService;
+        private readonly IERMSDbContext _context;
+
 
         private const string Provider = "Google";
         private const string DefaultRole = AppRoles.Candidate;
@@ -28,13 +30,13 @@ namespace ERMS.Application.Features.Auth.Commands.GoogleLogin
             RoleManager<IdentityRole<Guid>> roleManager,
             ITokenService tokenService,
             IConfiguration config,
-            ICandidateService candidateService)
+            IERMSDbContext context)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _tokenService = tokenService;
             _config = config;
-            _candidateService = candidateService;
+            _context = context;
         }
 
         public async Task<string> Handle(GoogleLoginCommand request, CancellationToken cancellationToken)
@@ -46,15 +48,19 @@ namespace ERMS.Application.Features.Auth.Commands.GoogleLogin
                 {
                     Audience = new[] { _config["GoogleAuth:ClientId"] }
                 });
+            //Kiểm tra chữ ký JWT
 
+           //Kiểm tra token có phải của app bạn không
+
+            //Trả về payload
             if (payload == null || !payload.EmailVerified)
                 throw new UnauthorizedAccessException("Google token không hợp lệ.");
 
-            
+            //Tạo LoginInfo cho Google
             var loginInfo = new UserLoginInfo(
                 Provider,
                 payload.Subject, 
-                Provider
+                Provider    
             );
 
             var user = await _userManager.FindByLoginAsync(
@@ -111,8 +117,11 @@ namespace ERMS.Application.Features.Auth.Commands.GoogleLogin
                     CreatedAt = DateTime.UtcNow
                 };
 
-                await _candidateService.AddCandidateAsync(c);
-                
+                _context.Candidates.Add(c); 
+                await _context.SaveChangesAsync(cancellationToken);
+
+
+
             }
 
 
