@@ -1,11 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Threading.Tasks;
 
 namespace ERMS.Application.Interface
 {
     public interface ICurrentUserService
     {
         Guid? UserId { get; }
+        Task<Guid?> GetEnterpriseIdAsync();
     }
 }

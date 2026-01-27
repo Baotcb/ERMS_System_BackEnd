@@ -43,6 +43,9 @@ namespace ERMS.Infrastructure
             services.AddTransient<IEmailService, EmailService>();
             services.AddScoped<ICandidateService, CandidateService>();
             services.AddScoped<IEnterprisesService, EnterprisesService>();
+            services.AddScoped<ISubscriptionPlanService, SubscriptionPlanService>();
+            services.AddScoped<IDepartmentService, DepartmentService>();
+            services.AddScoped<IEmployeeService, EmployeeService>();
 
 
 

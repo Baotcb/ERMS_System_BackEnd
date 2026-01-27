@@ -45,7 +45,7 @@ namespace ERMS.Application.Features.Auth.Commands.ResendConfirmation
                 var clientUrl = _config["ClientSettings:Url"];
                 var encodedToken = Uri.EscapeDataString(token);
                 
-                var confirmationUrl = $"{clientUrl}/auth/confirm-email?userId={user.Id}&token={encodedToken}&email={Uri.EscapeDataString(user.Email!)}";
+                var confirmationUrl = $"{clientUrl}/confirm-email?userId={user.Id}&token={encodedToken}&email={Uri.EscapeDataString(user.Email!)}";
 
                 var subject = "Xác thực email tài khoản ERMS";
                 var body = CreateEmailTemplate(user.FullName, confirmationUrl);
@@ -122,15 +122,17 @@ namespace ERMS.Application.Features.Auth.Commands.ResendConfirmation
         }}
 
         .logo-icon {{
-            width: 32px;
-            height: 32px;
-            background: #eef2ff;
-            border-radius: 8px;
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #4f46e5;
-            font-size: 18px;
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
         }}
 
         .main-content {{
@@ -266,7 +268,7 @@ namespace ERMS.Application.Features.Auth.Commands.ResendConfirmation
             <div class='accent-bar'></div>
             <div class='brand-section'>
                 <div class='brand-logo'>
-                    <div class='logo-icon'>E</div>
+                    <div class='logo-icon'>ERMS</div>
                     ERMS
                 </div>
             </div>
