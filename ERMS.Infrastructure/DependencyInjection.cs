@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Microsoft.AspNetCore.Http;
+using ERMS.Domain.Entities.Identity;
 
 namespace ERMS.Infrastructure
 {
@@ -26,17 +27,21 @@ namespace ERMS.Infrastructure
 
 
             // 2. Identity
-            services.AddIdentityCore<User>()
-                .AddRoles<IdentityRole<Guid>>()
-                .AddEntityFrameworkStores<ERMSDbContext>()
-                .AddDefaultTokenProviders();
+            services.AddIdentity<User, IdentityRole<Guid>>(options =>
+            {
+                options.User.RequireUniqueEmail = true;
+            })
+            .AddEntityFrameworkStores<ERMSDbContext>()
+            .AddDefaultTokenProviders();
 
 
-            
+
+
 
             services.AddScoped<ICurrentUserService, CurrentUserService>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddTransient<IEmailService, EmailService>();
+
 
 
 

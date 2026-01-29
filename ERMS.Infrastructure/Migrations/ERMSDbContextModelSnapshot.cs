@@ -22,24 +22,20 @@ namespace ERMS.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("ERMS.Domain.Entities.Application", b =>
+            modelBuilder.Entity("ERMS.Domain.Entities.Application.Application", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("ApplicantType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<DateTime>("AppliedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("AvailableStartDate")
                         .HasColumnType("datetime2");
 
                     b.Property<Guid>("CandidateId")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Category")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CoverLetter")
                         .HasColumnType("nvarchar(max)");
@@ -47,150 +43,126 @@ namespace ERMS.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("CvUrl")
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("ExpectedSalary")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("HRNote")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("JobPostingId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("Rating")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("ReferredById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("RejectedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("RejectedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("RejectionReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("ResumeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Source")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Stage")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid>("JobId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<double?>("MatchingScore")
-                        .HasColumnType("float");
-
-                    b.Property<Guid>("ResumeId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<DateTime?>("StageUpdatedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("WithdrawReason")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("WithdrawnAt")
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CandidateId");
 
-                    b.HasIndex("JobId");
+                    b.HasIndex("JobPostingId");
+
+                    b.HasIndex("ReferredById");
+
+                    b.HasIndex("RejectedById");
 
                     b.HasIndex("ResumeId");
 
                     b.ToTable("Applications");
                 });
 
-            modelBuilder.Entity("ERMS.Domain.Entities.Attendance", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("EmployeeId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Note")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("RecordedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("RecordedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("SessionId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Status")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("EmployeeId");
-
-                    b.HasIndex("RecordedBy");
-
-                    b.HasIndex("SessionId");
-
-                    b.ToTable("Attendances");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.Candidate", b =>
-                {
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("AboutMe")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("UserId");
-
-                    b.ToTable("Candidates");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.CandidateSkill", b =>
-                {
-                    b.Property<Guid>("CandidateId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("SkillId")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsVerified")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("Proficiency")
-                        .HasColumnType("int");
-
-                    b.HasKey("CandidateId", "SkillId");
-
-                    b.HasIndex("SkillId");
-
-                    b.ToTable("CandidateSkills");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.Course", b =>
+            modelBuilder.Entity("ERMS.Domain.Entities.Application.CVScreeningResult", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("AIModel")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("ApplicationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Concerns")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("CreatorId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<decimal?>("EducationMatchScore")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
-                    b.Property<string>("Description")
+                    b.Property<decimal?>("ExperienceMatchScore")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("KeywordMatchScore")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("MatchedSkills")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<bool>("IsRequired")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("MinAttendancePercent")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
+                    b.Property<string>("MissingSkills")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("ThumbnailUrl")
+                    b.Property<decimal>("OverallScore")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("ProcessedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RawResponse")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Title")
-                        .IsRequired()
+                    b.Property<decimal?>("SkillMatchScore")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Strengths")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Summary")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -198,294 +170,13 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CreatorId");
-
-                    b.ToTable("Courses");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.CourseFeedback", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Comment")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("CourseId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("EmployeeId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("Rating")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CourseId");
-
-                    b.HasIndex("EmployeeId");
-
-                    b.ToTable("CourseFeedbacks");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.CourseSession", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<Guid>("CourseId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("EndTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("MeetingLink")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("OrderIndex")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("StartTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Type")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("VideoUrl")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CourseId");
-
-                    b.ToTable("CourseSessions");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.CourseSkill", b =>
-                {
-                    b.Property<Guid>("CourseId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("SkillId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TargetProficiency")
-                        .HasColumnType("int");
-
-                    b.HasKey("CourseId", "SkillId");
-
-                    b.HasIndex("SkillId");
-
-                    b.ToTable("CourseSkills");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.Department", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("DepartmentName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid?>("ManagerId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ManagerId");
-
-                    b.ToTable("Departments");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.Education", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Degree")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("EndDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<double?>("Gpa")
-                        .HasColumnType("float");
-
-                    b.Property<string>("Major")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("ResumeId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("SchoolName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("StartDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Status")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ResumeId");
-
-                    b.ToTable("Educations");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.Employee", b =>
-                {
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int?>("DepartmentId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("EmployeeCode")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<bool>("IsTrainer")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime>("JoinDate")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("UserId");
-
-                    b.HasIndex("DepartmentId");
-
-                    b.HasIndex("EmployeeCode")
+                    b.HasIndex("ApplicationId")
                         .IsUnique();
 
-                    b.ToTable("Employees");
+                    b.ToTable("CVScreeningResults");
                 });
 
-            modelBuilder.Entity("ERMS.Domain.Entities.Enrollment", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("CourseId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("EmployeeId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("EnrolledAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("Progress")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CourseId");
-
-                    b.HasIndex("EmployeeId");
-
-                    b.ToTable("Enrollments");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.EnrollmentRequest", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<Guid>("CourseId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("EmployeeId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("RequestedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("ReviewerId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CourseId");
-
-                    b.HasIndex("EmployeeId");
-
-                    b.HasIndex("ReviewerId");
-
-                    b.ToTable("EnrollmentRequests");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.Interview", b =>
+            modelBuilder.Entity("ERMS.Domain.Entities.Application.Interview", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -494,14 +185,30 @@ namespace ERMS.Infrastructure.Migrations
                     b.Property<Guid>("ApplicationId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("InterviewType")
+                    b.Property<string>("Decision")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid>("InterviewerId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Duration")
+                        .HasColumnType("int");
+
+                    b.Property<string>("InterviewType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Location")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("MeetingLink")
                         .HasColumnType("nvarchar(max)");
@@ -509,17 +216,24 @@ namespace ERMS.Infrastructure.Migrations
                     b.Property<string>("Note")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Result")
+                    b.Property<string>("OverallFeedback")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("OverallRating")
+                        .HasColumnType("int");
 
                     b.Property<int>("RoundNumber")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("ScheduledTime")
+                    b.Property<DateTime>("ScheduledAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int?>("Score")
-                        .HasColumnType("int");
+                    b.Property<Guid>("ScheduledById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -528,132 +242,62 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("ApplicationId");
 
-                    b.HasIndex("InterviewerId");
+                    b.HasIndex("ScheduledById");
 
                     b.ToTable("Interviews");
                 });
 
-            modelBuilder.Entity("ERMS.Domain.Entities.JobPosting", b =>
+            modelBuilder.Entity("ERMS.Domain.Entities.Application.InterviewParticipant", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("CreatorId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Currency")
+                    b.Property<string>("ConfirmationStatus")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("DepartmentId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("ExpiresAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Location")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal?>("MaxSalary")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("MinSalary")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("PostingType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("PublishDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Requirements")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatorId");
-
-                    b.HasIndex("DepartmentId");
-
-                    b.ToTable("JobPostings");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.JobSkill", b =>
-                {
-                    b.Property<Guid>("JobId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("SkillId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("MinProficiency")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Weight")
-                        .HasColumnType("int");
-
-                    b.HasKey("JobId", "SkillId");
-
-                    b.HasIndex("SkillId");
-
-                    b.ToTable("JobSkills");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.Notification", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<bool>("IsRead")
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Feedback")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("FeedbackSubmittedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("InterviewId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsRequired")
                         .HasColumnType("bit");
 
-                    b.Property<string>("Message")
+                    b.Property<int?>("Rating")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Recommendation")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Title")
+                    b.Property<string>("Role")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Type")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("EmployeeId");
 
-                    b.ToTable("Notifications");
+                    b.HasIndex("InterviewId");
+
+                    b.ToTable("InterviewParticipants");
                 });
 
-            modelBuilder.Entity("ERMS.Domain.Entities.Offer", b =>
+            modelBuilder.Entity("ERMS.Domain.Entities.Application.Offer", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -662,20 +306,65 @@ namespace ERMS.Infrastructure.Migrations
                     b.Property<Guid>("ApplicationId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("ApprovedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Benefits")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Bonus")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CandidateNote")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("DepartmentId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("ExpirationDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("OfferCode")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("OfferLetterUrl")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Position")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("RespondedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<decimal>("Salary")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("SalaryFrequency")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("SentById")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime2");
@@ -692,45 +381,84 @@ namespace ERMS.Infrastructure.Migrations
                     b.HasIndex("ApplicationId")
                         .IsUnique();
 
+                    b.HasIndex("ApprovedById");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("DepartmentId");
+
+                    b.HasIndex("SentById");
+
                     b.ToTable("Offers");
                 });
 
-            modelBuilder.Entity("ERMS.Domain.Entities.Report", b =>
+            modelBuilder.Entity("ERMS.Domain.Entities.Candidate.Candidate", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("AboutMe")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("FileUrl")
+                    b.Property<string>("CurrentCompany")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime>("GeneratedAt")
+                    b.Property<string>("CurrentPosition")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("GeneratedBy")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<decimal?>("ExpectedSalary")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
-                    b.Property<string>("Title")
-                        .IsRequired()
+                    b.Property<string>("Headline")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Type")
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsOpenToWork")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LinkedInUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Location")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("NoticePeriod")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PortfolioUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PreferredJobTypes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PreferredLocations")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("GeneratedBy");
+                    b.HasIndex("UserId")
+                        .IsUnique();
 
-                    b.ToTable("Reports");
+                    b.ToTable("Candidates");
                 });
 
-            modelBuilder.Entity("ERMS.Domain.Entities.Resume", b =>
+            modelBuilder.Entity("ERMS.Domain.Entities.Candidate.CandidateSkill", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -742,20 +470,117 @@ namespace ERMS.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("FilePath")
+                    b.Property<int?>("ProficiencyLevel")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("SkillId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("YearsOfExperience")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CandidateId");
+
+                    b.HasIndex("SkillId");
+
+                    b.ToTable("CandidateSkills");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Candidate.Education", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CandidateId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Degree")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<bool>("IsPrimary")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Summary")
+                    b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Title")
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FieldOfStudy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Grade")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Institution")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsCurrent")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CandidateId");
+
+                    b.ToTable("Educations");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Candidate.Resume", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CandidateId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("FileSize")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FileType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FileUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ParsedData")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("UploadedAt")
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
@@ -765,37 +590,325 @@ namespace ERMS.Infrastructure.Migrations
                     b.ToTable("Resumes");
                 });
 
-            modelBuilder.Entity("ERMS.Domain.Entities.Skill", b =>
+            modelBuilder.Entity("ERMS.Domain.Entities.Candidate.SavedJob", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("uniqueidentifier");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    b.Property<Guid>("CandidateId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<Guid>("JobPostingId")
+                        .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Type")
-                        .IsRequired()
+                    b.Property<string>("Note")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("SavedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Name")
-                        .IsUnique();
+                    b.HasIndex("CandidateId");
 
-                    b.ToTable("Skills");
+                    b.HasIndex("JobPostingId");
+
+                    b.ToTable("SavedJobs");
                 });
 
-            modelBuilder.Entity("ERMS.Domain.Entities.User", b =>
+            modelBuilder.Entity("ERMS.Domain.Entities.Candidate.WorkExperience", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CandidateId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CompanyName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EmploymentType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsCurrent")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Location")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Position")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CandidateId");
+
+                    b.ToTable("WorkExperiences");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Enterprise.Enterprise", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Address")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EnterpriseCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EnterpriseName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LogoUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Phone")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("SubscriptionEndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("SubscriptionPlanId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("SubscriptionStartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SubscriptionStatus")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TaxCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Website")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("SubscriptionPlanId");
+
+                    b.ToTable("Enterprises");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Enterprise.OwnershipTransfer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("ApprovedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("EnterpriseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("FromUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("ToUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("TransferredAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApprovedById");
+
+                    b.HasIndex("EnterpriseId");
+
+                    b.HasIndex("FromUserId");
+
+                    b.HasIndex("ToUserId");
+
+                    b.ToTable("OwnershipTransfers");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Enterprise.SubscriptionHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ActionType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("EnterpriseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PaymentMethod")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PaymentReference")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("PeriodEndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("PeriodStartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("PreviousPlanId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("SubscriptionPlanId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EnterpriseId");
+
+                    b.HasIndex("PreviousPlanId");
+
+                    b.HasIndex("SubscriptionPlanId");
+
+                    b.ToTable("SubscriptionHistories");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Enterprise.SubscriptionPlan", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Features")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("MaxCourses")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MaxJobPostings")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MaxUsers")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PlanCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PlanName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("PriceMonthly")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("PriceYearly")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SubscriptionPlans");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Identity.User", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -857,14 +970,8 @@ namespace ERMS.Infrastructure.Migrations
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("bit");
 
-                    b.Property<string>("Phones")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
 
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("bit");
@@ -888,10 +995,10 @@ namespace ERMS.Infrastructure.Migrations
                         .HasDatabaseName("UserNameIndex")
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("ERMS.Domain.Entities.WorkExperience", b =>
+            modelBuilder.Entity("ERMS.Domain.Entities.Organization.Department", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -899,9 +1006,133 @@ namespace ERMS.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("CompanyName")
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DepartmentCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DepartmentName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("EnterpriseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("ManagerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("ParentDepartmentId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EnterpriseId");
+
+                    b.HasIndex("ManagerId");
+
+                    b.HasIndex("ParentDepartmentId");
+
+                    b.ToTable("Departments");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Organization.Employee", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("DepartmentId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EmployeeCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EmploymentType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("EnterpriseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("HireDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsTrainer")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("JobPositionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("ManagerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Position")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("Salary")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("TerminationDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DepartmentId");
+
+                    b.HasIndex("EnterpriseId");
+
+                    b.HasIndex("JobPositionId");
+
+                    b.HasIndex("ManagerId");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("Employees");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Organization.JobPosition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -909,27 +1140,1128 @@ namespace ERMS.Infrastructure.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime?>("EndDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Position")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("ResumeId")
+                    b.Property<Guid>("EnterpriseId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime?>("StartDate")
-                        .HasColumnType("datetime2");
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PositionName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ResumeId");
+                    b.HasIndex("EnterpriseId");
 
-                    b.ToTable("WorkExperiences");
+                    b.ToTable("JobPositions");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.ApprovalHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("EntityId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NewStatus")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("PerformedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("PreviousStatus")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PerformedById");
+
+                    b.ToTable("ApprovalHistories");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.JobPosting", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("ApplicationCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ApplicationDeadline")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Benefits")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("DepartmentId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EducationLevel")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EmploymentType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("EnterpriseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ExperienceLevel")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("JobCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("JobTitle")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Location")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("PlanDetailId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("PublishedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("PublishedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RemoteOption")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Requirements")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("SalaryRangeMax")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("SalaryRangeMin")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("ShowSalary")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ViewCount")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("DepartmentId");
+
+                    b.HasIndex("EnterpriseId");
+
+                    b.HasIndex("PlanDetailId");
+
+                    b.HasIndex("PublishedById");
+
+                    b.ToTable("JobPostings");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.JobSkill", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsRequired")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("JobPostingId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("MinLevel")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("SkillId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("JobPostingId");
+
+                    b.HasIndex("SkillId");
+
+                    b.ToTable("JobSkills");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.PlanDetail", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("DepartmentId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EducationLevel")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ExpectedStartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Justification")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("MaxExperience")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MinExperience")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PositionTitle")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Priority")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("RecruitmentPlanId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("RequestedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("RequiredSkills")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReviewNote")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("ReviewerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("SalaryRangeMax")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("SalaryRangeMin")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DepartmentId");
+
+                    b.HasIndex("RecruitmentPlanId");
+
+                    b.HasIndex("RequestedById");
+
+                    b.HasIndex("ReviewerId");
+
+                    b.ToTable("PlanDetails");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.RecruitmentPlan", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("ApprovedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("EnterpriseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PlanCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PlanName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("TotalBudget")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApprovedById");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("EnterpriseId");
+
+                    b.ToTable("RecruitmentPlans");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Skill.JobCompetency", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Importance")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("JobPositionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("RequiredLevel")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("SkillId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("JobPositionId");
+
+                    b.HasIndex("SkillId");
+
+                    b.ToTable("JobCompetencies");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Skill.Skill", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("EnterpriseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("SkillCategory")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SkillName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EnterpriseId");
+
+                    b.ToTable("Skills");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.System.Notification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ActionUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("EntityId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("EntityType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsSent")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NotificationType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Notifications");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.Course", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CompletionCriteria")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CourseCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CourseName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("DurationMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("EnrollmentDeadline")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("EnterpriseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsMandatory")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Level")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("MaxEnrollments")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("PublishedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ThumbnailUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("TrainerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("TrainingPlanId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EnterpriseId");
+
+                    b.HasIndex("TrainerId");
+
+                    b.HasIndex("TrainingPlanId");
+
+                    b.ToTable("Courses");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.CourseSkill", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("SkillId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("SkillLevelGained")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("SkillId");
+
+                    b.ToTable("CourseSkills");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.Enrollment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("CertificateIssuedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CertificateUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("EnrolledAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("EnrolledById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastAccessedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Progress")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("StartedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.HasIndex("EnrolledById");
+
+                    b.ToTable("Enrollments");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.Lesson", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Content")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DocumentUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("EstimatedMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ExternalLinkUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsPreview")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LessonTitle")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("OrderIndex")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("VideoDurationMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<string>("VideoUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId");
+
+                    b.ToTable("Lessons");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.LessonProgress", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("EnrollmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("LastPosition")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("LessonId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("StartedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TimeSpentMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("WatchPercentage")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EnrollmentId");
+
+                    b.HasIndex("LessonId");
+
+                    b.ToTable("LessonProgresses");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.Quiz", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("MaxAttempts")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PassingScore")
+                        .HasColumnType("int");
+
+                    b.Property<string>("QuizTitle")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("ShowCorrectAnswers")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("ShuffleAnswers")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("ShuffleQuestions")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("TimeLimitMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId")
+                        .IsUnique();
+
+                    b.ToTable("Quizzes");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.QuizAnswer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("AnsweredAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool?>("IsCorrect")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("PointsEarned")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("QuizAttemptId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("QuizQuestionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SelectedAnswer")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuizAttemptId");
+
+                    b.HasIndex("QuizQuestionId");
+
+                    b.ToTable("QuizAnswers");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.QuizAttempt", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("AttemptNumber")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("CorrectAnswers")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("EnrollmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool?>("IsPassed")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("QuizId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("Score")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("TimeTakenMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotalQuestions")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EnrollmentId");
+
+                    b.HasIndex("QuizId");
+
+                    b.ToTable("QuizAttempts");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.QuizQuestion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CorrectAnswer")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Explanation")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Options")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("OrderIndex")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Points")
+                        .HasColumnType("int");
+
+                    b.Property<string>("QuestionText")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("QuestionType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("QuizId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuizId");
+
+                    b.ToTable("QuizQuestions");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.TrainingPlan", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("ApprovedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("EnterpriseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PlanCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PlanName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReviewNote")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("TotalBudget")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApprovedById");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("EnterpriseId");
+
+                    b.ToTable("TrainingPlans");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.TrainingRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("DepartmentId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("EnterpriseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("EstimatedBudget")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("EstimatedParticipants")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("RequestedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ReviewNote")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TargetAudience")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("TrainingPlanId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Urgency")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DepartmentId");
+
+                    b.HasIndex("EnterpriseId");
+
+                    b.HasIndex("RequestedById");
+
+                    b.HasIndex("TrainingPlanId");
+
+                    b.ToTable("TrainingRequests");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", b =>
@@ -957,7 +2289,7 @@ namespace ERMS.Infrastructure.Migrations
                         .HasDatabaseName("RoleNameIndex")
                         .HasFilter("[NormalizedName] IS NOT NULL");
 
-                    b.ToTable("Roles", (string)null);
+                    b.ToTable("AspNetRoles", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -981,7 +2313,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("RoleId");
 
-                    b.ToTable("RoleClaims", (string)null);
+                    b.ToTable("AspNetRoleClaims", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<System.Guid>", b =>
@@ -1005,7 +2337,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserClaims", (string)null);
+                    b.ToTable("AspNetUserClaims", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<System.Guid>", b =>
@@ -1026,7 +2358,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserLogins", (string)null);
+                    b.ToTable("AspNetUserLogins", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<System.Guid>", b =>
@@ -1041,7 +2373,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("RoleId");
 
-                    b.ToTable("UserRoles", (string)null);
+                    b.ToTable("AspNetUserRoles", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<System.Guid>", b =>
@@ -1060,328 +2392,180 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasKey("UserId", "LoginProvider", "Name");
 
-                    b.ToTable("UserTokens", (string)null);
+                    b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("ERMS.Domain.Entities.Application", b =>
+            modelBuilder.Entity("ERMS.Domain.Entities.Application.Application", b =>
                 {
-                    b.HasOne("ERMS.Domain.Entities.Candidate", "Candidate")
+                    b.HasOne("ERMS.Domain.Entities.Candidate.Candidate", "Candidate")
                         .WithMany("Applications")
                         .HasForeignKey("CandidateId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("ERMS.Domain.Entities.JobPosting", "Job")
+                    b.HasOne("ERMS.Domain.Entities.Recruitment.JobPosting", "JobPosting")
                         .WithMany("Applications")
-                        .HasForeignKey("JobId")
+                        .HasForeignKey("JobPostingId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("ERMS.Domain.Entities.Resume", "Resume")
-                        .WithMany("Applications")
-                        .HasForeignKey("ResumeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                    b.HasOne("ERMS.Domain.Entities.Organization.Employee", "ReferredBy")
+                        .WithMany()
+                        .HasForeignKey("ReferredById");
+
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "RejectedBy")
+                        .WithMany()
+                        .HasForeignKey("RejectedById");
+
+                    b.HasOne("ERMS.Domain.Entities.Candidate.Resume", "Resume")
+                        .WithMany()
+                        .HasForeignKey("ResumeId");
 
                     b.Navigation("Candidate");
 
-                    b.Navigation("Job");
+                    b.Navigation("JobPosting");
+
+                    b.Navigation("ReferredBy");
+
+                    b.Navigation("RejectedBy");
 
                     b.Navigation("Resume");
                 });
 
-            modelBuilder.Entity("ERMS.Domain.Entities.Attendance", b =>
+            modelBuilder.Entity("ERMS.Domain.Entities.Application.CVScreeningResult", b =>
                 {
-                    b.HasOne("ERMS.Domain.Entities.Employee", "Employee")
-                        .WithMany("Attendances")
-                        .HasForeignKey("EmployeeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("ERMS.Domain.Entities.Employee", "Recorder")
-                        .WithMany()
-                        .HasForeignKey("RecordedBy")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("ERMS.Domain.Entities.CourseSession", "Session")
-                        .WithMany("Attendances")
-                        .HasForeignKey("SessionId")
+                    b.HasOne("ERMS.Domain.Entities.Application.Application", "Application")
+                        .WithOne("CVScreeningResult")
+                        .HasForeignKey("ERMS.Domain.Entities.Application.CVScreeningResult", "ApplicationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Employee");
-
-                    b.Navigation("Recorder");
-
-                    b.Navigation("Session");
+                    b.Navigation("Application");
                 });
 
-            modelBuilder.Entity("ERMS.Domain.Entities.Candidate", b =>
+            modelBuilder.Entity("ERMS.Domain.Entities.Application.Interview", b =>
                 {
-                    b.HasOne("ERMS.Domain.Entities.User", "User")
-                        .WithOne("Candidate")
-                        .HasForeignKey("ERMS.Domain.Entities.Candidate", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.CandidateSkill", b =>
-                {
-                    b.HasOne("ERMS.Domain.Entities.Candidate", "Candidate")
-                        .WithMany("CandidateSkills")
-                        .HasForeignKey("CandidateId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("ERMS.Domain.Entities.Skill", "Skill")
-                        .WithMany("CandidateSkills")
-                        .HasForeignKey("SkillId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Candidate");
-
-                    b.Navigation("Skill");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.Course", b =>
-                {
-                    b.HasOne("ERMS.Domain.Entities.Employee", "Creator")
-                        .WithMany("CreatedCourses")
-                        .HasForeignKey("CreatorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Creator");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.CourseFeedback", b =>
-                {
-                    b.HasOne("ERMS.Domain.Entities.Course", "Course")
-                        .WithMany("CourseFeedbacks")
-                        .HasForeignKey("CourseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("ERMS.Domain.Entities.Employee", "Employee")
-                        .WithMany("CourseFeedbacks")
-                        .HasForeignKey("EmployeeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Course");
-
-                    b.Navigation("Employee");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.CourseSession", b =>
-                {
-                    b.HasOne("ERMS.Domain.Entities.Course", "Course")
-                        .WithMany("CourseSessions")
-                        .HasForeignKey("CourseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Course");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.CourseSkill", b =>
-                {
-                    b.HasOne("ERMS.Domain.Entities.Course", "Course")
-                        .WithMany("CourseSkills")
-                        .HasForeignKey("CourseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("ERMS.Domain.Entities.Skill", "Skill")
-                        .WithMany("CourseSkills")
-                        .HasForeignKey("SkillId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Course");
-
-                    b.Navigation("Skill");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.Department", b =>
-                {
-                    b.HasOne("ERMS.Domain.Entities.Employee", "Manager")
-                        .WithMany()
-                        .HasForeignKey("ManagerId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Manager");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.Education", b =>
-                {
-                    b.HasOne("ERMS.Domain.Entities.Resume", "Resume")
-                        .WithMany("Educations")
-                        .HasForeignKey("ResumeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Resume");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.Employee", b =>
-                {
-                    b.HasOne("ERMS.Domain.Entities.Department", "Department")
-                        .WithMany("Employees")
-                        .HasForeignKey("DepartmentId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("ERMS.Domain.Entities.User", "User")
-                        .WithOne("Employee")
-                        .HasForeignKey("ERMS.Domain.Entities.Employee", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Department");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.Enrollment", b =>
-                {
-                    b.HasOne("ERMS.Domain.Entities.Course", "Course")
-                        .WithMany("Enrollments")
-                        .HasForeignKey("CourseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("ERMS.Domain.Entities.Employee", "Employee")
-                        .WithMany("Enrollments")
-                        .HasForeignKey("EmployeeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Course");
-
-                    b.Navigation("Employee");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.EnrollmentRequest", b =>
-                {
-                    b.HasOne("ERMS.Domain.Entities.Course", "Course")
-                        .WithMany("EnrollmentRequests")
-                        .HasForeignKey("CourseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("ERMS.Domain.Entities.Employee", "Employee")
-                        .WithMany("EnrollmentRequests")
-                        .HasForeignKey("EmployeeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("ERMS.Domain.Entities.Employee", "Reviewer")
-                        .WithMany()
-                        .HasForeignKey("ReviewerId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Course");
-
-                    b.Navigation("Employee");
-
-                    b.Navigation("Reviewer");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.Interview", b =>
-                {
-                    b.HasOne("ERMS.Domain.Entities.Application", "Application")
+                    b.HasOne("ERMS.Domain.Entities.Application.Application", "Application")
                         .WithMany("Interviews")
                         .HasForeignKey("ApplicationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ERMS.Domain.Entities.Employee", "Interviewer")
-                        .WithMany("Interviews")
-                        .HasForeignKey("InterviewerId")
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "ScheduledBy")
+                        .WithMany()
+                        .HasForeignKey("ScheduledById")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Application");
 
-                    b.Navigation("Interviewer");
+                    b.Navigation("ScheduledBy");
                 });
 
-            modelBuilder.Entity("ERMS.Domain.Entities.JobPosting", b =>
+            modelBuilder.Entity("ERMS.Domain.Entities.Application.InterviewParticipant", b =>
                 {
-                    b.HasOne("ERMS.Domain.Entities.Employee", "Creator")
-                        .WithMany("CreatedJobPostings")
-                        .HasForeignKey("CreatorId")
+                    b.HasOne("ERMS.Domain.Entities.Organization.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Application.Interview", "Interview")
+                        .WithMany("Participants")
+                        .HasForeignKey("InterviewId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("Interview");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Application.Offer", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Application.Application", "Application")
+                        .WithOne("Offer")
+                        .HasForeignKey("ERMS.Domain.Entities.Application.Offer", "ApplicationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "ApprovedBy")
+                        .WithMany()
+                        .HasForeignKey("ApprovedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("ERMS.Domain.Entities.Department", "Department")
-                        .WithMany("JobPostings")
+                    b.HasOne("ERMS.Domain.Entities.Organization.Department", "Department")
+                        .WithMany()
                         .HasForeignKey("DepartmentId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.Navigation("Creator");
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "SentBy")
+                        .WithMany()
+                        .HasForeignKey("SentById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Application");
+
+                    b.Navigation("ApprovedBy");
+
+                    b.Navigation("CreatedBy");
 
                     b.Navigation("Department");
+
+                    b.Navigation("SentBy");
                 });
 
-            modelBuilder.Entity("ERMS.Domain.Entities.JobSkill", b =>
+            modelBuilder.Entity("ERMS.Domain.Entities.Candidate.Candidate", b =>
                 {
-                    b.HasOne("ERMS.Domain.Entities.JobPosting", "Job")
-                        .WithMany("JobSkills")
-                        .HasForeignKey("JobId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("ERMS.Domain.Entities.Skill", "Skill")
-                        .WithMany("JobSkills")
-                        .HasForeignKey("SkillId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Job");
-
-                    b.Navigation("Skill");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.Notification", b =>
-                {
-                    b.HasOne("ERMS.Domain.Entities.User", "User")
-                        .WithMany("Notifications")
-                        .HasForeignKey("UserId")
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "User")
+                        .WithOne("Candidate")
+                        .HasForeignKey("ERMS.Domain.Entities.Candidate.Candidate", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("ERMS.Domain.Entities.Offer", b =>
+            modelBuilder.Entity("ERMS.Domain.Entities.Candidate.CandidateSkill", b =>
                 {
-                    b.HasOne("ERMS.Domain.Entities.Application", "Application")
-                        .WithOne("Offer")
-                        .HasForeignKey("ERMS.Domain.Entities.Offer", "ApplicationId")
+                    b.HasOne("ERMS.Domain.Entities.Candidate.Candidate", "Candidate")
+                        .WithMany("CandidateSkills")
+                        .HasForeignKey("CandidateId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Application");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.Report", b =>
-                {
-                    b.HasOne("ERMS.Domain.Entities.Employee", "Generator")
-                        .WithMany("GeneratedReports")
-                        .HasForeignKey("GeneratedBy")
-                        .OnDelete(DeleteBehavior.Restrict)
+                    b.HasOne("ERMS.Domain.Entities.Skill.Skill", "Skill")
+                        .WithMany()
+                        .HasForeignKey("SkillId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Generator");
+                    b.Navigation("Candidate");
+
+                    b.Navigation("Skill");
                 });
 
-            modelBuilder.Entity("ERMS.Domain.Entities.Resume", b =>
+            modelBuilder.Entity("ERMS.Domain.Entities.Candidate.Education", b =>
                 {
-                    b.HasOne("ERMS.Domain.Entities.Candidate", "Candidate")
+                    b.HasOne("ERMS.Domain.Entities.Candidate.Candidate", "Candidate")
+                        .WithMany("Educations")
+                        .HasForeignKey("CandidateId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Candidate");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Candidate.Resume", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Candidate.Candidate", "Candidate")
                         .WithMany("Resumes")
                         .HasForeignKey("CandidateId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1390,25 +2574,581 @@ namespace ERMS.Infrastructure.Migrations
                     b.Navigation("Candidate");
                 });
 
-            modelBuilder.Entity("ERMS.Domain.Entities.User", b =>
+            modelBuilder.Entity("ERMS.Domain.Entities.Candidate.SavedJob", b =>
                 {
-                    b.HasOne("ERMS.Domain.Entities.Department", "Department")
-                        .WithMany("Users")
-                        .HasForeignKey("DepartmentId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                    b.HasOne("ERMS.Domain.Entities.Candidate.Candidate", "Candidate")
+                        .WithMany("SavedJobs")
+                        .HasForeignKey("CandidateId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Recruitment.JobPosting", "JobPosting")
+                        .WithMany()
+                        .HasForeignKey("JobPostingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Candidate");
+
+                    b.Navigation("JobPosting");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Candidate.WorkExperience", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Candidate.Candidate", "Candidate")
+                        .WithMany("WorkExperiences")
+                        .HasForeignKey("CandidateId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Candidate");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Enterprise.Enterprise", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("ERMS.Domain.Entities.Enterprise.SubscriptionPlan", "SubscriptionPlan")
+                        .WithMany("Enterprises")
+                        .HasForeignKey("SubscriptionPlanId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("SubscriptionPlan");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Enterprise.OwnershipTransfer", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "ApprovedBy")
+                        .WithMany()
+                        .HasForeignKey("ApprovedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERMS.Domain.Entities.Enterprise.Enterprise", "Enterprise")
+                        .WithMany()
+                        .HasForeignKey("EnterpriseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "FromUser")
+                        .WithMany()
+                        .HasForeignKey("FromUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "ToUser")
+                        .WithMany()
+                        .HasForeignKey("ToUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ApprovedBy");
+
+                    b.Navigation("Enterprise");
+
+                    b.Navigation("FromUser");
+
+                    b.Navigation("ToUser");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Enterprise.SubscriptionHistory", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Enterprise.Enterprise", "Enterprise")
+                        .WithMany()
+                        .HasForeignKey("EnterpriseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Enterprise.SubscriptionPlan", "PreviousPlan")
+                        .WithMany()
+                        .HasForeignKey("PreviousPlanId");
+
+                    b.HasOne("ERMS.Domain.Entities.Enterprise.SubscriptionPlan", "SubscriptionPlan")
+                        .WithMany()
+                        .HasForeignKey("SubscriptionPlanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Enterprise");
+
+                    b.Navigation("PreviousPlan");
+
+                    b.Navigation("SubscriptionPlan");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Identity.User", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Organization.Department", "Department")
+                        .WithMany()
+                        .HasForeignKey("DepartmentId");
 
                     b.Navigation("Department");
                 });
 
-            modelBuilder.Entity("ERMS.Domain.Entities.WorkExperience", b =>
+            modelBuilder.Entity("ERMS.Domain.Entities.Organization.Department", b =>
                 {
-                    b.HasOne("ERMS.Domain.Entities.Resume", "Resume")
-                        .WithMany("WorkExperiences")
-                        .HasForeignKey("ResumeId")
+                    b.HasOne("ERMS.Domain.Entities.Enterprise.Enterprise", "Enterprise")
+                        .WithMany("Departments")
+                        .HasForeignKey("EnterpriseId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Resume");
+                    b.HasOne("ERMS.Domain.Entities.Organization.Employee", "Manager")
+                        .WithMany()
+                        .HasForeignKey("ManagerId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERMS.Domain.Entities.Organization.Department", "ParentDepartment")
+                        .WithMany("ChildDepartments")
+                        .HasForeignKey("ParentDepartmentId");
+
+                    b.Navigation("Enterprise");
+
+                    b.Navigation("Manager");
+
+                    b.Navigation("ParentDepartment");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Organization.Employee", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Organization.Department", "Department")
+                        .WithMany("Employees")
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Enterprise.Enterprise", "Enterprise")
+                        .WithMany()
+                        .HasForeignKey("EnterpriseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Organization.JobPosition", "JobPosition")
+                        .WithMany()
+                        .HasForeignKey("JobPositionId");
+
+                    b.HasOne("ERMS.Domain.Entities.Organization.Employee", "Manager")
+                        .WithMany("DirectReports")
+                        .HasForeignKey("ManagerId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "User")
+                        .WithOne("Employee")
+                        .HasForeignKey("ERMS.Domain.Entities.Organization.Employee", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Department");
+
+                    b.Navigation("Enterprise");
+
+                    b.Navigation("JobPosition");
+
+                    b.Navigation("Manager");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Organization.JobPosition", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Enterprise.Enterprise", "Enterprise")
+                        .WithMany()
+                        .HasForeignKey("EnterpriseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Enterprise");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.ApprovalHistory", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "PerformedBy")
+                        .WithMany()
+                        .HasForeignKey("PerformedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("PerformedBy");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.JobPosting", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Organization.Department", "Department")
+                        .WithMany()
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Enterprise.Enterprise", "Enterprise")
+                        .WithMany()
+                        .HasForeignKey("EnterpriseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Recruitment.PlanDetail", "PlanDetail")
+                        .WithMany("JobPostings")
+                        .HasForeignKey("PlanDetailId");
+
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "PublishedBy")
+                        .WithMany()
+                        .HasForeignKey("PublishedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Department");
+
+                    b.Navigation("Enterprise");
+
+                    b.Navigation("PlanDetail");
+
+                    b.Navigation("PublishedBy");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.JobSkill", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Recruitment.JobPosting", "JobPosting")
+                        .WithMany("JobSkills")
+                        .HasForeignKey("JobPostingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Skill.Skill", "Skill")
+                        .WithMany()
+                        .HasForeignKey("SkillId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("JobPosting");
+
+                    b.Navigation("Skill");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.PlanDetail", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Organization.Department", "Department")
+                        .WithMany()
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Recruitment.RecruitmentPlan", "RecruitmentPlan")
+                        .WithMany("PlanDetails")
+                        .HasForeignKey("RecruitmentPlanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "RequestedBy")
+                        .WithMany()
+                        .HasForeignKey("RequestedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "Reviewer")
+                        .WithMany()
+                        .HasForeignKey("ReviewerId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Department");
+
+                    b.Navigation("RecruitmentPlan");
+
+                    b.Navigation("RequestedBy");
+
+                    b.Navigation("Reviewer");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.RecruitmentPlan", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "ApprovedBy")
+                        .WithMany()
+                        .HasForeignKey("ApprovedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Enterprise.Enterprise", "Enterprise")
+                        .WithMany()
+                        .HasForeignKey("EnterpriseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ApprovedBy");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Enterprise");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Skill.JobCompetency", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Organization.JobPosition", "JobPosition")
+                        .WithMany()
+                        .HasForeignKey("JobPositionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Skill.Skill", "Skill")
+                        .WithMany()
+                        .HasForeignKey("SkillId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("JobPosition");
+
+                    b.Navigation("Skill");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Skill.Skill", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Enterprise.Enterprise", "Enterprise")
+                        .WithMany()
+                        .HasForeignKey("EnterpriseId");
+
+                    b.Navigation("Enterprise");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.System.Notification", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "User")
+                        .WithMany("Notifications")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.Course", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Enterprise.Enterprise", "Enterprise")
+                        .WithMany()
+                        .HasForeignKey("EnterpriseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Organization.Employee", "Trainer")
+                        .WithMany()
+                        .HasForeignKey("TrainerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Training.TrainingPlan", "TrainingPlan")
+                        .WithMany("Courses")
+                        .HasForeignKey("TrainingPlanId");
+
+                    b.Navigation("Enterprise");
+
+                    b.Navigation("Trainer");
+
+                    b.Navigation("TrainingPlan");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.CourseSkill", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Training.Course", "Course")
+                        .WithMany("CourseSkills")
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Skill.Skill", "Skill")
+                        .WithMany()
+                        .HasForeignKey("SkillId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Course");
+
+                    b.Navigation("Skill");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.Enrollment", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Training.Course", "Course")
+                        .WithMany("Enrollments")
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Organization.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "EnrolledBy")
+                        .WithMany()
+                        .HasForeignKey("EnrolledById");
+
+                    b.Navigation("Course");
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("EnrolledBy");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.Lesson", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Training.Course", "Course")
+                        .WithMany("Lessons")
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Course");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.LessonProgress", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Training.Enrollment", "Enrollment")
+                        .WithMany("LessonProgresses")
+                        .HasForeignKey("EnrollmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Training.Lesson", "Lesson")
+                        .WithMany()
+                        .HasForeignKey("LessonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Enrollment");
+
+                    b.Navigation("Lesson");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.Quiz", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Training.Course", "Course")
+                        .WithOne("Quiz")
+                        .HasForeignKey("ERMS.Domain.Entities.Training.Quiz", "CourseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Course");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.QuizAnswer", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Training.QuizAttempt", "QuizAttempt")
+                        .WithMany("QuizAnswers")
+                        .HasForeignKey("QuizAttemptId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Training.QuizQuestion", "QuizQuestion")
+                        .WithMany()
+                        .HasForeignKey("QuizQuestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("QuizAttempt");
+
+                    b.Navigation("QuizQuestion");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.QuizAttempt", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Training.Enrollment", "Enrollment")
+                        .WithMany("QuizAttempts")
+                        .HasForeignKey("EnrollmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Training.Quiz", "Quiz")
+                        .WithMany()
+                        .HasForeignKey("QuizId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Enrollment");
+
+                    b.Navigation("Quiz");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.QuizQuestion", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Training.Quiz", "Quiz")
+                        .WithMany("Questions")
+                        .HasForeignKey("QuizId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Quiz");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.TrainingPlan", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "ApprovedBy")
+                        .WithMany()
+                        .HasForeignKey("ApprovedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Enterprise.Enterprise", "Enterprise")
+                        .WithMany()
+                        .HasForeignKey("EnterpriseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ApprovedBy");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Enterprise");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.TrainingRequest", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Organization.Department", "Department")
+                        .WithMany()
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Enterprise.Enterprise", "Enterprise")
+                        .WithMany()
+                        .HasForeignKey("EnterpriseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "RequestedBy")
+                        .WithMany()
+                        .HasForeignKey("RequestedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Training.TrainingPlan", "TrainingPlan")
+                        .WithMany("TrainingRequests")
+                        .HasForeignKey("TrainingPlanId");
+
+                    b.Navigation("Department");
+
+                    b.Navigation("Enterprise");
+
+                    b.Navigation("RequestedBy");
+
+                    b.Navigation("TrainingPlan");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -1422,7 +3162,7 @@ namespace ERMS.Infrastructure.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<System.Guid>", b =>
                 {
-                    b.HasOne("ERMS.Domain.Entities.User", null)
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1431,7 +3171,7 @@ namespace ERMS.Infrastructure.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<System.Guid>", b =>
                 {
-                    b.HasOne("ERMS.Domain.Entities.User", null)
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1446,7 +3186,7 @@ namespace ERMS.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ERMS.Domain.Entities.User", null)
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1455,107 +3195,123 @@ namespace ERMS.Infrastructure.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<System.Guid>", b =>
                 {
-                    b.HasOne("ERMS.Domain.Entities.User", null)
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("ERMS.Domain.Entities.Application", b =>
+            modelBuilder.Entity("ERMS.Domain.Entities.Application.Application", b =>
                 {
+                    b.Navigation("CVScreeningResult");
+
                     b.Navigation("Interviews");
 
                     b.Navigation("Offer");
                 });
 
-            modelBuilder.Entity("ERMS.Domain.Entities.Candidate", b =>
+            modelBuilder.Entity("ERMS.Domain.Entities.Application.Interview", b =>
+                {
+                    b.Navigation("Participants");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Candidate.Candidate", b =>
                 {
                     b.Navigation("Applications");
 
                     b.Navigation("CandidateSkills");
 
-                    b.Navigation("Resumes");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.Course", b =>
-                {
-                    b.Navigation("CourseFeedbacks");
-
-                    b.Navigation("CourseSessions");
-
-                    b.Navigation("CourseSkills");
-
-                    b.Navigation("EnrollmentRequests");
-
-                    b.Navigation("Enrollments");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.CourseSession", b =>
-                {
-                    b.Navigation("Attendances");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.Department", b =>
-                {
-                    b.Navigation("Employees");
-
-                    b.Navigation("JobPostings");
-
-                    b.Navigation("Users");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.Employee", b =>
-                {
-                    b.Navigation("Attendances");
-
-                    b.Navigation("CourseFeedbacks");
-
-                    b.Navigation("CreatedCourses");
-
-                    b.Navigation("CreatedJobPostings");
-
-                    b.Navigation("EnrollmentRequests");
-
-                    b.Navigation("Enrollments");
-
-                    b.Navigation("GeneratedReports");
-
-                    b.Navigation("Interviews");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.JobPosting", b =>
-                {
-                    b.Navigation("Applications");
-
-                    b.Navigation("JobSkills");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.Resume", b =>
-                {
-                    b.Navigation("Applications");
-
                     b.Navigation("Educations");
+
+                    b.Navigation("Resumes");
+
+                    b.Navigation("SavedJobs");
 
                     b.Navigation("WorkExperiences");
                 });
 
-            modelBuilder.Entity("ERMS.Domain.Entities.Skill", b =>
+            modelBuilder.Entity("ERMS.Domain.Entities.Enterprise.Enterprise", b =>
                 {
-                    b.Navigation("CandidateSkills");
-
-                    b.Navigation("CourseSkills");
-
-                    b.Navigation("JobSkills");
+                    b.Navigation("Departments");
                 });
 
-            modelBuilder.Entity("ERMS.Domain.Entities.User", b =>
+            modelBuilder.Entity("ERMS.Domain.Entities.Enterprise.SubscriptionPlan", b =>
+                {
+                    b.Navigation("Enterprises");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Identity.User", b =>
                 {
                     b.Navigation("Candidate");
 
                     b.Navigation("Employee");
 
                     b.Navigation("Notifications");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Organization.Department", b =>
+                {
+                    b.Navigation("ChildDepartments");
+
+                    b.Navigation("Employees");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Organization.Employee", b =>
+                {
+                    b.Navigation("DirectReports");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.JobPosting", b =>
+                {
+                    b.Navigation("Applications");
+
+                    b.Navigation("JobSkills");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.PlanDetail", b =>
+                {
+                    b.Navigation("JobPostings");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.RecruitmentPlan", b =>
+                {
+                    b.Navigation("PlanDetails");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.Course", b =>
+                {
+                    b.Navigation("CourseSkills");
+
+                    b.Navigation("Enrollments");
+
+                    b.Navigation("Lessons");
+
+                    b.Navigation("Quiz");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.Enrollment", b =>
+                {
+                    b.Navigation("LessonProgresses");
+
+                    b.Navigation("QuizAttempts");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.Quiz", b =>
+                {
+                    b.Navigation("Questions");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.QuizAttempt", b =>
+                {
+                    b.Navigation("QuizAnswers");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.TrainingPlan", b =>
+                {
+                    b.Navigation("Courses");
+
+                    b.Navigation("TrainingRequests");
                 });
 #pragma warning restore 612, 618
         }

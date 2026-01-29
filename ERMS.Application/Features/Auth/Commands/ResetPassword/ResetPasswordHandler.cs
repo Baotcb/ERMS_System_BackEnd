@@ -1,4 +1,5 @@
 ﻿using ERMS.Domain.Entities;
+using ERMS.Domain.Entities.Identity;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using System;

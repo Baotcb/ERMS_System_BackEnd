@@ -15,7 +15,8 @@ namespace ERMS.Application.Features.Users.Commands.ChangeProfile
         public DateTime? DateOfBirth { get; set; }
         public string? Hometown { get; set; }
         public string? Phones { get; set; }
+        public string? Address { get; set; }
 
 
-    }
-}
+        }
+        }

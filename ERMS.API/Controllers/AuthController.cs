@@ -1,19 +1,27 @@
 ﻿using ERMS.Application.Features.Auth.Commands.ChangePassword;
+using ERMS.Application.Features.Auth.Commands.ConfirmEmail;
 using ERMS.Application.Features.Auth.Commands.ForgotPassword;
 using ERMS.Application.Features.Auth.Commands.GoogleLogin;
 using ERMS.Application.Features.Auth.Commands.Login;
 using ERMS.Application.Features.Auth.Commands.Register;
+using ERMS.Application.Features.Auth.Commands.ResendConfirmation;
 using ERMS.Application.Features.Auth.Commands.ResetPassword;
 using ERMS.Application.Interface;
-using ERMS.Domain.Entities;
+using ERMS.Domain.Constants.Roles;
+using ERMS.Domain.Entities.Identity;
 using Google.Apis.Auth;
 using MediatR;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
+using System;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Security.Claims;
 using System.Text;
 
@@ -27,16 +35,26 @@ namespace ERMS.API.Controllers
         private readonly ISender _sender;
         private readonly IConfiguration _config;
         private readonly ITokenService _tokenService;
+        private readonly IMediator _mediator;
+        private readonly UserManager<User> _userManager;
+        private readonly RoleManager<IdentityRole<Guid>> _roleManager;
 
         public AuthController(ISender sender,
             IConfiguration config,
-            ITokenService tokenService)
+            ITokenService tokenService,
+            IMediator mediator,
+            UserManager<User> userManager,
+            RoleManager<IdentityRole<Guid>> roleManager)
         {
             _sender = sender;
             _config = config;
             _tokenService = tokenService;
+            _mediator = mediator;
+            _userManager = userManager;
+            _roleManager = roleManager;
         }
         [HttpPost("register")]
+        [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody] RegisterCommand command)
         {
             try
@@ -107,13 +125,27 @@ namespace ERMS.API.Controllers
             }
         }
 
-        [HttpPost("login-google")]
-        public async Task<IActionResult> LoginGoogle([FromBody] GoogleLoginCommand command)
+        
+        [HttpPost("google-login")]
+        [DisableRateLimiting]
+        public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginCommand command)
         {
             try
             {
+                if (string.IsNullOrWhiteSpace(command.IdToken))
+                {
+                    return BadRequest(new { message = "Google ID token là bắt buộc." });
+                }
+
                 var token = await _sender.Send(command);
-                return Ok(new { token });
+                return Ok(new
+                {
+                    token = token
+                });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
             }
             catch (Exception ex)
             {
@@ -135,6 +167,101 @@ namespace ERMS.API.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [HttpPost("confirm-email")]
+        [DisableRateLimiting]
+        public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailCommand command)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                var result = await _mediator.Send(command);
+
+                
+                var user = await _userManager.FindByIdAsync(command.UserId);
+                if (user != null)
+                {
+                    var token = await _tokenService.CreateToken(user);
+                    return Ok(new
+                    {
+                        message = result,
+                        success = true,
+                        token = token,
+                        email = user.Email,
+                        fullName = user.FullName
+                    });
+                }
+
+                return Ok(new
+                {
+                    message = result,
+                    success = true
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message,
+                    success = false
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    message = "Xác thực email thất bại. Vui lòng thử lại hoặc yêu cầu gửi lại email xác thực.",
+                    error = ex.Message,
+                    success = false
+                });
+            }
+        }
+
+        [HttpPost("resend-confirmation")]
+        [DisableRateLimiting]
+        public async Task<IActionResult> ResendConfirmation([FromBody] ResendConfirmationCommand command)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                var result = await _sender.Send(command);
+                
+
+                return Ok(new
+                {
+                    message = "Email xác thực đã được gửi. Vui lòng kiểm tra hộp thư của bạn (bao gồm cả thư mục spam).",
+                    success = result
+            });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message,
+                    success = false
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    message = "Không thể gửi email xác thực. Vui lòng thử lại sau.",
+                    error = ex.Message,
+                    success = false
+                });
+            }
+        }
+
+
+
 
     } 
 }

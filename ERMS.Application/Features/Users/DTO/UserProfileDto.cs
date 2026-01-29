@@ -13,6 +13,7 @@ namespace ERMS.Application.Features.Users.DTO
         public int? DepartmentId { get; set; } 
         public string? DepartmentName { get; set; }
         public int Status { get; set; }
+        public string? AvatarUrl { get; set; }
         public DateTime DateJoined { get; set; }
     }
 }
