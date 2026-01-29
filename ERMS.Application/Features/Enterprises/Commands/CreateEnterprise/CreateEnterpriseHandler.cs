@@ -1,6 +1,7 @@
 ﻿using ERMS.Application.Interface;
 using ERMS.Domain.Entities.Enterprise;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,14 +11,14 @@ namespace ERMS.Application.Features.Enterprises.Commands.CreateEnterprise
     public class CreateEnterpriseHandler
         : IRequestHandler<CreateEnterpriseCommand, Guid>
     {
-        private readonly IEnterprisesService _enterprisesService;
+        private readonly IERMSDbContext _context;
         private readonly ICurrentUserService _currentUser;
 
         public CreateEnterpriseHandler(
-            IEnterprisesService enterprisesService,
+            IERMSDbContext context,
             ICurrentUserService currentUser)
         {
-            _enterprisesService = enterprisesService;
+            _context = context;
             _currentUser = currentUser;
         }
 
@@ -25,8 +26,8 @@ namespace ERMS.Application.Features.Enterprises.Commands.CreateEnterprise
             CreateEnterpriseCommand request,
             CancellationToken cancellationToken)
         {
-            var existingEnterprise = await _enterprisesService
-                .GetByCodeAsync(request.EnterpriseCode);
+            var existingEnterprise = await _context.Enterprises
+                .FirstOrDefaultAsync(e => e.EnterpriseCode == request.EnterpriseCode && !e.IsDeleted, cancellationToken);
 
             if (existingEnterprise != null)
             {
@@ -52,9 +53,8 @@ namespace ERMS.Application.Features.Enterprises.Commands.CreateEnterprise
                 CreatedAt = DateTime.UtcNow
             };
 
-
-
-            await _enterprisesService.CreateAsync(enterprise);
+            _context.Enterprises.Add(enterprise);
+            await _context.SaveChangesAsync(cancellationToken);
             return enterprise.Id;
         }
     }

@@ -1,4 +1,5 @@
 using ERMS.Application.Interface;
+using ERMS.Domain.Constants.Roles;
 using ERMS.Domain.Entities.Identity;
 using ERMS.Domain.Entities.Organization;
 using MediatR;
@@ -82,7 +83,7 @@ namespace ERMS.Application.Features.Employees.Commands.CreateEmployee
             }
 
             // Assign Employee role
-            await _userManager.AddToRoleAsync(user, "Employee");
+            await _userManager.AddToRoleAsync(user, AppRoles.Employee);
 
             // Generate employee code
             var employeeCount = await _context.Employees

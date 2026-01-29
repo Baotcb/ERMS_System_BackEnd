@@ -11,14 +11,10 @@ namespace ERMS.Application.Features.Enterprises.Commands.RegisterEnterprise
     public sealed class RegisterEnterpriseHandler : IRequestHandler<RegisterEnterpriseCommand, Guid>
     {
         private readonly IERMSDbContext _context;
-        private readonly ISubscriptionPlanService _subscriptionPlanService;
 
-        public RegisterEnterpriseHandler(
-            IERMSDbContext context,
-            ISubscriptionPlanService subscriptionPlanService)
+        public RegisterEnterpriseHandler(IERMSDbContext context)
         {
             _context = context;
-            _subscriptionPlanService = subscriptionPlanService;
         }
 
         public async Task<Guid> Handle(RegisterEnterpriseCommand request, CancellationToken cancellationToken)
@@ -34,8 +30,32 @@ namespace ERMS.Application.Features.Enterprises.Commands.RegisterEnterprise
                 }
             }
 
-            // 2. Get Default Subscription Plan (via service - Clean Architecture)
-            var freePlan = await _subscriptionPlanService.GetOrCreateFreePlanAsync(cancellationToken);
+            // 2. Get or Create Default Subscription Plan
+            var freePlan = await _context.SubscriptionPlans
+                .FirstOrDefaultAsync(p => p.PlanCode == "FREE" && !p.IsDeleted, cancellationToken);
+
+            if (freePlan == null)
+            {
+                // Create default FREE plan
+                freePlan = new SubscriptionPlan
+                {
+                    Id = Guid.NewGuid(),
+                    PlanName = "Free Plan",
+                    PlanCode = "FREE",
+                    Description = "Default free plan for new enterprises",
+                    MaxUsers = 5,
+                    MaxJobPostings = 2,
+                    MaxCourses = 2,
+                    PriceMonthly = 0,
+                    PriceYearly = 0,
+                    IsActive = true,
+                    DisplayOrder = 0,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.SubscriptionPlans.Add(freePlan);
+                await _context.SaveChangesAsync(cancellationToken);
+            }
 
             // 3. Generate Enterprise Code
             var enterpriseCode = $"ENT-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid().ToString("N")[..4].ToUpper()}";

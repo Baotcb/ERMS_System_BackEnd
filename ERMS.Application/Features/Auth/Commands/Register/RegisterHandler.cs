@@ -6,6 +6,7 @@ using ERMS.Domain.Entities.Candidate;
 using ERMS.Domain.Entities.Identity;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -16,16 +17,16 @@ namespace ERMS.Application.Features.Auth.Commands.Register
     {
         private readonly UserManager<User> _userManager;
         private readonly RoleManager<IdentityRole<Guid>> _roleManager;
-        private readonly ICandidateService _candidateService;
+        private readonly IERMSDbContext _context;
         private readonly IMediator _mediator;
-        public RegisterHandler(UserManager<User> userManager, 
+        public RegisterHandler(UserManager<User> userManager,
             RoleManager<IdentityRole<Guid>> roleManager,
-            ICandidateService candidateService,
+            IERMSDbContext context,
             IMediator mediator)
         {
             _userManager = userManager;
             _roleManager = roleManager;
-            _candidateService = candidateService;
+            _context = context;
             _mediator = mediator;
         }
         public async Task<Guid> Handle(RegisterCommand request, CancellationToken cancellationToken)
@@ -55,7 +56,7 @@ namespace ERMS.Application.Features.Auth.Commands.Register
             if (await _roleManager.RoleExistsAsync(AppRoles.Candidate.ToString()))
             {
                 await _userManager.AddToRoleAsync(user, AppRoles.Candidate.ToString());
-                   
+
             }
             else
             {
@@ -68,7 +69,8 @@ namespace ERMS.Application.Features.Auth.Commands.Register
                 CreatedAt = DateTime.UtcNow
             };
 
-            await _candidateService.AddCandidateAsync(c);
+            _context.Candidates.Add(c);
+            await _context.SaveChangesAsync(cancellationToken);
             try
             {
                 await _mediator.Send(new ResendConfirmationCommand { Email = user.Email }, cancellationToken);

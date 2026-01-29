@@ -22,5 +22,5 @@ namespace ERMS.Domain.Entities.Organization
         public virtual Department? ParentDepartment { get; set; }
         public virtual ICollection<Department> ChildDepartments { get; set; } = new List<Department>();
         public virtual ICollection<Employee> Employees { get; set; } = new List<Employee>();
-    }
+         }
 }

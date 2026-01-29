@@ -1,5 +1,7 @@
 using ERMS.Application.Interface;
+using ERMS.Domain.Entities.Identity;
 using MediatR;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
@@ -13,12 +15,18 @@ namespace ERMS.Application.Features.Employees.Commands.DeleteEmployee
         private readonly IERMSDbContext _context;
         private readonly ILogger<DeleteEmployeeHandler> _logger;
         private readonly ICurrentUserService _currentUserService;
+        private readonly UserManager<User> _userManager;
 
-        public DeleteEmployeeHandler(IERMSDbContext context, ILogger<DeleteEmployeeHandler> logger, ICurrentUserService currentUserService)
+        public DeleteEmployeeHandler(
+            IERMSDbContext context,
+            ILogger<DeleteEmployeeHandler> logger,
+            ICurrentUserService currentUserService,
+            UserManager<User> userManager)
         {
             _context = context;
             _logger = logger;
             _currentUserService = currentUserService;
+            _userManager = userManager;
         }
 
         public async Task<bool> Handle(DeleteEmployeeCommand request, CancellationToken cancellationToken)
@@ -40,6 +48,14 @@ namespace ERMS.Application.Features.Employees.Commands.DeleteEmployee
             employee.IsDeleted = true;
             employee.DeletedAt = DateTime.UtcNow;
             employee.Status = "Inactive";
+
+            // Lock the associated user account
+            var user = await _userManager.FindByIdAsync(employee.UserId.ToString());
+            if (user != null)
+            {
+                await _userManager.SetLockoutEnabledAsync(user, true);
+                await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.MaxValue);
+            }
 
             await _context.SaveChangesAsync(cancellationToken);
 

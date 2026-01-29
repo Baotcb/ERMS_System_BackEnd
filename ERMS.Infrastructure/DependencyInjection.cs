@@ -1,5 +1,4 @@
 ﻿using ERMS.Application.Interface;
-using ERMS.Domain.Entities;
 using ERMS.Infrastructure.Data;
 using ERMS.Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
@@ -41,11 +40,6 @@ namespace ERMS.Infrastructure
             services.AddScoped<ICurrentUserService, CurrentUserService>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddTransient<IEmailService, EmailService>();
-            services.AddScoped<ICandidateService, CandidateService>();
-            services.AddScoped<IEnterprisesService, EnterprisesService>();
-            services.AddScoped<ISubscriptionPlanService, SubscriptionPlanService>();
-            services.AddScoped<IDepartmentService, DepartmentService>();
-            services.AddScoped<IEmployeeService, EmployeeService>();
 
 
 

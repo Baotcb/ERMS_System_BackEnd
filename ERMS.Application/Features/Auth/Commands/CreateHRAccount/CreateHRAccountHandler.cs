@@ -1,9 +1,11 @@
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Roles;
+using ERMS.Domain.Entities.Enterprise;
 using ERMS.Domain.Entities.Identity;
 using ERMS.Domain.Entities.Organization;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using System.Threading;
@@ -15,28 +17,26 @@ namespace ERMS.Application.Features.Auth.Commands.CreateHRAccount
     {
         private readonly UserManager<User> _userManager;
         private readonly RoleManager<IdentityRole<Guid>> _roleManager;
-        private readonly IEnterprisesService _enterpriseService;
-        private readonly IDepartmentService _departmentService;
-        private readonly IEmployeeService _employeeService;
+        private readonly IERMSDbContext _context;
 
         public CreateHRAccountHandler(
             UserManager<User> userManager,
             RoleManager<IdentityRole<Guid>> roleManager,
-            IEnterprisesService enterpriseService,
-            IDepartmentService departmentService,
-            IEmployeeService employeeService)
+            IERMSDbContext context)
         {
             _userManager = userManager;
             _roleManager = roleManager;
-            _enterpriseService = enterpriseService;
-            _departmentService = departmentService;
-            _employeeService = employeeService;
+            _context = context;
         }
 
         public async Task<Guid> Handle(CreateHRAccountCommand request, CancellationToken cancellationToken)
         {
-            // 1. Validate Enterprise (via Service)
-            var enterprise = await _enterpriseService.GetByIdAsync(request.EnterpriseId);
+            // 1. Validate Enterprise
+            var enterprise = await _context.Enterprises
+                .AsNoTracking()
+                .Include(x => x.SubscriptionPlan)
+                .Include(x => x.CreatedBy)
+                .FirstOrDefaultAsync(x => x.Id == request.EnterpriseId && !x.IsDeleted, cancellationToken);
 
             if (enterprise == null || enterprise.IsDeleted)
             {
@@ -75,13 +75,31 @@ namespace ERMS.Application.Features.Auth.Commands.CreateHRAccount
             }
             await _userManager.AddToRoleAsync(user, AppRoles.HRManager);
 
-            // 5. Get or Create HR Department (via service - Clean Architecture)
-            var hrDepartment = await _departmentService.GetOrCreateHRDepartmentAsync(enterprise.Id, cancellationToken);
+            // 5. Get or Create HR Department
+            var hrDepartment = await _context.Departments
+                .FirstOrDefaultAsync(d => d.EnterpriseId == enterprise.Id && d.DepartmentCode == "HR" && !d.IsDeleted, cancellationToken);
 
-            // 6. Generate Employee Code (via service)
-            var employeeCode = await _employeeService.GenerateEmployeeCodeAsync(enterprise.Id, cancellationToken);
+            if (hrDepartment == null)
+            {
+                hrDepartment = new Department
+                {
+                    EnterpriseId = enterprise.Id,
+                    DepartmentName = "Human Resources",
+                    DepartmentCode = "HR",
+                    Description = "Default HR Department",
+                    IsActive = true,
+                    IsDeleted = false,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.Departments.Add(hrDepartment);
+                await _context.SaveChangesAsync(cancellationToken);
+            }
 
-            // 7. Create Employee Record (via service)
+            // 6. Generate Employee Code
+            var employeeCount = await _context.Employees.CountAsync(e => e.EnterpriseId == enterprise.Id, cancellationToken);
+            var employeeCode = $"{enterprise.EnterpriseCode}-{(employeeCount + 1):D4}";
+
+            // 7. Create Employee Record
             var employee = new Employee
             {
                 Id = Guid.NewGuid(),
@@ -98,7 +116,8 @@ namespace ERMS.Application.Features.Auth.Commands.CreateHRAccount
                 IsDeleted = false
             };
 
-            await _employeeService.CreateAsync(employee, cancellationToken);
+            _context.Employees.Add(employee);
+            await _context.SaveChangesAsync(cancellationToken);
 
             return user.Id;
         }

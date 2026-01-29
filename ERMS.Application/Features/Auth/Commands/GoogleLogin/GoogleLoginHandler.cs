@@ -5,6 +5,7 @@ using ERMS.Domain.Entities.Identity;
 using Google.Apis.Auth;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
@@ -18,7 +19,7 @@ namespace ERMS.Application.Features.Auth.Commands.GoogleLogin
         private readonly RoleManager<IdentityRole<Guid>> _roleManager;
         private readonly ITokenService _tokenService;
         private readonly IConfiguration _config;
-        private readonly ICandidateService _candidateService;
+        private readonly IERMSDbContext _context;
 
         private const string Provider = "Google";
         private const string DefaultRole = AppRoles.Candidate;
@@ -28,13 +29,13 @@ namespace ERMS.Application.Features.Auth.Commands.GoogleLogin
             RoleManager<IdentityRole<Guid>> roleManager,
             ITokenService tokenService,
             IConfiguration config,
-            ICandidateService candidateService)
+            IERMSDbContext context)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _tokenService = tokenService;
             _config = config;
-            _candidateService = candidateService;
+            _context = context;
         }
 
         public async Task<string> Handle(GoogleLoginCommand request, CancellationToken cancellationToken)
@@ -111,7 +112,8 @@ namespace ERMS.Application.Features.Auth.Commands.GoogleLogin
                     CreatedAt = DateTime.UtcNow
                 };
 
-                await _candidateService.AddCandidateAsync(c);
+                _context.Candidates.Add(c);
+                await _context.SaveChangesAsync(cancellationToken);
                 
             }
 
