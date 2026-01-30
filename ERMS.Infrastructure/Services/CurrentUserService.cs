@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -25,6 +26,17 @@ namespace ERMS.Infrastructure.Services
             {
                 var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 return userId != null ? Guid.Parse(userId) : null;
+            }
+        }
+
+        public IEnumerable<string> Roles
+        {
+            get
+            {
+                var roles = _httpContextAccessor.HttpContext?.User?
+                    .FindAll(ClaimTypes.Role)
+                    .Select(c => c.Value) ?? Enumerable.Empty<string>();
+                return roles;
             }
         }
 

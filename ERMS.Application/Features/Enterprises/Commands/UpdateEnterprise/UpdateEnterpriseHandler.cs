@@ -1,4 +1,6 @@
-﻿using ERMS.Application.Interface;
+using ERMS.Application.Interface;
+using ERMS.Domain.Constants;
+using ERMS.Domain.Constants.Roles;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -13,6 +15,9 @@ namespace ERMS.Application.Features.Enterprises.Commands.UpdateEnterprise
         private readonly IERMSDbContext _context;
         private readonly ICurrentUserService _currentUserService;
 
+        // Số tháng tối thiểu giữa các lần update
+        private const int MinimumMonthsBetweenUpdates = 6;
+
         public UpdateEnterpriseHandler(IERMSDbContext context, ICurrentUserService currentUserService)
         {
             _context = context;
@@ -21,12 +26,21 @@ namespace ERMS.Application.Features.Enterprises.Commands.UpdateEnterprise
 
         public async Task<bool> Handle(UpdateEnterpriseCommand request, CancellationToken cancellationToken)
         {
+            // 1. Kiểm tra người dùng đăng nhập
             var userId = _currentUserService.UserId;
             if (userId == null)
             {
                 throw new UnauthorizedAccessException("Không tìm thấy thông tin người dùng.");
             }
 
+            // 2. Kiểm tra quyền HR
+            var userRoles = _currentUserService.Roles;
+            if (userRoles == null || !userRoles.Contains(AppRoles.HRManager))
+            {
+                throw new UnauthorizedAccessException("Chỉ HR Manager mới có quyền cập nhật thông tin doanh nghiệp.");
+            }
+
+            // 3. Tìm doanh nghiệp
             var enterprise = await _context.Enterprises
                 .FirstOrDefaultAsync(e => e.Id == request.Id, cancellationToken);
 
@@ -40,92 +54,67 @@ namespace ERMS.Application.Features.Enterprises.Commands.UpdateEnterprise
                 throw new Exception("Không thể cập nhật doanh nghiệp đã bị xóa.");
             }
 
-            // Kiểm tra quyền: Chỉ admin hoặc người tạo mới được update
-            // Có thể thêm logic check role ở đây nếu cần
-
-            // Update EnterpriseCode nếu có thay đổi
-            if (!string.IsNullOrEmpty(request.EnterpriseCode) && request.EnterpriseCode != enterprise.EnterpriseCode)
+            // 4. Kiểm tra thời gian update - phải cách nhau ít nhất 6 tháng
+            if (enterprise.UpdatedAt.HasValue)
             {
+                var lastUpdated = enterprise.UpdatedAt.Value;
+                var minimumNextUpdateDate = lastUpdated.AddMonths(MinimumMonthsBetweenUpdates);
+
+                if (DateTime.UtcNow < minimumNextUpdateDate)
+                {
+                    var daysRemaining = (minimumNextUpdateDate - DateTime.UtcNow).Days;
+                    throw new Exception($"Chưa đủ thời gian để cập nhật. Bạn cần đợi thêm {daysRemaining} ngày nữa (tối thiểu 6 tháng kể từ lần cập nhật trước: {lastUpdated:dd/MM/yyyy}).");
+                }
+            }
+
+            // 5. Kiểm tra nếu có thay đổi tên doanh nghiệp
+            if (!string.IsNullOrWhiteSpace(request.EnterpriseName) &&
+                request.EnterpriseName.Trim() != enterprise.EnterpriseName)
+            {
+                var newName = request.EnterpriseName.Trim();
+
+                // 5a. Kiểm tra tên không trùng với doanh nghiệp lớn (blacklist)
+                if (ReservedEnterpriseNames.IsBlacklisted(newName))
+                {
+                    throw new Exception($"Tên doanh nghiệp '{newName}' không được phép sử dụng vì trùng hoặc tương tự với tên của các doanh nghiệp/tổ chức lớn.");
+                }
+
+                // 5b. Kiểm tra tên unique trong hệ thống
                 var existingEnterprise = await _context.Enterprises
-                    .FirstOrDefaultAsync(e => e.EnterpriseCode == request.EnterpriseCode && e.Id != request.Id, cancellationToken);
+                    .FirstOrDefaultAsync(e =>
+                        e.EnterpriseName.ToLower() == newName.ToLower() &&
+                        e.Id != request.Id &&
+                        !e.IsDeleted,
+                        cancellationToken);
 
                 if (existingEnterprise != null)
                 {
-                    throw new Exception("Mã doanh nghiệp đã tồn tại.");
+                    throw new Exception($"Tên doanh nghiệp '{newName}' đã tồn tại trong hệ thống.");
                 }
-                enterprise.EnterpriseCode = request.EnterpriseCode;
+
+                enterprise.EnterpriseName = newName;
             }
 
-            // Update SubscriptionPlan nếu có thay đổi
-            if (request.SubscriptionPlanId.HasValue)
-            {
-                var subscriptionPlan = await _context.SubscriptionPlans
-                    .FirstOrDefaultAsync(sp => sp.Id == request.SubscriptionPlanId.Value, cancellationToken);
-
-                if (subscriptionPlan == null)
-                {
-                    throw new Exception("Không tìm thấy gói đăng ký.");
-                }
-                enterprise.SubscriptionPlanId = request.SubscriptionPlanId.Value;
-            }
-
-            // Update SubscriptionStatus nếu có thay đổi
-            if (!string.IsNullOrEmpty(request.SubscriptionStatus))
-            {
-                var validStatuses = new[] { "Active", "Expired", "Cancelled", "Trial", "PastDue" };
-                if (!validStatuses.Contains(request.SubscriptionStatus))
-                {
-                    throw new Exception($"Trạng thái đăng ký không hợp lệ. Chỉ chấp nhận: {string.Join(", ", validStatuses)}");
-                }
-                enterprise.SubscriptionStatus = request.SubscriptionStatus;
-            }
-
-            // Update các fields khác
-            if (!string.IsNullOrEmpty(request.EnterpriseName))
-            {
-                enterprise.EnterpriseName = request.EnterpriseName;
-            }
-
-            if (request.TaxCode != null)
-            {
-                enterprise.TaxCode = request.TaxCode;
-            }
-
+            // 6. Cập nhật các trường được phép
             if (request.Address != null)
             {
-                enterprise.Address = request.Address;
+                enterprise.Address = request.Address.Trim();
             }
 
             if (request.Phone != null)
             {
-                enterprise.Phone = request.Phone;
-            }
-
-            if (request.Email != null)
-            {
-                enterprise.Email = request.Email;
+                enterprise.Phone = request.Phone.Trim();
             }
 
             if (request.Website != null)
             {
-                enterprise.Website = request.Website;
+                enterprise.Website = request.Website.Trim();
             }
 
-            if (request.LogoUrl != null)
-            {
-                enterprise.LogoUrl = request.LogoUrl;
-            }
+            // 7. Cập nhật thời gian sửa đổi
+            enterprise.UpdatedAt = DateTime.UtcNow;
 
-            if (request.SubscriptionStartDate.HasValue)
-            {
-                enterprise.SubscriptionStartDate = request.SubscriptionStartDate.Value;
-            }
-
-            if (request.SubscriptionEndDate.HasValue)
-            {
-                enterprise.SubscriptionEndDate = request.SubscriptionEndDate.Value;
-            }
-
+            // 8. Lưu thay đổi
             await _context.SaveChangesAsync(cancellationToken);
 
             return true;
