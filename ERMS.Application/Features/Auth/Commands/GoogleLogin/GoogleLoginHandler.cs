@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Linq;
 
@@ -20,6 +21,7 @@ namespace ERMS.Application.Features.Auth.Commands.GoogleLogin
         private readonly ITokenService _tokenService;
         private readonly IConfiguration _config;
         private readonly IERMSDbContext _context;
+
 
         private const string Provider = "Google";
         private const string DefaultRole = AppRoles.Candidate;
@@ -47,15 +49,19 @@ namespace ERMS.Application.Features.Auth.Commands.GoogleLogin
                 {
                     Audience = new[] { _config["GoogleAuth:ClientId"] }
                 });
+            //Kiểm tra chữ ký JWT
 
+           //Kiểm tra token có phải của app bạn không
+
+            //Trả về payload
             if (payload == null || !payload.EmailVerified)
                 throw new UnauthorizedAccessException("Google token không hợp lệ.");
 
-            
+            //Tạo LoginInfo cho Google
             var loginInfo = new UserLoginInfo(
                 Provider,
                 payload.Subject, 
-                Provider
+                Provider    
             );
 
             var user = await _userManager.FindByLoginAsync(
@@ -112,9 +118,11 @@ namespace ERMS.Application.Features.Auth.Commands.GoogleLogin
                     CreatedAt = DateTime.UtcNow
                 };
 
-                _context.Candidates.Add(c);
+                _context.Candidates.Add(c); 
                 await _context.SaveChangesAsync(cancellationToken);
-                
+
+
+
             }
 
 

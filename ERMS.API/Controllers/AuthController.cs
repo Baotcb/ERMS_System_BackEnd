@@ -56,15 +56,24 @@ namespace ERMS.API.Controllers
             _roleManager = roleManager;
         }
         [HttpPost("register")]
+        [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody] RegisterCommand command)
         {
             try
             {
                 var userId = await _sender.Send(command);
 
+                if (await _mediator.Send(new ResendConfirmationCommand { Email = command.Email }))
+                { 
                 return Ok(new
                 {
                     message = "Đăng ký thành công!",
+                    userId = userId
+                });
+            }
+                return Ok(new
+                {
+                    message = "Đăng ký thành công nhưng không thể gửi email xác thực. Vui lòng liên hệ quản trị viên.",
                     userId = userId
                 });
             }

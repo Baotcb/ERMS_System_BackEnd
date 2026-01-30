@@ -19,6 +19,9 @@ namespace ERMS.Domain.Entities.Enterprise
         public DateTime SubscriptionStartDate { get; set; }
         public DateTime SubscriptionEndDate { get; set; }
         public string SubscriptionStatus { get; set; } = "Active";
+
+        public string Status { get; set; } = "Active"; // Active, Locked, Suspended
+
         public Guid? CreatedById { get; set; }
         public bool IsDeleted { get; set; }
         public DateTime? DeletedAt { get; set; }

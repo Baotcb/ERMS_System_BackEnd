@@ -1,7 +1,8 @@
-﻿using ERMS.Application.Features.Auth.Commands.ResendConfirmation;
+
+using ERMS.Application.Features.Auth.Commands.ResendConfirmation;
+using ERMS.Application.Features.Auth.Commands.Register;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Roles;
-using ERMS.Domain.Entities;
 using ERMS.Domain.Entities.Candidate;
 using ERMS.Domain.Entities.Identity;
 using MediatR;
