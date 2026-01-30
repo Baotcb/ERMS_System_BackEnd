@@ -95,7 +95,13 @@ namespace ERMS.Infrastructure.Data
                 .HasForeignKey(e => e.SubscriptionPlanId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-      
+            builder.Entity<Enterprise>()
+                .Property(e => e.Status)
+                .IsRequired()
+                .HasMaxLength(50)
+                .HasDefaultValue("Inactive");
+
+
             builder.Entity<Department>()
                 .HasOne(d => d.Manager)
                 .WithMany()
