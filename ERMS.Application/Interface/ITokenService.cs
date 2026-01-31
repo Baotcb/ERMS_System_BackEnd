@@ -1,4 +1,5 @@
 ﻿using ERMS.Domain.Entities;
+using ERMS.Domain.Entities.Identity;
 using System;
 using System.Collections.Generic;
 using System.Text;

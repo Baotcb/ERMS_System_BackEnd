@@ -1,5 +1,6 @@
 ﻿using ERMS.Application.Interface;
 using ERMS.Domain.Entities;
+using ERMS.Domain.Entities.Identity;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using System;
@@ -32,7 +33,7 @@ namespace ERMS.Application.Features.Auth.Commands.ChangePassword
             {
                 throw new Exception("Không tìm thấy người dùng");
             }
-            var result = _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword).Result;
+            var result = await _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
             if (!result.Succeeded)
             {
                 throw new Exception("Thay đổi mật khẩu thất bại: " + string.Join(", ", result.Errors.Select(e => e.Description)));
