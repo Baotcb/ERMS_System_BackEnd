@@ -45,7 +45,7 @@ namespace ERMS.Application.Features.Auth.Commands.ResendConfirmation
                 var clientUrl = _config["ClientSettings:Url"];
                 var encodedToken = Uri.EscapeDataString(token);
                 
-                var confirmationUrl = $"{clientUrl}/auth/confirm-email?userId={user.Id}&token={encodedToken}&email={Uri.EscapeDataString(user.Email!)}";
+                var confirmationUrl = $"{clientUrl}/confirm-email?userId={user.Id}&token={encodedToken}&email={Uri.EscapeDataString(user.Email!)}";
 
                 var subject = "Xác thực email tài khoản ERMS";
                 var body = CreateEmailTemplate(user.FullName, confirmationUrl);
@@ -112,25 +112,14 @@ namespace ERMS.Application.Features.Auth.Commands.ResendConfirmation
         }}
 
         .brand-logo {{
-            font-size: 20px;
+            font-size: 32px;
             font-weight: 700;
-            color: #4f46e5;
-            letter-spacing: -0.5px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            color: #7c3aed;
+            letter-spacing: 1px;
         }}
 
         .logo-icon {{
-            width: 32px;
-            height: 32px;
-            background: #eef2ff;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #4f46e5;
-            font-size: 18px;
+            display: none;
         }}
 
         .main-content {{
@@ -185,14 +174,14 @@ namespace ERMS.Application.Features.Auth.Commands.ResendConfirmation
         .security-note {{
             background-color: #f8fafc;
             border-radius: 12px;
-            padding: 20px;
+            padding: 10px 14px;
             font-size: 13px;
             color: #64748b;
             border-left: 4px solid #e2e8f0;
         }}
 
         .security-item {{
-            margin-bottom: 8px;
+            margin-bottom: 0;
             display: flex;
             align-items: flex-start;
             gap: 12px;
@@ -201,31 +190,6 @@ namespace ERMS.Application.Features.Auth.Commands.ResendConfirmation
         .icon {{
             color: #94a3b8;
             font-size: 14px;
-        }}
-
-        .fallback-section {{
-            margin-top: 30px;
-        }}
-
-        .fallback-label {{
-            font-size: 12px;
-            color: #4f46e5;
-            margin-bottom: 10px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-        }}
-
-        .fallback-link-box {{
-            padding: 14px;
-            background-color: #f5f7ff;
-            border-radius: 10px;
-            border: 1px dashed #c7d2fe;
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            font-size: 12px;
-            color: #4338ca;
-            word-break: break-all;
-            line-height: 1.4;
         }}
 
         .footer {{
@@ -265,10 +229,7 @@ namespace ERMS.Application.Features.Auth.Commands.ResendConfirmation
         <div class='container'>
             <div class='accent-bar'></div>
             <div class='brand-section'>
-                <div class='brand-logo'>
-                    <div class='logo-icon'>E</div>
-                    ERMS
-                </div>
+                <div class='brand-logo'>ERMS</div>
             </div>
 
             <div class='main-content'>
@@ -290,13 +251,6 @@ namespace ERMS.Application.Features.Auth.Commands.ResendConfirmation
                     <div class='security-item'>
                         <span class='icon'>ⓘ</span>
                         <span>Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email.</span>
-                    </div>
-                </div>
-
-                <div class='fallback-section'>
-                    <div class='fallback-label'>Sử dụng liên kết trực tiếp</div>
-                    <div class='fallback-link-box'>
-                        {confirmationUrl}
                     </div>
                 </div>
 

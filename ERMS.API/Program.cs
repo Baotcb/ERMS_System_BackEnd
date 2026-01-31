@@ -23,9 +23,13 @@ app.MapScalarApiReference(options => {
     options.ShowSidebar = true;
 });
 
-app.UseHttpsRedirection();
-
 app.UseCors("AllowFrontend");
+
+// Only redirect to HTTPS in production (prevents CORS preflight issues in dev)
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseRateLimiter(); 
 app.UseAuthentication();

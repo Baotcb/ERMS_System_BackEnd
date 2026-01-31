@@ -39,15 +39,38 @@ namespace ERMS.API
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
             })
-                .AddCookie( options =>
+                .AddCookie(options =>
                 {
                     options.Cookie.Name = "ERMS.External";
                     options.Cookie.HttpOnly = true;
-                    options.Cookie.SameSite = SameSiteMode.None; 
+                    options.Cookie.SameSite = SameSiteMode.None;
                     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
                 })
                .AddJwtBearer(options =>
                {
+                   // Read token from Authorization header OR from auth_token cookie
+                   options.Events = new JwtBearerEvents
+                   {
+                       OnMessageReceived = context =>
+                       {
+                           // Try to get token from Authorization header first
+                           var token = context.Request.Headers.Authorization.ToString();
+                           if (!string.IsNullOrEmpty(token) && token.StartsWith("Bearer "))
+                           {
+                               context.Token = token.Substring("Bearer ".Length).Trim();
+                           }
+                           else
+                           {
+                               // Fall back to auth_token cookie (for HttpOnly cookie auth)
+                               if (context.Request.Cookies.TryGetValue("auth_token", out var cookieToken))
+                               {
+                                   context.Token = cookieToken;
+                               }
+                           }
+                           return Task.CompletedTask;
+                       }
+                   };
+
                    options.TokenValidationParameters = new TokenValidationParameters
                    {
                        ValidateIssuer = true,

@@ -6,6 +6,8 @@ using ERMS.Application.Features.Auth.Commands.Login;
 using ERMS.Application.Features.Auth.Commands.Register;
 using ERMS.Application.Features.Auth.Commands.ResendConfirmation;
 using ERMS.Application.Features.Auth.Commands.ResetPassword;
+using ERMS.Application.Features.Auth.Commands.CreateHRAccount;
+using ERMS.Application.Features.Enterprises.Commands.RegisterEnterprise;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Roles;
 using ERMS.Domain.Entities.Identity;
@@ -270,6 +272,43 @@ namespace ERMS.API.Controllers
 
 
 
+
+
+        [HttpPost("register-enterprise")]
+        public async Task<IActionResult> RegisterEnterprise([FromBody] RegisterEnterpriseCommand command)
+        {
+            try
+            {
+                var enterpriseId = await _sender.Send(command);
+                return Ok(new
+                {
+                    message = "Đăng ký doanh nghiệp thành công!",
+                    enterpriseId = enterpriseId
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("create-hr-account")]
+        public async Task<IActionResult> CreateHRAccount([FromBody] CreateHRAccountCommand command)
+        {
+            try
+            {
+                var userId = await _sender.Send(command);
+                return Ok(new
+                {
+                    message = "Tạo tài khoản thành công! Vui lòng kiểm tra email để xác thực.",
+                    userId = userId
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
 
     } 
 }
