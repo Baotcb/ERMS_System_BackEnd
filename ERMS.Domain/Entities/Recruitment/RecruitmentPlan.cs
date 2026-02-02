@@ -15,10 +15,12 @@ namespace ERMS.Domain.Entities.Recruitment
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
         public decimal? TotalBudget { get; set; }
-        public string Status { get; set; } = "Draft";
+        public string Status { get; set; } = "Pending";
         public Guid CreatedById { get; set; }
         public Guid? ApprovedById { get; set; }
         public DateTime? ApprovedAt { get; set; }
+        public string? RejectionReason { get; set; }
+        public DateTime? RejectedAt { get; set; }
         public bool IsDeleted { get; set; }
         public DateTime? DeletedAt { get; set; }
 
