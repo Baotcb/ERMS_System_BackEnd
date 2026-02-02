@@ -37,7 +37,8 @@ namespace ERMS.Infrastructure.Data
         public DbSet<Skill> Skills { get; set; }
         public DbSet<JobCompetency> JobCompetencies { get; set; }
 
-     
+
+        public DbSet<RecruitmentCampaign> RecruitmentCampaigns { get; set; }
         public DbSet<RecruitmentPlan> RecruitmentPlans { get; set; }
         public DbSet<PlanDetail> PlanDetails { get; set; }
         public DbSet<JobPosting> JobPostings { get; set; }
@@ -181,6 +182,44 @@ namespace ERMS.Infrastructure.Data
                 .HasOne(o => o.ApprovedBy)
                 .WithMany()
                 .HasForeignKey(o => o.ApprovedById)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<RecruitmentCampaign>()
+                .HasOne(c => c.Enterprise)
+                .WithMany()
+                .HasForeignKey(c => c.EnterpriseId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<RecruitmentCampaign>()
+                .HasOne(c => c.CreatedBy)
+                .WithMany()
+                .HasForeignKey(c => c.CreatedById)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<RecruitmentCampaign>()
+                .HasIndex(c => new { c.EnterpriseId, c.CampaignCode })
+                .IsUnique()
+                .HasDatabaseName("UQ_RC_Enterprise_Code");
+
+            builder.Entity<RecruitmentCampaign>()
+                .Property(c => c.CampaignName)
+                .HasMaxLength(200)
+                .IsRequired();
+
+            builder.Entity<RecruitmentCampaign>()
+                .Property(c => c.CampaignCode)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            builder.Entity<RecruitmentCampaign>()
+                .Property(c => c.Status)
+                .HasMaxLength(50)
+                .HasDefaultValue("Draft");
+
+            builder.Entity<RecruitmentPlan>()
+                .HasOne(r => r.Campaign)
+                .WithMany(c => c.RecruitmentPlans)
+                .HasForeignKey(r => r.CampaignId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             builder.Entity<RecruitmentPlan>()

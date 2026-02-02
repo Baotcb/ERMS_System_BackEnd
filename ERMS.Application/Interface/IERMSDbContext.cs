@@ -35,6 +35,7 @@ namespace ERMS.Application.Interface
         DbSet<JobCompetency> JobCompetencies { get; set; }
 
         // ================= Recruitment =================
+        DbSet<RecruitmentCampaign> RecruitmentCampaigns { get; set; }
         DbSet<RecruitmentPlan> RecruitmentPlans { get; set; }
         DbSet<PlanDetail> PlanDetails { get; set; }
         DbSet<JobPosting> JobPostings { get; set; }
