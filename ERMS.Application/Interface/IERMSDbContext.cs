@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using System.Threading;
 using System.Threading.Tasks;
 using ERMS.Domain.Entities.Identity;
@@ -16,7 +17,8 @@ namespace ERMS.Application.Interface
 {
     public interface IERMSDbContext
     {
-        
+        DatabaseFacade Database { get; }
+
         DbSet<User> Users { get; set; }
 
        

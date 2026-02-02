@@ -72,7 +72,7 @@ public sealed class CreateRecruitmentPlanHandler : IRequestHandler<CreateRecruit
             StartDate = request.StartDate,
             EndDate = request.EndDate,
             TotalBudget = request.TotalBudget,
-            Status = "Draft",
+            Status = "Pending",
             CreatedById = userId.Value,
             IsDeleted = false,
             CreatedAt = DateTime.UtcNow

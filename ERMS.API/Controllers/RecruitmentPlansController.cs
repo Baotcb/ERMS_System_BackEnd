@@ -1,6 +1,8 @@
 using ERMS.Application.Features.RecruitmentPlans.Commands.CreateRecruitmentPlan;
 using ERMS.Application.Features.RecruitmentPlans.Commands.DeleteRecruitmentPlan;
 using ERMS.Application.Features.RecruitmentPlans.Commands.UpdateRecruitmentPlan;
+using ERMS.Application.Features.RecruitmentPlans.Commands.ApprovePlan;
+using ERMS.Application.Features.RecruitmentPlans.Commands.RejectPlan;
 using ERMS.Application.Features.RecruitmentPlans.Queries.GetAllRecruitmentPlans;
 using ERMS.Application.Features.RecruitmentPlans.Queries.GetRecruitmentPlanById;
 using MediatR;
@@ -95,6 +97,48 @@ public class RecruitmentPlansController : ControllerBase
         {
             await _mediator.Send(new DeleteRecruitmentPlanCommand { Id = id });
             return Ok(new { message = "Xóa kế hoạch tuyển dụng thành công" });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPatch("approve")]
+    public async Task<IActionResult> ApprovePlan([FromBody] ApprovePlanCommand command)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        try
+        {
+            await _mediator.Send(command);
+            return Ok(new { message = "Phê duyệt kế hoạch tuyển dụng thành công" });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPatch("reject")]
+    public async Task<IActionResult> RejectPlan([FromBody] RejectPlanCommand command)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        try
+        {
+            await _mediator.Send(command);
+            return Ok(new { message = "Từ chối kế hoạch tuyển dụng thành công" });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
         }
         catch (Exception ex)
         {

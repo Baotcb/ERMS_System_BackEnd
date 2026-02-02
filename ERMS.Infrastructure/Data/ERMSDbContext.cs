@@ -234,6 +234,15 @@ namespace ERMS.Infrastructure.Data
                 .HasForeignKey(r => r.ApprovedById)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            builder.Entity<RecruitmentPlan>()
+                .Property(r => r.Status)
+                .HasMaxLength(50)
+                .HasDefaultValue("Pending");
+
+            builder.Entity<RecruitmentPlan>()
+                .Property(r => r.RejectionReason)
+                .HasMaxLength(1000);
+
             builder.Entity<PlanDetail>()
                 .HasOne(p => p.RequestedBy)
                 .WithMany()
