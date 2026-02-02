@@ -33,6 +33,8 @@ public sealed class GetRecruitmentPlanByIdHandler : IRequestHandler<GetRecruitme
             {
                 Id = rp.Id,
                 EnterpriseId = rp.EnterpriseId,
+                CampaignId = rp.CampaignId,
+                CampaignName = rp.Campaign.CampaignName,
                 PlanName = rp.PlanName,
                 PlanCode = rp.PlanCode,
                 Description = rp.Description,

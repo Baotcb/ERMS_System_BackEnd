@@ -53,6 +53,8 @@ public sealed class GetAllRecruitmentPlansHandler : IRequestHandler<GetAllRecrui
             .Select(rp => new RecruitmentPlanDto
             {
                 Id = rp.Id,
+                CampaignId = rp.CampaignId,
+                CampaignName = rp.Campaign.CampaignName,
                 PlanName = rp.PlanName,
                 PlanCode = rp.PlanCode,
                 Description = rp.Description,
