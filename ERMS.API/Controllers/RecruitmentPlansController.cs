@@ -21,9 +21,6 @@ public class RecruitmentPlansController : ControllerBase
         _mediator = mediator;
     }
 
-    /// <summary>
-    /// Lấy danh sách kế hoạch tuyển dụng (phân trang)
-    /// </summary>
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] GetAllRecruitmentPlansQuery query)
     {
@@ -37,10 +34,6 @@ public class RecruitmentPlansController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
-
-    /// <summary>
-    /// Lấy chi tiết kế hoạch tuyển dụng theo ID
-    /// </summary>
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(Guid id)
     {
@@ -55,9 +48,6 @@ public class RecruitmentPlansController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Tạo kế hoạch tuyển dụng mới
-    /// </summary>
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateRecruitmentPlanCommand command)
     {
@@ -78,10 +68,6 @@ public class RecruitmentPlansController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
-
-    /// <summary>
-    /// Cập nhật kế hoạch tuyển dụng
-    /// </summary>
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateRecruitmentPlanCommand command)
     {
@@ -102,9 +88,6 @@ public class RecruitmentPlansController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Xóa kế hoạch tuyển dụng (soft delete)
-    /// </summary>
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
