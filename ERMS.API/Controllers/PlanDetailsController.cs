@@ -5,6 +5,7 @@ using ERMS.Application.Features.PlanDetails.Queries.GetAllPlanDetails;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ERMS.Domain.Constants.Roles;
 
 namespace ERMS.API.Controllers;
 
@@ -24,6 +25,7 @@ public class PlanDetailsController : ControllerBase
     /// Lấy danh sách chi tiết kế hoạch theo PlanId
     /// </summary>
     [HttpGet]
+    [Authorize(Roles =AppRoles.DepartmentHead + "+" + AppRoles.Director)]
     public async Task<IActionResult> GetAll([FromQuery] Guid recruitmentPlanId)
     {
         try
@@ -45,6 +47,7 @@ public class PlanDetailsController : ControllerBase
     /// Plan phải ở status Draft hoặc Rejected. Tự động recalculate TotalBudget.
     /// </remarks>
     [HttpPost]
+    [Authorize(Roles = AppRoles.DepartmentHead)]
     public async Task<IActionResult> Create([FromBody] CreatePlanDetailCommand command)
     {
         if (!ModelState.IsValid)
@@ -76,6 +79,7 @@ public class PlanDetailsController : ControllerBase
     /// Plan phải ở status Draft hoặc Rejected. Tự động recalculate TotalBudget.
     /// </remarks>
     [HttpPut("{id}")]
+    [Authorize(Roles = AppRoles.DepartmentHead)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdatePlanDetailCommand command)
     {
         if (id != command.Id)
@@ -106,6 +110,7 @@ public class PlanDetailsController : ControllerBase
     /// Soft delete. Plan phải ở status Draft hoặc Rejected. Tự động recalculate TotalBudget.
     /// </remarks>
     [HttpDelete("{id}")]
+    [Authorize(Roles = AppRoles.DepartmentHead )]
     public async Task<IActionResult> Delete(Guid id)
     {
         try

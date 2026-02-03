@@ -2,6 +2,7 @@ using ERMS.Application.Features.RecruitmentCampaigns.Commands.CreateRecruitmentC
 using ERMS.Application.Features.RecruitmentCampaigns.Commands.UpdateCampaignStatus;
 using ERMS.Application.Features.RecruitmentCampaigns.Queries.GetAllRecruitmentCampaigns;
 using ERMS.Application.Features.RecruitmentCampaigns.Queries.GetRecruitmentCampaignById;
+using ERMS.Domain.Constants.Roles;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -27,6 +28,7 @@ public class RecruitmentCampaignsController : ControllerBase
     /// Filter: ?status=Open để lấy các chiến dịch đang mở cho Dept Head chọn
     /// </remarks>
     [HttpGet]
+    [Authorize(Roles = AppRoles.HRManager + "," + AppRoles.Director + ","+ AppRoles.DepartmentHead)]
     public async Task<IActionResult> GetAll([FromQuery] GetAllRecruitmentCampaignsQuery query)
     {
         try
@@ -44,6 +46,7 @@ public class RecruitmentCampaignsController : ControllerBase
     /// Lấy chi tiết chiến dịch tuyển dụng theo ID
     /// </summary>
     [HttpGet("{id}")]
+    [Authorize(Roles = AppRoles.HRManager + "," + AppRoles.Director + "," + AppRoles.DepartmentHead)]
     public async Task<IActionResult> GetById(Guid id)
     {
         try
@@ -64,6 +67,7 @@ public class RecruitmentCampaignsController : ControllerBase
     /// Tạo chiến dịch với status Open tự động
     /// </remarks>
     [HttpPost]
+    [Authorize(Roles = AppRoles.HRManager)]
     public async Task<IActionResult> Create([FromBody] CreateRecruitmentCampaignCommand command)
     {
         if (!ModelState.IsValid)
@@ -91,22 +95,18 @@ public class RecruitmentCampaignsController : ControllerBase
     /// Ví dụ: Đóng chiến dịch khi hết hạn hoặc đủ plan
     /// Workflow: Draft → Open → Closed → Archived
     /// </remarks>
-    [HttpPut("{id}/status")]
-    public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateStatusRequest request)
+    [HttpPut("status")]
+    [Authorize(Roles = AppRoles.HRManager)]
+    public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateCampaignStatusCommand command)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
         try
         {
-            var command = new UpdateCampaignStatusCommand
-            {
-                Id = id,
-                NewStatus = request.NewStatus
-            };
-
+      
             await _mediator.Send(command);
-            return Ok(new { message = $"Cập nhật trạng thái chiến dịch thành '{request.NewStatus}' thành công" });
+            return Ok(new { message = $"Cập nhật trạng thái chiến dịch thành '{command.NewStatus}' thành công" });
         }
         catch (Exception ex)
         {
@@ -115,7 +115,4 @@ public class RecruitmentCampaignsController : ControllerBase
     }
 }
 
-public class UpdateStatusRequest
-{
-    public string NewStatus { get; set; } = null!;
-}
+
