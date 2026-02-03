@@ -3,6 +3,8 @@ using ERMS.Application.Features.RecruitmentPlans.Commands.DeleteRecruitmentPlan;
 using ERMS.Application.Features.RecruitmentPlans.Commands.UpdateRecruitmentPlan;
 using ERMS.Application.Features.RecruitmentPlans.Commands.ApprovePlan;
 using ERMS.Application.Features.RecruitmentPlans.Commands.RejectPlan;
+using ERMS.Application.Features.RecruitmentPlans.Commands.SubmitPlan;
+using ERMS.Application.Features.RecruitmentPlans.Commands.ResubmitPlan;
 using ERMS.Application.Features.RecruitmentPlans.Queries.GetAllRecruitmentPlans;
 using ERMS.Application.Features.RecruitmentPlans.Queries.GetRecruitmentPlanById;
 using MediatR;
@@ -135,6 +137,60 @@ public class RecruitmentPlansController : ControllerBase
         {
             await _mediator.Send(command);
             return Ok(new { message = "Từ chối kế hoạch tuyển dụng thành công" });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Department Head submit kế hoạch tuyển dụng (Draft → Pending)
+    /// </summary>
+    /// <remarks>
+    /// Chuyển status từ Draft → Pending để chờ Director duyệt
+    /// </remarks>
+    [HttpPatch("submit")]
+    public async Task<IActionResult> SubmitPlan([FromBody] SubmitPlanCommand command)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        try
+        {
+            await _mediator.Send(command);
+            return Ok(new { message = "Submit kế hoạch tuyển dụng thành công. Đang chờ Director phê duyệt." });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Department Head resubmit kế hoạch đã bị từ chối (Rejected → Pending)
+    /// </summary>
+    /// <remarks>
+    /// Chuyển status từ Rejected → Pending sau khi chỉnh sửa
+    /// </remarks>
+    [HttpPatch("resubmit")]
+    public async Task<IActionResult> ResubmitPlan([FromBody] ResubmitPlanCommand command)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        try
+        {
+            await _mediator.Send(command);
+            return Ok(new { message = "Resubmit kế hoạch tuyển dụng thành công. Đang chờ Director phê duyệt." });
         }
         catch (UnauthorizedAccessException ex)
         {

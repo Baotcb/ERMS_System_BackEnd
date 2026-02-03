@@ -8,21 +8,26 @@ namespace ERMS.Domain.Constants.Recruitment
     public static class PlanStatus
     {
         /// <summary>
-        /// ⏳ Pending: Dept Head đã submit, đang chờ HR phê duyệt
+        /// 📝 Draft: Dept Head đang soạn thảo, chưa submit
+        /// </summary>
+        public const string Draft = "Draft";
+
+        /// <summary>
+        /// ⏳ Pending: Dept Head đã submit, đang chờ Director phê duyệt
         /// </summary>
         public const string Pending = "Pending";
 
         /// <summary>
-        /// ✅ Approved: HR đã phê duyệt, có thể tạo JobPosting
+        /// ✅ Approved: Director đã phê duyệt, có thể tạo JobPosting
         /// </summary>
         public const string Approved = "Approved";
 
         /// <summary>
-        /// ❌ Rejected: HR từ chối, cần chỉnh sửa hoặc hủy
+        /// ❌ Rejected: Director từ chối, cần chỉnh sửa và resubmit
         /// </summary>
         public const string Rejected = "Rejected";
 
-        public static readonly string[] ValidStatuses = { Pending, Approved, Rejected };
+        public static readonly string[] ValidStatuses = { Draft, Pending, Approved, Rejected };
 
         /// <summary>
         /// Kiểm tra trạng thái có hợp lệ không
@@ -33,15 +38,15 @@ namespace ERMS.Domain.Constants.Recruitment
         }
 
         /// <summary>
-        /// Kiểm tra plan đã được phê duyệt chưa
+        /// Kiểm tra plan đang ở Draft
         /// </summary>
-        public static bool IsApproved(string status)
+        public static bool IsDraft(string status)
         {
-            return status.Equals(Approved, StringComparison.OrdinalIgnoreCase);
+            return status.Equals(Draft, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
-        /// Kiểm tra plan đang chờ phê duyệt không
+        /// Kiểm tra plan đang chờ phê duyệt
         /// </summary>
         public static bool IsPending(string status)
         {
@@ -49,7 +54,15 @@ namespace ERMS.Domain.Constants.Recruitment
         }
 
         /// <summary>
-        /// Kiểm tra plan bị từ chối không
+        /// Kiểm tra plan đã được phê duyệt
+        /// </summary>
+        public static bool IsApproved(string status)
+        {
+            return status.Equals(Approved, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Kiểm tra plan bị từ chối
         /// </summary>
         public static bool IsRejected(string status)
         {
@@ -57,7 +70,31 @@ namespace ERMS.Domain.Constants.Recruitment
         }
 
         /// <summary>
-        /// Kiểm tra HR có thể review (approve/reject) plan không
+        /// Kiểm tra có thể CRUD PlanDetails không (Draft OR Rejected)
+        /// </summary>
+        public static bool CanEditPlanDetails(string status)
+        {
+            return IsDraft(status) || IsRejected(status);
+        }
+
+        /// <summary>
+        /// Kiểm tra có thể Submit không (Draft only)
+        /// </summary>
+        public static bool CanSubmit(string status)
+        {
+            return IsDraft(status);
+        }
+
+        /// <summary>
+        /// Kiểm tra có thể Resubmit không (Rejected only)
+        /// </summary>
+        public static bool CanResubmit(string status)
+        {
+            return IsRejected(status);
+        }
+
+        /// <summary>
+        /// Kiểm tra Director có thể review (approve/reject) không
         /// </summary>
         public static bool CanReview(string status)
         {
@@ -79,11 +116,17 @@ namespace ERMS.Domain.Constants.Recruitment
         {
             return (currentStatus, newStatus) switch
             {
-                // HR review
+                // Dept Head submit
+                (Draft, Pending) => true,
+
+                // Dept Head resubmit
+                (Rejected, Pending) => true,
+
+                // Director review
                 (Pending, Approved) => true,
                 (Pending, Rejected) => true,
 
-                // HR can revoke approval
+                // Director can revoke approval
                 (Approved, Rejected) => true,
 
                 _ => false
@@ -97,6 +140,7 @@ namespace ERMS.Domain.Constants.Recruitment
         {
             return status switch
             {
+                Draft => "Đang soạn thảo",
                 Pending => "Chờ phê duyệt",
                 Approved => "Đã phê duyệt",
                 Rejected => "Bị từ chối",
