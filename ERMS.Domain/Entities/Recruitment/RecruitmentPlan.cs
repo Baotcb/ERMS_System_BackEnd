@@ -9,6 +9,7 @@ namespace ERMS.Domain.Entities.Recruitment
     {
         public Guid EnterpriseId { get; set; }
         public Guid CampaignId { get; set; }
+        public int DepartmentId { get; set; }
         public string PlanName { get; set; } = null!;
         public string PlanCode { get; set; } = null!;
         public string? Description { get; set; }
@@ -26,6 +27,7 @@ namespace ERMS.Domain.Entities.Recruitment
 
         public virtual Enterprise.Enterprise Enterprise { get; set; } = null!;
         public virtual RecruitmentCampaign Campaign { get; set; } = null!;
+        public virtual Organization.Department Department { get; set; } = null!;
         public virtual Identity.User CreatedBy { get; set; } = null!;
         public virtual Identity.User? ApprovedBy { get; set; }
         public virtual ICollection<PlanDetail> PlanDetails { get; set; } = new List<PlanDetail>();

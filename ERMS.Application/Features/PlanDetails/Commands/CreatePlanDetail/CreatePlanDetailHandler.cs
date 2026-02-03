@@ -90,7 +90,6 @@ public sealed class CreatePlanDetailHandler : IRequestHandler<CreatePlanDetailCo
         {
             Id = Guid.NewGuid(),
             RecruitmentPlanId = request.RecruitmentPlanId,
-            DepartmentId = request.DepartmentId,
             RequestedById = userId.Value,
             PositionTitle = request.PositionTitle.Trim(),
             Quantity = request.Quantity,
