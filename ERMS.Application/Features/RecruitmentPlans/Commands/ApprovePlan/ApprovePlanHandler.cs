@@ -50,9 +50,10 @@ public sealed class ApprovePlanHandler : IRequestHandler<ApprovePlanCommand, boo
 
         try
         {
-            
+            // 5. Tìm plan với campaign và PlanDetails
             var plan = await _context.RecruitmentPlans
                 .Include(p => p.Campaign)
+                .Include(p => p.PlanDetails)
                 .FirstOrDefaultAsync(p =>
                     p.Id == request.PlanId &&
                     p.EnterpriseId == enterpriseId.Value &&
@@ -96,24 +97,33 @@ public sealed class ApprovePlanHandler : IRequestHandler<ApprovePlanCommand, boo
                 }
             }
 
-          
+            // 9. Cập nhật plan status
             plan.Status = PlanStatus.Approved;
             plan.ApprovedById = userId.Value;
             plan.ApprovedAt = DateTime.UtcNow;
             plan.UpdatedAt = DateTime.UtcNow;
 
-        
+            // 10. Auto-approve tất cả PlanDetails
+            var activePlanDetails = plan.PlanDetails.Where(d => !d.IsDeleted).ToList();
+            foreach (var detail in activePlanDetails)
+            {
+                detail.Status = PlanDetailStatus.Approved;
+                detail.UpdatedAt = DateTime.UtcNow;
+            }
+
+            // 11. Lưu thay đổi
             await _context.SaveChangesAsync(cancellationToken);
 
-         
+            // 12. Commit transaction
             await transaction.CommitAsync(cancellationToken);
 
             _logger.LogInformation(
-                "Director {DirectorId} approved plan {PlanId} ({PlanName}). Budget: {Budget} VNĐ",
+                "Director {DirectorId} approved plan {PlanId} ({PlanName}). Budget: {Budget} VNĐ, {Count} PlanDetails approved.",
                 userId.Value,
                 plan.Id,
                 plan.PlanName,
-                plan.TotalBudget ?? 0);
+                plan.TotalBudget ?? 0,
+                activePlanDetails.Count);
 
             return true;
         }

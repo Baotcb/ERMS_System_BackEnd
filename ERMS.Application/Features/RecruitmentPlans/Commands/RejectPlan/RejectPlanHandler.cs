@@ -56,9 +56,10 @@ public sealed class RejectPlanHandler : IRequestHandler<RejectPlanCommand, bool>
             throw new Exception("Lý do từ chối không được vượt quá 1000 ký tự.");
         }
 
-      
+        // 5. Tìm plan với campaign và PlanDetails
         var plan = await _context.RecruitmentPlans
             .Include(p => p.Campaign)
+            .Include(p => p.PlanDetails)
             .FirstOrDefaultAsync(p =>
                 p.Id == request.PlanId &&
                 p.EnterpriseId == enterpriseId.Value &&
@@ -75,21 +76,30 @@ public sealed class RejectPlanHandler : IRequestHandler<RejectPlanCommand, bool>
             throw new Exception($"Chỉ có thể từ chối kế hoạch ở trạng thái 'Pending'. Trạng thái hiện tại: {PlanStatus.GetDescription(plan.Status)}");
         }
 
-    
+        // 7. Cập nhật plan status
         plan.Status = PlanStatus.Rejected;
         plan.RejectionReason = request.RejectionReason.Trim();
         plan.RejectedAt = DateTime.UtcNow;
         plan.UpdatedAt = DateTime.UtcNow;
 
-      
+        // 8. Auto-reject tất cả PlanDetails
+        var activePlanDetails = plan.PlanDetails.Where(d => !d.IsDeleted).ToList();
+        foreach (var detail in activePlanDetails)
+        {
+            detail.Status = PlanDetailStatus.Rejected;
+            detail.UpdatedAt = DateTime.UtcNow;
+        }
+
+        // 9. Lưu thay đổi
         await _context.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation(
-            "Director {DirectorId} rejected plan {PlanId} ({PlanName}). Reason: {Reason}",
+            "Director {DirectorId} rejected plan {PlanId} ({PlanName}). Reason: {Reason}, {Count} PlanDetails rejected.",
             userId.Value,
             plan.Id,
             plan.PlanName,
-            request.RejectionReason);
+            request.RejectionReason,
+            activePlanDetails.Count);
 
         return true;
     }

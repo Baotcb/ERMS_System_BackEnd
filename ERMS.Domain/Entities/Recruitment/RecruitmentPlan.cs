@@ -15,7 +15,7 @@ namespace ERMS.Domain.Entities.Recruitment
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
         public decimal? TotalBudget { get; set; }
-        public string Status { get; set; } = "Pending";
+        public string Status { get; set; } = "Draft";
         public Guid CreatedById { get; set; }
         public Guid? ApprovedById { get; set; }
         public DateTime? ApprovedAt { get; set; }

@@ -237,7 +237,7 @@ namespace ERMS.Infrastructure.Data
             builder.Entity<RecruitmentPlan>()
                 .Property(r => r.Status)
                 .HasMaxLength(50)
-                .HasDefaultValue("Pending");
+                .HasDefaultValue("Draft");
 
             builder.Entity<RecruitmentPlan>()
                 .Property(r => r.RejectionReason)
