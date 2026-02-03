@@ -252,7 +252,7 @@ namespace ERMS.Infrastructure.Data
             builder.Entity<RecruitmentPlan>()
                 .HasOne(r => r.Department)
                 .WithMany()
-                .HasForeignKey("DepartmentId") // Shadow property
+                .HasForeignKey(r => r.DepartmentId)
                 .OnDelete(DeleteBehavior.Restrict);
 
 
