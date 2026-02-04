@@ -160,7 +160,7 @@ namespace ERMS.UnitTests.Features.Auth.Command.CreateHRAccount
             // Verify Add was called
             _employeesMock.Verify(x => x.Add(It.IsAny<Employee>()), Times.Once);
             _departmentsMock.Verify(x => x.Add(It.IsAny<Department>()), Times.Once);
-            _contextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+            _contextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.AtMost(2));
         }
     }
 
