@@ -2,6 +2,7 @@ using ERMS.Application.Features.Departments.Commands.CreateDepartment;
 using ERMS.Application.Features.Departments.Commands.DeleteDepartment;
 using ERMS.Application.Features.Departments.Commands.UpdateDepartment;
 using ERMS.Application.Features.Departments.Queries.GetAllDepartments;
+using ERMS.Domain.Constants.Roles;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -26,6 +27,7 @@ namespace ERMS.API.Controllers
         /// Lấy danh sách phòng ban (phân trang)
         /// </summary>
         [HttpGet]
+
         public async Task<IActionResult> GetAll([FromQuery] GetAllDepartmentsQuery query)
         {
             try
@@ -43,6 +45,7 @@ namespace ERMS.API.Controllers
         /// Tạo phòng ban mới
         /// </summary>
         [HttpPost]
+        [Authorize(Roles =AppRoles.HRManager)]
         public async Task<IActionResult> Create([FromBody] CreateDepartmentCommand command)
         {
             if (!ModelState.IsValid)
@@ -67,6 +70,7 @@ namespace ERMS.API.Controllers
         /// Cập nhật phòng ban
         /// </summary>
         [HttpPut("{id}")]
+        [Authorize(Roles = AppRoles.HRManager+","+AppRoles.DepartmentHead)]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateDepartmentCommand command)
         {
             if (id != command.Id)

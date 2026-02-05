@@ -25,7 +25,7 @@ public class PlanDetailsController : ControllerBase
     /// Lấy danh sách chi tiết kế hoạch theo PlanId
     /// </summary>
     [HttpGet]
-    [Authorize(Roles =AppRoles.DepartmentHead + "+" + AppRoles.Director)]
+    [Authorize(Roles =AppRoles.DepartmentHead + "," + AppRoles.Director)]
     public async Task<IActionResult> GetAll([FromQuery] Guid recruitmentPlanId)
     {
         try
