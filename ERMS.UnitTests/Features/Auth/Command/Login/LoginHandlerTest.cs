@@ -25,7 +25,8 @@ namespace ERMS.UnitTests.Features.Auth.Command.Login
                 userStoreMock.Object, null, null, null, null, null, null, null, null);
 
             _tokenServiceMock = new Mock<ITokenService>();
-            _handler = new LoginHandler(_userManagerMock.Object, _tokenServiceMock.Object);
+            var contextMock = new Mock<IERMSDbContext>();
+            _handler = new LoginHandler(_userManagerMock.Object, _tokenServiceMock.Object, contextMock.Object);
         }
 
         [Fact]
@@ -42,6 +43,8 @@ namespace ERMS.UnitTests.Features.Auth.Command.Login
                 .ReturnsAsync(true);
             _tokenServiceMock.Setup(x => x.CreateToken(user))
                 .ReturnsAsync(token);
+            _userManagerMock.Setup(x => x.GetRolesAsync(user))
+                .ReturnsAsync(new List<string> { "Candidate" });
 
             // Act
             var result = await _handler.Handle(command, CancellationToken.None);
