@@ -11,7 +11,7 @@ namespace ERMS.Application.Features.Enterprises.Commands.LockEnterprise
 {
     public class LockEnterpriseHandler : IRequestHandler<LockEnterpriseCommand, bool>
     {
-       private IERMSDbContext _context;
+       private readonly IERMSDbContext _context;
         private readonly ICurrentUserService _currentUserService;
         public LockEnterpriseHandler(IERMSDbContext context,ICurrentUserService currentUserService) 
         {
