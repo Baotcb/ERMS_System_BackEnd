@@ -27,4 +27,10 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Features\Users\Commands\ChangeProfile\" />
+    <Folder Include="Features\Users\Commands\GetProfile\" />
+    <Folder Include="Features\Users\Commands\LockUser\" />
+  </ItemGroup>
+
 </Project>
