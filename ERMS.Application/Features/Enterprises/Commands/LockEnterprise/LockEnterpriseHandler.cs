@@ -32,6 +32,10 @@ namespace ERMS.Application.Features.Enterprises.Commands.LockEnterprise
                 throw new UnauthorizedAccessException("Chỉ Admin mới có quyền chỉnh sửa trạng thái doanh nghiệp .");
             }
             var enterprise = await _context.Enterprises.FindAsync(request.EnterpriseId);
+            if (enterprise == null)
+            {
+                throw new KeyNotFoundException($"Không tìm thấy doanh nghiệp với mã {request.EnterpriseId}.");
+            }
             if (request.IsLocked)
             {
                 enterprise.Status = Domain.Constants.Enterprise.EnterpriseStatus.Locked;
