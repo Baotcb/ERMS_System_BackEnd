@@ -107,6 +107,39 @@ namespace ERMS.Application.Features.Auth.Commands.GoogleLogin
                 await _context.SaveChangesAsync(cancellationToken);
             }
 
+           
+            var roles = await _userManager.GetRolesAsync(user);
+            var role = roles.FirstOrDefault();
+
+            if (role != null && role != AppRoles.Candidate && role != AppRoles.Admin)
+            {
+                var enterpriseId = _context.Employees
+                    .Where(e => e.UserId == user.Id)
+                    .Select(e => e.EnterpriseId)
+                    .FirstOrDefault();
+
+                if (enterpriseId != Guid.Empty)
+                {
+                    var enterprise = await _context.Enterprises.FindAsync(enterpriseId);
+                    
+                    if (enterprise != null)
+                    {
+                        if (enterprise.Status == Domain.Constants.Enterprise.EnterpriseStatus.Locked)
+                        {
+                            throw new Exception("Tài khoản doanh nghiệp đã bị khóa. Vui lòng liên hệ quản trị viên để biết thêm chi tiết.");
+                        }
+                        if (enterprise.Status == Domain.Constants.Enterprise.EnterpriseStatus.Suspended)
+                        {
+                            throw new Exception("Tài khoản doanh nghiệp của bạn đang chờ phê duyệt. Vui lòng chờ quản trị viên phê duyệt tài khoản của bạn.");
+                        }
+                        if (enterprise.Status == Domain.Constants.Enterprise.EnterpriseStatus.Inactive)
+                        {
+                            throw new Exception("Tài khoản doanh nghiệp không hoạt động. Vui lòng liên hệ quản trị viên để biết thêm chi tiết.");
+                        }
+                    }
+                }
+            }
+
             // 6️⃣ Generate JWT
             return await _tokenService.CreateToken(user);
         }
