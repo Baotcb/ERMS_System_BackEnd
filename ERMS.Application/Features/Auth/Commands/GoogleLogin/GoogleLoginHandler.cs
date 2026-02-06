@@ -98,7 +98,7 @@ namespace ERMS.Application.Features.Auth.Commands.GoogleLogin
 
                 var candidate = new Candidate
                 {
-                    Id = Guid.NewGuid(),
+                    Id = Guid.CreateVersion7(),
                     UserId = user.Id,
                     CreatedAt = DateTime.UtcNow
                 };

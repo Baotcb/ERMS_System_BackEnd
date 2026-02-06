@@ -84,7 +84,7 @@ public sealed class CreateJobPostingHandler : IRequestHandler<CreateJobPostingCo
         // 8. Create JobPosting with AUTO-FILL from PlanDetail
         var jobPosting = new JobPosting
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             EnterpriseId = enterpriseId,
             PlanDetailId = request.PlanDetailId,
             

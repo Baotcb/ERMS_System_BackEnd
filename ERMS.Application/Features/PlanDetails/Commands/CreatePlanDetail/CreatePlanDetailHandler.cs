@@ -88,7 +88,7 @@ public sealed class CreatePlanDetailHandler : IRequestHandler<CreatePlanDetailCo
         // 8. Tạo PlanDetail mới
         var planDetail = new PlanDetail
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             RecruitmentPlanId = request.RecruitmentPlanId,
             RequestedById = userId.Value,
             PositionTitle = request.PositionTitle.Trim(),
