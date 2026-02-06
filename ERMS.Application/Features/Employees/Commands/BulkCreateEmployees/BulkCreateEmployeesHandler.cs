@@ -108,7 +108,7 @@ namespace ERMS.Application.Features.Employees.Commands.BulkCreateEmployees
                     // Create User
                     var user = new User
                     {
-                        Id = Guid.NewGuid(),
+                        Id = Guid.CreateVersion7(),
                         UserName = item.Email,
                         Email = item.Email,
                         FullName = item.FullName,
@@ -142,7 +142,7 @@ namespace ERMS.Application.Features.Employees.Commands.BulkCreateEmployees
                     employeeCount++;
                     var employee = new Employee
                     {
-                        Id = Guid.NewGuid(),
+                        Id = Guid.CreateVersion7(),
                         UserId = user.Id,
                         EnterpriseId = enterpriseId.Value,
                         DepartmentId = department.Id,
@@ -230,7 +230,8 @@ namespace ERMS.Application.Features.Employees.Commands.BulkCreateEmployees
             // Shuffle the password to avoid predictable pattern
             return new string(password.ToString().ToCharArray().OrderBy(_ => RandomNumberGenerator.GetInt32(100)).ToArray());
         }
-// đoạn này t hơi bí nên đặt ra 1 commands riêng không hay để luôn ở đây, tại đúng ra thì nó nằm trong luồng tạo nhân viên luôn chứ không độc lập, m thấy sao ?
+        // đoạn này t hơi bí nên đặt ra 1 commands riêng không hay để luôn ở đây, tại đúng ra thì nó nằm trong luồng tạo nhân viên luôn chứ không độc lập, m thấy sao ?
+        // t ko thấy vấn đề gì khi để nó ở đây cả, vì nó chỉ phục vụ cho việc gửi email sau khi tạo nhân viên thành công mà
         private async Task SendWelcomeEmailAsync(string email, string fullName, string password, string enterpriseName)
         {
             var subject = $"Chào mừng bạn đến với {enterpriseName} - Thông tin tài khoản";

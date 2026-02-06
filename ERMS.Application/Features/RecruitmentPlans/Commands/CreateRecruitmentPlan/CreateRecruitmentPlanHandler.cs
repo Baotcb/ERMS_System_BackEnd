@@ -84,7 +84,7 @@ public sealed class CreateRecruitmentPlanHandler : IRequestHandler<CreateRecruit
 
         var recruitmentPlan = new RecruitmentPlan
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             EnterpriseId = enterpriseId.Value,
             CampaignId = request.CampaignId,
             DepartmentId = request.DepartmentId,

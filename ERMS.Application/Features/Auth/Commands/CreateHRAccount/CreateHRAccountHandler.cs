@@ -53,7 +53,7 @@ namespace ERMS.Application.Features.Auth.Commands.CreateHRAccount
             // 3. Create User
             var user = new User
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.CreateVersion7(),
                 UserName = request.Email,
                 Email = request.Email,
                 FullName = request.FullName,
@@ -102,7 +102,7 @@ namespace ERMS.Application.Features.Auth.Commands.CreateHRAccount
             // 7. Create Employee Record
             var employee = new Employee
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.CreateVersion7(),
                 UserId = user.Id,
                 EnterpriseId = enterprise.Id,
                 DepartmentId = hrDepartment.Id,

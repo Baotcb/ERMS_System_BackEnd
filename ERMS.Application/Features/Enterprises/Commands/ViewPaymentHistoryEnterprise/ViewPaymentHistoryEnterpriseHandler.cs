@@ -4,20 +4,36 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ERMS.Application.Interface;
+using ERMS.Domain.Constants.Roles;
 
 namespace ERMS.Application.Features.Enterprises.Commands.ViewPaymentHistoryEnterprise
 {
     public class ViewPaymentHistoryEnterpriseHandler : IRequestHandler<ViewPaymentHistoryEnterpriseCommand, ViewPaymentHistoryEnterpriseResponse>
     {
         private readonly IERMSDbContext _context;
+        private readonly ICurrentUserService _currentUserService;
 
-        public ViewPaymentHistoryEnterpriseHandler(IERMSDbContext context)
+        public ViewPaymentHistoryEnterpriseHandler(IERMSDbContext context, ICurrentUserService currentUserService)
         {
             _context = context;
+            _currentUserService = currentUserService;
         }
 
         public async Task<ViewPaymentHistoryEnterpriseResponse> Handle(ViewPaymentHistoryEnterpriseCommand request, CancellationToken cancellationToken)
         {
+            if (_currentUserService.Roles.ToString() == AppRoles.Director)
+            {
+                var userid = _currentUserService.UserId;
+                var employee = await _context.Employees
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(e => e.UserId == userid, cancellationToken);
+                var enterpriseId = employee.EnterpriseId;
+                if (enterpriseId != request.EnterpriseId)
+                {
+                    throw new UnauthorizedAccessException("You do not have permission to view payment history for this enterprise.");
+                }
+            }
+
             var histories = await _context.SubscriptionHistories
                 .AsNoTracking()
                 .Include(x => x.SubscriptionPlan)
