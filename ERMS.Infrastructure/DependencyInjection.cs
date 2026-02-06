@@ -43,7 +43,10 @@ namespace ERMS.Infrastructure
             services.AddScoped<IExcelParserService, ExcelParserService>();
             services.AddScoped<IGoogleAuthService, GoogleAuthService>();
 
-
+            // CV Processing Services
+            services.AddScoped<ICloudinaryService, CloudinaryService>();
+            services.AddScoped<IPdfTextExtractor, PdfTextExtractor>();
+            services.AddHttpClient<IGeminiAIService, GeminiAIService>();
 
 
 
