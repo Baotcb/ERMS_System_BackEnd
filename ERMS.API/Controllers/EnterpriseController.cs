@@ -1,5 +1,6 @@
 ﻿using ERMS.Application.Features.Enterprises.Commands.LockEnterprise;
 using ERMS.Application.Features.Enterprises.Commands.ViewPaymentHistoryEnterprise;
+using ERMS.Application.Features.Enterprises.Commands.GetUrlAvataEnterprise;
 using ERMS.Domain.Constants.Roles;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -18,6 +19,25 @@ namespace ERMS.API.Controllers
         public EnterpriseController(ISender sender)
         {
             _sender = sender;
+        }
+
+        [HttpGet("get-url-avata-enterprise")]
+        [Authorize(Roles =AppRoles.Employee+","+AppRoles.HRManager+","+AppRoles.Trainer+","+AppRoles.DepartmentHead+","+AppRoles.Director)]
+        public async Task<IActionResult> GetUrlAvataEnterprise()
+        {
+            try
+            {
+                var result = await _sender.Send(new GetUrlAvataEnterpriseCommand());
+                return Ok(result);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
         [HttpPost("lock-enterprise")]
         [Authorize(Roles = AppRoles.Admin)]
