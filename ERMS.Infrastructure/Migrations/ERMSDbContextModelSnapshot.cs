@@ -1369,9 +1369,6 @@ namespace ERMS.Infrastructure.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("DepartmentId")
-                        .HasColumnType("int");
-
                     b.Property<string>("EducationLevel")
                         .HasColumnType("nvarchar(max)");
 
@@ -1435,8 +1432,6 @@ namespace ERMS.Infrastructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("DepartmentId");
 
                     b.HasIndex("RecruitmentPlanId");
 
@@ -1551,6 +1546,9 @@ namespace ERMS.Infrastructure.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("DepartmentId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
@@ -1586,7 +1584,7 @@ namespace ERMS.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
-                        .HasDefaultValue("Pending");
+                        .HasDefaultValue("Draft");
 
                     b.Property<decimal?>("TotalBudget")
                         .HasPrecision(18, 2)
@@ -1602,6 +1600,8 @@ namespace ERMS.Infrastructure.Migrations
                     b.HasIndex("CampaignId");
 
                     b.HasIndex("CreatedById");
+
+                    b.HasIndex("DepartmentId");
 
                     b.HasIndex("EnterpriseId");
 
@@ -2938,12 +2938,6 @@ namespace ERMS.Infrastructure.Migrations
 
             modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.PlanDetail", b =>
                 {
-                    b.HasOne("ERMS.Domain.Entities.Organization.Department", "Department")
-                        .WithMany()
-                        .HasForeignKey("DepartmentId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("ERMS.Domain.Entities.Recruitment.RecruitmentPlan", "RecruitmentPlan")
                         .WithMany("PlanDetails")
                         .HasForeignKey("RecruitmentPlanId")
@@ -2960,8 +2954,6 @@ namespace ERMS.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("ReviewerId")
                         .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Department");
 
                     b.Navigation("RecruitmentPlan");
 
@@ -3008,10 +3000,16 @@ namespace ERMS.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ERMS.Domain.Entities.Organization.Department", "Department")
+                        .WithMany()
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("ERMS.Domain.Entities.Enterprise.Enterprise", "Enterprise")
                         .WithMany()
                         .HasForeignKey("EnterpriseId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("ApprovedBy");
@@ -3019,6 +3017,8 @@ namespace ERMS.Infrastructure.Migrations
                     b.Navigation("Campaign");
 
                     b.Navigation("CreatedBy");
+
+                    b.Navigation("Department");
 
                     b.Navigation("Enterprise");
                 });

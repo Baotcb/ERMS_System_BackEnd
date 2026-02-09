@@ -77,7 +77,7 @@ public sealed class CreateRecruitmentCampaignHandler : IRequestHandler<CreateRec
         
         var campaign = new RecruitmentCampaign
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             EnterpriseId = enterpriseId.Value,
             CampaignName = request.CampaignName.Trim(),
             CampaignCode = request.CampaignCode.Trim(),

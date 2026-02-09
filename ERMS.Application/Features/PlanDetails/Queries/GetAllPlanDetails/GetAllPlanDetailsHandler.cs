@@ -25,7 +25,6 @@ public sealed class GetAllPlanDetailsHandler : IRequestHandler<GetAllPlanDetails
 
         var planDetails = await _context.PlanDetails
             .Include(d => d.RecruitmentPlan)
-            .Include(d => d.Department)
             .Include(d => d.RequestedBy)
             .Where(d => d.RecruitmentPlanId == request.RecruitmentPlanId
                      && d.RecruitmentPlan.EnterpriseId == enterpriseId.Value
@@ -35,8 +34,6 @@ public sealed class GetAllPlanDetailsHandler : IRequestHandler<GetAllPlanDetails
             {
                 Id = d.Id,
                 RecruitmentPlanId = d.RecruitmentPlanId,
-                DepartmentId = d.DepartmentId,
-                DepartmentName = d.Department.DepartmentName,
                 PositionTitle = d.PositionTitle,
                 Quantity = d.Quantity,
                 Priority = d.Priority,

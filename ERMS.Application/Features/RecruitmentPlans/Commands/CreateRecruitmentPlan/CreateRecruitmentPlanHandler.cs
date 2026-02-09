@@ -1,4 +1,5 @@
 using ERMS.Application.Interface;
+using ERMS.Domain.Constants.Recruitment;
 using ERMS.Domain.Entities.Recruitment;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -50,6 +51,25 @@ public sealed class CreateRecruitmentPlanHandler : IRequestHandler<CreateRecruit
             throw new Exception("Mã kế hoạch tuyển dụng đã tồn tại trong doanh nghiệp");
         }
 
+        // Validate CampaignId exists and belongs to enterprise
+        var campaign = await _context.RecruitmentCampaigns
+            .FirstOrDefaultAsync(c =>
+                c.Id == request.CampaignId &&
+                c.EnterpriseId == enterpriseId.Value &&
+                !c.IsDeleted,
+                cancellationToken);
+
+        if (campaign == null)
+        {
+            throw new Exception("Chiến dịch tuyển dụng không tồn tại hoặc không thuộc doanh nghiệp của bạn.");
+        }
+
+        // Validate Campaign status must be Open
+        if (!CampaignStatus.CanSubmitPlans(campaign.Status))
+        {
+            throw new Exception($"Chiến dịch phải ở trạng thái 'Open' để tạo kế hoạch. Trạng thái hiện tại: {campaign.Status}");
+        }
+
         // Validate dates
         if (request.EndDate <= request.StartDate)
         {
@@ -64,15 +84,17 @@ public sealed class CreateRecruitmentPlanHandler : IRequestHandler<CreateRecruit
 
         var recruitmentPlan = new RecruitmentPlan
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.CreateVersion7(),
             EnterpriseId = enterpriseId.Value,
+            CampaignId = request.CampaignId,
+            DepartmentId = request.DepartmentId,
             PlanName = request.PlanName,
             PlanCode = request.PlanCode,
             Description = request.Description,
             StartDate = request.StartDate,
             EndDate = request.EndDate,
             TotalBudget = request.TotalBudget,
-            Status = "Pending",
+            Status = PlanStatus.Draft,
             CreatedById = userId.Value,
             IsDeleted = false,
             CreatedAt = DateTime.UtcNow

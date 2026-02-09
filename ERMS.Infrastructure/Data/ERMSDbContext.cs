@@ -243,6 +243,25 @@ namespace ERMS.Infrastructure.Data
                 .Property(r => r.RejectionReason)
                 .HasMaxLength(1000);
 
+            builder.Entity<RecruitmentPlan>()
+                .HasOne(r => r.Enterprise)
+                .WithMany()
+                .HasForeignKey(r => r.EnterpriseId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<RecruitmentPlan>()
+                .HasOne(r => r.Department)
+                .WithMany()
+                .HasForeignKey(r => r.DepartmentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+
+            builder.Entity<PlanDetail>()
+                .HasOne(p => p.RecruitmentPlan)
+                .WithMany(r => r.PlanDetails)
+                .HasForeignKey(p => p.RecruitmentPlanId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             builder.Entity<PlanDetail>()
                 .HasOne(p => p.RequestedBy)
                 .WithMany()
@@ -254,6 +273,7 @@ namespace ERMS.Infrastructure.Data
                 .WithMany()
                 .HasForeignKey(p => p.ReviewerId)
                 .OnDelete(DeleteBehavior.Restrict);
+
 
             builder.Entity<TrainingPlan>()
                 .HasOne(t => t.CreatedBy)
@@ -319,12 +339,8 @@ namespace ERMS.Infrastructure.Data
                 .HasForeignKey(j => j.EnterpriseId)
                 .OnDelete(DeleteBehavior.Restrict);
             
-            // PlanDetail: Enterprise -> RecruitmentPlan -> PlanDetail vs Enterprise -> Department -> PlanDetail (PlanDetail -> Department)
-            builder.Entity<PlanDetail>()
-                .HasOne(p => p.Department)
-                .WithMany()
-                .HasForeignKey(p => p.DepartmentId)
-                .OnDelete(DeleteBehavior.Restrict);
+            // PlanDetail: Enterprise -> RecruitmentPlan -> PlanDetail vs Enterprise -> Department -> PlanDetail (PlanDetail -> Department relationship removed)
+
 
             // TrainingRequest: Enterprise -> Department -> TrainingRequest vs Enterprise -> TrainingRequest
             builder.Entity<TrainingRequest>()

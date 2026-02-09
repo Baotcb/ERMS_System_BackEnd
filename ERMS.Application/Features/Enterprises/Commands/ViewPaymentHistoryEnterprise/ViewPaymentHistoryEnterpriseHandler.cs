@@ -1,0 +1,69 @@
+﻿using MediatR;
+using Microsoft.EntityFrameworkCore;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using ERMS.Application.Interface;
+using ERMS.Domain.Constants.Roles;
+
+namespace ERMS.Application.Features.Enterprises.Commands.ViewPaymentHistoryEnterprise
+{
+    public class ViewPaymentHistoryEnterpriseHandler : IRequestHandler<ViewPaymentHistoryEnterpriseCommand, ViewPaymentHistoryEnterpriseResponse>
+    {
+        private readonly IERMSDbContext _context;
+        private readonly ICurrentUserService _currentUserService;
+
+        public ViewPaymentHistoryEnterpriseHandler(IERMSDbContext context, ICurrentUserService currentUserService)
+        {
+            _context = context;
+            _currentUserService = currentUserService;
+        }
+
+        public async Task<ViewPaymentHistoryEnterpriseResponse> Handle(ViewPaymentHistoryEnterpriseCommand request, CancellationToken cancellationToken)
+        {
+            if (_currentUserService.Roles.Contains(AppRoles.Director))
+            {
+                var userid = _currentUserService.UserId;
+                var employee = await _context.Employees
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(e => e.UserId == userid, cancellationToken);
+
+                if (employee == null || employee.EnterpriseId != request.EnterpriseId)
+                {
+                    throw new UnauthorizedAccessException("You do not have permission to view payment history for this enterprise.");
+                }
+            }
+
+            var histories = await _context.SubscriptionHistories
+                .AsNoTracking()
+                .Include(x => x.SubscriptionPlan)
+                .Include(x => x.PreviousPlan)
+                .Where(x => x.EnterpriseId == request.EnterpriseId)
+                .OrderByDescending(x => x.PeriodStartDate)
+                .Select(x => new SubscriptionHistoryDto
+                {
+                    Id = x.Id,
+                    ActionType = x.ActionType,
+                    PlanName = x.SubscriptionPlan.PlanName,
+                    PreviousPlanName = x.PreviousPlan != null ? x.PreviousPlan.PlanName : null,
+                    Amount = x.Amount,
+                    Currency = x.Currency,
+                    PaymentMethod = x.PaymentMethod,
+                    PeriodStartDate = x.PeriodStartDate,
+                    PeriodEndDate = x.PeriodEndDate,
+                    Note = x.Note
+                })
+                .ToListAsync(cancellationToken);
+            
+            if (!histories.Any())
+            {
+                throw new InvalidOperationException("No payment history found for the specified enterprise.");
+            }
+            
+            return new ViewPaymentHistoryEnterpriseResponse
+            {
+                SubscriptionHistories = histories
+            };
+        }
+    }
+}

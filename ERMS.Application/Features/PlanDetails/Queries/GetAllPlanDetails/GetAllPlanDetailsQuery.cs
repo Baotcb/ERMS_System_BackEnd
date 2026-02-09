@@ -11,8 +11,6 @@ public sealed class PlanDetailDto
 {
     public Guid Id { get; set; }
     public Guid RecruitmentPlanId { get; set; }
-    public int DepartmentId { get; set; }
-    public string? DepartmentName { get; set; }
     public string PositionTitle { get; set; } = null!;
     public int Quantity { get; set; }
     public string Priority { get; set; } = null!;

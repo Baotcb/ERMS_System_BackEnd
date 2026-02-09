@@ -3,9 +3,11 @@ using ERMS.Application;
 using ERMS.Infrastructure;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Scalar.AspNetCore;
+using DotNetEnv;
 
 var builder = WebApplication.CreateBuilder(args);
 
+Env.Load();
 // Add services to the container.
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();

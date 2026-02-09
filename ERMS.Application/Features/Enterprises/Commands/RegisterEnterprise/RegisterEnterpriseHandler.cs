@@ -39,7 +39,7 @@ namespace ERMS.Application.Features.Enterprises.Commands.RegisterEnterprise
                 // Create default FREE plan
                 freePlan = new SubscriptionPlan
                 {
-                    Id = Guid.NewGuid(),
+                    Id = Guid.CreateVersion7(),
                     PlanName = "Free Plan",
                     PlanCode = "FREE",
                     Description = "Default free plan for new enterprises",
@@ -58,12 +58,12 @@ namespace ERMS.Application.Features.Enterprises.Commands.RegisterEnterprise
             }
 
             // 3. Generate Enterprise Code
-            var enterpriseCode = $"ENT-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid().ToString("N")[..4].ToUpper()}";
+            var enterpriseCode = $"ENT-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.CreateVersion7().ToString("N")[..4].ToUpper()}";
 
             // 4. Create Enterprise
             var enterprise = new Enterprise
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.CreateVersion7(),
                 EnterpriseName = request.EnterpriseName,
                 EnterpriseCode = enterpriseCode,
                 TaxCode = request.TaxCode,
