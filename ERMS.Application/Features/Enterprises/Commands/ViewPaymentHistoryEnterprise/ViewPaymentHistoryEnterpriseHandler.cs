@@ -21,14 +21,14 @@ namespace ERMS.Application.Features.Enterprises.Commands.ViewPaymentHistoryEnter
 
         public async Task<ViewPaymentHistoryEnterpriseResponse> Handle(ViewPaymentHistoryEnterpriseCommand request, CancellationToken cancellationToken)
         {
-            if (_currentUserService.Roles.ToString() == AppRoles.Director)
+            if (_currentUserService.Roles.Contains(AppRoles.Director))
             {
                 var userid = _currentUserService.UserId;
                 var employee = await _context.Employees
                     .AsNoTracking()
                     .FirstOrDefaultAsync(e => e.UserId == userid, cancellationToken);
-                var enterpriseId = employee.EnterpriseId;
-                if (enterpriseId != request.EnterpriseId)
+
+                if (employee == null || employee.EnterpriseId != request.EnterpriseId)
                 {
                     throw new UnauthorizedAccessException("You do not have permission to view payment history for this enterprise.");
                 }
@@ -54,16 +54,16 @@ namespace ERMS.Application.Features.Enterprises.Commands.ViewPaymentHistoryEnter
                     Note = x.Note
                 })
                 .ToListAsync(cancellationToken);
+            
             if (!histories.Any())
             {
-               throw new Exception("No payment history found for the specified enterprise.");
+                throw new InvalidOperationException("No payment history found for the specified enterprise.");
             }
+            
             return new ViewPaymentHistoryEnterpriseResponse
             {
                 SubscriptionHistories = histories
             };
-
-
         }
     }
 }

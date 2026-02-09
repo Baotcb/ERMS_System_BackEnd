@@ -9,6 +9,7 @@ using ERMS.Domain.Constants.Roles;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ERMS.Application.Features.JobPostings.Commands.SaveJobPosting;
 
 namespace ERMS.API.Controllers;
 
@@ -218,6 +219,28 @@ public class JobPostingsController : ControllerBase
         {
             await _mediator.Send(new DeleteJobPostingCommand { Id = id });
             return Ok(new { message = "Job posting deleted successfully." });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+    [HttpPost("savejob")]
+    [Authorize(Roles = AppRoles.Candidate)]
+    public async Task<IActionResult> SaveJobPosting(SaveJobPostingCommand command)
+    {
+        try
+        {
+            var savedJobId = await _mediator.Send(command);
+            return Ok(new
+            {
+                message = "Job posting saved successfully.",
+                savedJobId
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
         }
         catch (Exception ex)
         {
