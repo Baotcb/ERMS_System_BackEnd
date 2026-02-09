@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace ERMS.Application.Features.Enterprises.Commands.GetUrlAvataEnterprise
 {
-    internal class GetUrlAvataEnterpriseHandle : IRequestHandler<GetUrlAvataEnterpriseCommand, GetUrlAvataEnterpriseResponse>
+    public class GetUrlAvataEnterpriseHandle : IRequestHandler<GetUrlAvataEnterpriseCommand, GetUrlAvataEnterpriseResponse>
     {
         private readonly IERMSDbContext _context;
         private readonly ICurrentUserService _currentUserService;

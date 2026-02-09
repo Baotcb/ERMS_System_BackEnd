@@ -27,7 +27,7 @@ namespace ERMS.UnitTests.Features.Auth.Command.CreateHRAccount
         private readonly Mock<IERMSDbContext> _contextMock;
         private readonly CreateHRAccountHandler _handler;
         
-        private Mock<DbSet<Enterprise>> _enterprisesMock;
+        private Mock<DbSet<ERMS.Domain.Entities.Enterprise.Enterprise>> _enterprisesMock;
         private Mock<DbSet<Employee>> _employeesMock;
         private Mock<DbSet<Department>> _departmentsMock;
 
@@ -43,7 +43,7 @@ namespace ERMS.UnitTests.Features.Auth.Command.CreateHRAccount
 
             _contextMock = new Mock<IERMSDbContext>();
             
-            _enterprisesMock = CreateMockDbSet(new List<Enterprise>());
+            _enterprisesMock = CreateMockDbSet(new List<ERMS.Domain.Entities.Enterprise.Enterprise>());
             _employeesMock = CreateMockDbSet(new List<Employee>());
             _departmentsMock = CreateMockDbSet(new List<Department>());
 
@@ -96,10 +96,10 @@ namespace ERMS.UnitTests.Features.Auth.Command.CreateHRAccount
         {
             // Arrange
             var enterpriseId = Guid.NewGuid();
-            var enterprise = new Enterprise { Id = enterpriseId, IsDeleted = false, Status = "Active" };
+            var enterprise = new ERMS.Domain.Entities.Enterprise.Enterprise { Id = enterpriseId, IsDeleted = false, Status = "Active" };
             
             // Update the mock to contain data
-            var enterprises = new List<Enterprise> { enterprise };
+            var enterprises = new List<ERMS.Domain.Entities.Enterprise.Enterprise> { enterprise };
             _enterprisesMock = CreateMockDbSet(enterprises);
             _contextMock.Setup(x => x.Enterprises).Returns(_enterprisesMock.Object);
 
@@ -119,10 +119,10 @@ namespace ERMS.UnitTests.Features.Auth.Command.CreateHRAccount
         {
             // Arrange
             var enterpriseId = Guid.NewGuid();
-            var enterprise = new Enterprise { Id = enterpriseId, IsDeleted = false, Status = "Active", EnterpriseCode = "ENT", SubscriptionPlan = new SubscriptionPlan() };
+            var enterprise = new ERMS.Domain.Entities.Enterprise.Enterprise { Id = enterpriseId, IsDeleted = false, Status = "Active", EnterpriseCode = "ENT", SubscriptionPlan = new SubscriptionPlan() };
             
             // Setup Enterprises
-            var enterprises = new List<Enterprise> { enterprise };
+            var enterprises = new List<ERMS.Domain.Entities.Enterprise.Enterprise> { enterprise };
             _enterprisesMock = CreateMockDbSet(enterprises);
             _contextMock.Setup(x => x.Enterprises).Returns(_enterprisesMock.Object);
 
