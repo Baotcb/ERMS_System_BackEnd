@@ -1,5 +1,6 @@
 using ERMS.Application.Features.Applications.Commands.SubmitApplication;
 using ERMS.Application.Features.Applications.Commands.ForwardApplication;
+using ERMS.Application.Features.Applications.Commands.ScheduleInterview;
 using ERMS.Application.Features.Applications.Queries.GetApplicationsByJob;
 using ERMS.Domain.Constants.Roles;
 using MediatR;
@@ -158,6 +159,51 @@ public class ApplicationsController : ControllerBase
         catch (UnauthorizedAccessException ex)
         {
             return Unauthorized(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Schedule an interview for a shortlisted application
+    /// </summary>
+    /// <remarks>
+    /// **Access:** DepartmentHead only (must be from the same department as the job posting)
+    /// 
+    /// Creates an interview record with specified interviewers and updates application stage to "InterviewScheduled".
+    /// 
+    /// **Validations:**
+    /// - Application must be in "Shortlisted" stage
+    /// - ScheduledAt must be in the future
+    /// - At least one interviewer is required
+    /// - All interviewers must belong to the same enterprise
+    /// </remarks>
+    /// <param name="id">Application ID</param>
+    /// <param name="command">Interview scheduling details</param>
+    /// <returns>Created interview details with participants</returns>
+    [HttpPost("{id}/schedule-interview")]
+    [Authorize(Roles = AppRoles.DepartmentHead)]
+    [ProducesResponseType(typeof(ScheduleInterviewResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> ScheduleInterview(Guid id, [FromBody] ScheduleInterviewCommand command)
+    {
+        try
+        {
+            var scheduleCommand = command with { ApplicationId = id };
+            var result = await _mediator.Send(scheduleCommand);
+            return Ok(new
+            {
+                message = "Interview scheduled successfully.",
+                data = result
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
         }
         catch (Exception ex)
         {

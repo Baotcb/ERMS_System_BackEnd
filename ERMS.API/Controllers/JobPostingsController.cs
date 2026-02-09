@@ -5,6 +5,7 @@ using ERMS.Application.Features.JobPostings.Commands.CloseJobPosting;
 using ERMS.Application.Features.JobPostings.Commands.DeleteJobPosting;
 using ERMS.Application.Features.JobPostings.Queries.GetJobPostingById;
 using ERMS.Application.Features.JobPostings.Queries.GetJobPostings;
+using ERMS.Application.Features.Applications.Queries.GetShortlistedApplications;
 using ERMS.Domain.Constants.Roles;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -218,6 +219,51 @@ public class JobPostingsController : ControllerBase
         {
             await _mediator.Send(new DeleteJobPostingCommand { Id = id });
             return Ok(new { message = "Job posting deleted successfully." });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get shortlisted applications for a job posting (Department Head view)
+    /// </summary>
+    /// <remarks>
+    /// **Access:** DepartmentHead only (must be from the same department as the job posting)
+    /// 
+    /// Returns applications in "Shortlisted" stage, sorted by CVScreeningResult.OverallScore descending.
+    /// Department Heads can only access job postings from their own department.
+    /// </remarks>
+    /// <param name="id">Job posting ID</param>
+    /// <param name="pageNumber">Page number (default: 1)</param>
+    /// <param name="pageSize">Items per page (default: 20)</param>
+    /// <returns>Paginated list of shortlisted applications</returns>
+    [HttpGet("{id}/shortlisted")]
+    [Authorize(Roles = AppRoles.DepartmentHead)]
+    [ProducesResponseType(typeof(GetShortlistedApplicationsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetShortlisted(
+        Guid id,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20)
+    {
+        try
+        {
+            var query = new GetShortlistedApplicationsQuery
+            {
+                JobPostingId = id,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
         }
         catch (Exception ex)
         {
