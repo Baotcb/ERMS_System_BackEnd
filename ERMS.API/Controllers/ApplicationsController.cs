@@ -81,26 +81,21 @@ public class ApplicationsController : ControllerBase
     /// 
     /// This action forwards a candidate to the Department Head for further review.
     /// The application must be in "Applied" stage to be forwarded.
+    /// ApplicationId must be provided in the request body.
     /// </remarks>
-    /// <param name="id">Application ID</param>
-    /// <param name="command">Optional HR note</param>
+    /// <param name="command">Forward command with ApplicationId and optional HR note</param>
     /// <returns>Updated application status</returns>
-    [HttpPatch("{id}/forward")]
+    [HttpPatch("forward")]
     [Authorize(Roles = AppRoles.HRManager)]
     [ProducesResponseType(typeof(ForwardApplicationResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> Forward(Guid id, [FromBody] ForwardApplicationCommand? command)
+    public async Task<IActionResult> Forward([FromBody] ForwardApplicationCommand command)
     {
         try
         {
-            var forwardCommand = new ForwardApplicationCommand
-            {
-                ApplicationId = id,
-                HRNote = command?.HRNote
-            };
-            var result = await _mediator.Send(forwardCommand);
+            var result = await _mediator.Send(command);
             return Ok(new
             {
                 message = "Application forwarded successfully.",
@@ -173,6 +168,7 @@ public class ApplicationsController : ControllerBase
     /// **Access:** DepartmentHead only (must be from the same department as the job posting)
     /// 
     /// Creates an interview record with specified interviewers and updates application stage to "InterviewScheduled".
+    /// ApplicationId must be provided in the request body.
     /// 
     /// **Validations:**
     /// - Application must be in "Shortlisted" stage
@@ -180,21 +176,19 @@ public class ApplicationsController : ControllerBase
     /// - At least one interviewer is required
     /// - All interviewers must belong to the same enterprise
     /// </remarks>
-    /// <param name="id">Application ID</param>
-    /// <param name="command">Interview scheduling details</param>
+    /// <param name="command">Interview scheduling details with ApplicationId</param>
     /// <returns>Created interview details with participants</returns>
-    [HttpPost("{id}/schedule-interview")]
+    [HttpPost("schedule-interview")]
     [Authorize(Roles = AppRoles.DepartmentHead)]
     [ProducesResponseType(typeof(ScheduleInterviewResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> ScheduleInterview(Guid id, [FromBody] ScheduleInterviewCommand command)
+    public async Task<IActionResult> ScheduleInterview([FromBody] ScheduleInterviewCommand command)
     {
         try
         {
-            var scheduleCommand = command with { ApplicationId = id };
-            var result = await _mediator.Send(scheduleCommand);
+            var result = await _mediator.Send(command);
             return Ok(new
             {
                 message = "Interview scheduled successfully.",

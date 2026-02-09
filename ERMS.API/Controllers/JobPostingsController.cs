@@ -120,21 +120,18 @@ public class JobPostingsController : ControllerBase
     /// </summary>
     /// <remarks>
     /// Note: PlanDetailId is immutable and cannot be changed after creation.
+    /// ID must be provided in the request body.
     /// </remarks>
-    /// <param name="id">Job posting ID</param>
-    /// <param name="command">Update command with fields to modify</param>
+    /// <param name="command">Update command with Id and fields to modify</param>
     /// <returns>Success message</returns>
-    [HttpPut("{id}")]
+    [HttpPut]
     [Authorize(Roles = AppRoles.HRManager)]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateJobPostingCommand command)
+    public async Task<IActionResult> Update([FromBody] UpdateJobPostingCommand command)
     {
-        if (id != command.Id)
-            return BadRequest(new { message = "ID mismatch." });
-
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
@@ -154,20 +151,21 @@ public class JobPostingsController : ControllerBase
     /// </summary>
     /// <remarks>
     /// Precondition: Job posting must be in "Draft" status.
+    /// ID must be provided in the request body.
     /// </remarks>
-    /// <param name="id">Job posting ID</param>
+    /// <param name="command">Command with job posting Id</param>
     /// <returns>Success message</returns>
-    [HttpPatch("{id}/publish")]
+    [HttpPatch("publish")]
     [Authorize(Roles = AppRoles.HRManager)]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Publish(Guid id)
+    public async Task<IActionResult> Publish([FromBody] PublishJobPostingCommand command)
     {
         try
         {
-            await _mediator.Send(new PublishJobPostingCommand { Id = id });
+            await _mediator.Send(command);
             return Ok(new { message = "Job posting published successfully." });
         }
         catch (Exception ex)
@@ -181,20 +179,21 @@ public class JobPostingsController : ControllerBase
     /// </summary>
     /// <remarks>
     /// Precondition: Job posting must be in "Published" status.
+    /// ID must be provided in the request body.
     /// </remarks>
-    /// <param name="id">Job posting ID</param>
+    /// <param name="command">Command with job posting Id</param>
     /// <returns>Success message</returns>
-    [HttpPatch("{id}/close")]
+    [HttpPatch("close")]
     [Authorize(Roles = AppRoles.HRManager)]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Close(Guid id)
+    public async Task<IActionResult> Close([FromBody] CloseJobPostingCommand command)
     {
         try
         {
-            await _mediator.Send(new CloseJobPostingCommand { Id = id });
+            await _mediator.Send(command);
             return Ok(new { message = "Job posting closed successfully." });
         }
         catch (Exception ex)
@@ -206,19 +205,20 @@ public class JobPostingsController : ControllerBase
     /// <summary>
     /// Soft delete a job posting
     /// </summary>
-    /// <param name="id">Job posting ID</param>
+    /// <remarks>ID must be provided in the request body.</remarks>
+    /// <param name="command">Command with job posting Id</param>
     /// <returns>Success message</returns>
-    [HttpDelete("{id}")]
+    [HttpDelete]
     [Authorize(Roles = AppRoles.HRManager)]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Delete(Guid id)
+    public async Task<IActionResult> Delete([FromBody] DeleteJobPostingCommand command)
     {
         try
         {
-            await _mediator.Send(new DeleteJobPostingCommand { Id = id });
+            await _mediator.Send(command);
             return Ok(new { message = "Job posting deleted successfully." });
         }
         catch (Exception ex)
