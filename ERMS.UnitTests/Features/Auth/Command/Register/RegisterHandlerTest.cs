@@ -103,7 +103,7 @@ namespace ERMS.UnitTests.Features.Auth.Command.Register
             var result = await _handler.Handle(command, CancellationToken.None);
 
             // Assert
-            //result.Should().NotBeEmpty();
+            result.Should().NotBeEmpty();
             _candidatesDbSetMock.Verify(x => x.Add(It.IsAny<Candidate>()), Times.Once);
             _contextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
             _mediatorMock.Verify(x => x.Send(It.IsAny<ResendConfirmationCommand>(), It.IsAny<CancellationToken>()), Times.Once);

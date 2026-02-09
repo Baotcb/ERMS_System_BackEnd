@@ -20,4 +20,11 @@
     <Using Include="NUnit.Framework" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Utilities\" />
+    <Folder Include="TestData\" />
+    <Folder Include="TestCases\" />
+    <Folder Include="PageObjects\" />
+  </ItemGroup>
+
 </Project>
