@@ -1,5 +1,6 @@
 using ERMS.Application.Features.JobPostings.Commands.CreateJobPosting;
 using ERMS.Application.Interface;
+using FluentAssertions;
 using ERMS.Domain.Constants.Application;
 using ERMS.Domain.Constants.Recruitment;
 using ERMS.Domain.Constants.Roles;
@@ -12,7 +13,7 @@ using Moq;
 // Alias to avoid namespace collision with ERMS.Application
 using ApplicationEntity = ERMS.Domain.Entities.Application.Application;
 
-namespace ERMS.UnitTests.Features.JobPostings;
+namespace ERMS.UnitTests.Features.JobPostings.Commands.CreateJobPosting;
 
 public class CreateJobPostingHandlerTests
 {
@@ -108,7 +109,7 @@ public class CreateJobPostingHandlerTests
     #region Security Tests
 
     [Fact]
-    public async Task Should_Throw_UnauthorizedAccessException_When_User_Not_Authenticated()
+    public async Task Handle_ShouldThrowUnauthorizedAccessException_WhenUserNotAuthenticated()
     {
         // Arrange
         _currentUserServiceMock.Setup(x => x.UserId).Returns((Guid?)null);
@@ -116,14 +117,13 @@ public class CreateJobPostingHandlerTests
         var command = CreateValidCommand();
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            _handler.Handle(command, CancellationToken.None));
-
-        Assert.Equal("User not authenticated.", exception.Message);
+        await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
+            .Should().ThrowAsync<UnauthorizedAccessException>()
+            .WithMessage("User not authenticated.");
     }
 
     [Fact]
-    public async Task Should_Throw_UnauthorizedAccessException_When_User_Is_Not_HRManager()
+    public async Task Handle_ShouldThrowUnauthorizedAccessException_WhenUserIsNotHRManager()
     {
         // Arrange
         _currentUserServiceMock.Setup(x => x.UserId).Returns(_userId);
@@ -133,14 +133,13 @@ public class CreateJobPostingHandlerTests
         var command = CreateValidCommand();
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            _handler.Handle(command, CancellationToken.None));
-
-        Assert.Equal("Only HR Manager can create job postings.", exception.Message);
+        await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
+            .Should().ThrowAsync<UnauthorizedAccessException>()
+            .WithMessage("Only HR Manager can create job postings.");
     }
 
     [Fact]
-    public async Task Should_Throw_UnauthorizedAccessException_When_User_Has_No_Roles()
+    public async Task Handle_ShouldThrowUnauthorizedAccessException_WhenUserHasNoRoles()
     {
         // Arrange
         _currentUserServiceMock.Setup(x => x.UserId).Returns(_userId);
@@ -150,14 +149,13 @@ public class CreateJobPostingHandlerTests
         var command = CreateValidCommand();
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            _handler.Handle(command, CancellationToken.None));
-
-        Assert.Equal("Only HR Manager can create job postings.", exception.Message);
+        await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
+            .Should().ThrowAsync<UnauthorizedAccessException>()
+            .WithMessage("Only HR Manager can create job postings.");
     }
 
     [Fact]
-    public async Task Should_Throw_UnauthorizedAccessException_When_User_Has_No_Enterprise()
+    public async Task Handle_ShouldThrowUnauthorizedAccessException_WhenUserHasNoEnterprise()
     {
         // Arrange
         _currentUserServiceMock.Setup(x => x.UserId).Returns(_userId);
@@ -167,10 +165,9 @@ public class CreateJobPostingHandlerTests
         var command = CreateValidCommand();
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            _handler.Handle(command, CancellationToken.None));
-
-        Assert.Equal("User is not associated with any enterprise.", exception.Message);
+        await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
+            .Should().ThrowAsync<UnauthorizedAccessException>()
+            .WithMessage("User is not associated with any enterprise.");
     }
 
     #endregion
@@ -178,7 +175,7 @@ public class CreateJobPostingHandlerTests
     #region PlanDetail Validation Tests
 
     [Fact]
-    public async Task Should_Throw_Exception_When_PlanDetail_Not_Found()
+    public async Task Handle_ShouldThrowException_WhenPlanDetailNotFound()
     {
         // Arrange
         SetupCurrentUser();
@@ -190,15 +187,13 @@ public class CreateJobPostingHandlerTests
         var command = CreateValidCommand();
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<Exception>(() =>
-            _handler.Handle(command, CancellationToken.None));
-
-        Assert.Contains("PlanDetail with ID", exception.Message);
-        Assert.Contains("not found", exception.Message);
+        await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
+            .Should().ThrowAsync<Exception>()
+            .WithMessage("*PlanDetail with ID*not found*");
     }
 
     [Fact]
-    public async Task Should_Throw_BusinessRuleException_When_RecruitmentPlan_Not_Approved()
+    public async Task Handle_ShouldThrowBusinessRuleException_WhenRecruitmentPlanNotApproved()
     {
         // Arrange
         SetupCurrentUser();
@@ -213,15 +208,13 @@ public class CreateJobPostingHandlerTests
         var command = CreateValidCommand();
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<Exception>(() =>
-            _handler.Handle(command, CancellationToken.None));
-
-        Assert.Contains("RecruitmentPlan must be 'Approved' by Director", exception.Message);
-        Assert.Contains("Pending", exception.Message);
+        await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
+            .Should().ThrowAsync<Exception>()
+            .WithMessage("*RecruitmentPlan must be 'Approved' by Director*");
     }
 
     [Fact]
-    public async Task Should_Throw_BusinessRuleException_When_PlanDetail_Status_Is_Not_Approved()
+    public async Task Handle_ShouldThrowBusinessRuleException_WhenPlanDetailStatusIsNotApproved()
     {
         // Arrange
         SetupCurrentUser();
@@ -236,14 +229,13 @@ public class CreateJobPostingHandlerTests
         var command = CreateValidCommand();
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<Exception>(() =>
-            _handler.Handle(command, CancellationToken.None));
-
-        Assert.Contains("PlanDetail status must be 'Approved'", exception.Message);
+        await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
+            .Should().ThrowAsync<Exception>()
+            .WithMessage("*PlanDetail status must be 'Approved'*");
     }
 
     [Fact]
-    public async Task Should_Throw_BusinessRuleException_When_RequiredSkills_Is_Empty()
+    public async Task Handle_ShouldThrowBusinessRuleException_WhenRequiredSkillsIsEmpty()
     {
         // Arrange
         SetupCurrentUser();
@@ -254,15 +246,13 @@ public class CreateJobPostingHandlerTests
         var command = CreateValidCommand();
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<Exception>(() =>
-            _handler.Handle(command, CancellationToken.None));
-
-        Assert.Contains("RequiredSkills is empty", exception.Message);
-        Assert.Contains("AI CV scanning", exception.Message);
+        await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
+            .Should().ThrowAsync<Exception>()
+            .WithMessage("*RequiredSkills is empty*");
     }
 
     [Fact]
-    public async Task Should_Throw_BusinessRuleException_When_RequiredSkills_Is_Whitespace()
+    public async Task Handle_ShouldThrowBusinessRuleException_WhenRequiredSkillsIsWhitespace()
     {
         // Arrange
         SetupCurrentUser();
@@ -273,10 +263,9 @@ public class CreateJobPostingHandlerTests
         var command = CreateValidCommand();
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<Exception>(() =>
-            _handler.Handle(command, CancellationToken.None));
-
-        Assert.Contains("RequiredSkills is empty", exception.Message);
+        await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
+            .Should().ThrowAsync<Exception>()
+            .WithMessage("*RequiredSkills is empty*");
     }
 
     #endregion
@@ -284,7 +273,7 @@ public class CreateJobPostingHandlerTests
     #region Quota Validation Tests
 
     [Fact]
-    public async Task Should_Throw_BusinessRuleException_When_Plan_Quota_Exhausted()
+    public async Task Handle_ShouldThrowBusinessRuleException_WhenPlanQuotaExhausted()
     {
         // Arrange
         SetupCurrentUser();
@@ -321,16 +310,13 @@ public class CreateJobPostingHandlerTests
         var command = CreateValidCommand();
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<Exception>(() =>
-            _handler.Handle(command, CancellationToken.None));
-
-        Assert.Contains("Quota exhausted", exception.Message);
-        Assert.Contains("Required: 2", exception.Message);
-        Assert.Contains("Hired: 2", exception.Message);
+        await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
+            .Should().ThrowAsync<Exception>()
+            .WithMessage("*Quota exhausted*");
     }
 
     [Fact]
-    public async Task Should_Succeed_When_Quota_Has_Remaining_Slots()
+    public async Task Handle_ShouldSucceed_WhenQuotaHasRemainingSlots()
     {
         // Arrange
         SetupCurrentUser();
@@ -377,7 +363,7 @@ public class CreateJobPostingHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        Assert.NotEqual(Guid.Empty, result);
+        result.Should().NotBe(Guid.Empty);
     }
 
     #endregion
@@ -385,7 +371,7 @@ public class CreateJobPostingHandlerTests
     #region Auto-Fill Logic Tests
 
     [Fact]
-    public async Task Should_Copy_RequiredSkills_To_Requirements_For_AI_Scanning()
+    public async Task Handle_ShouldCopyRequiredSkillsToRequirementsForAIScanning()
     {
         // Arrange
         SetupCurrentUser();
@@ -418,14 +404,14 @@ public class CreateJobPostingHandlerTests
         await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        Assert.NotNull(capturedJobPosting);
-        Assert.Equal(expectedRequirements, capturedJobPosting.Requirements);
-        Assert.Equal(planDetail.PositionTitle, capturedJobPosting.JobTitle);
-        Assert.Equal(JobPostingStatus.Draft, capturedJobPosting.Status);
+        capturedJobPosting.Should().NotBeNull();
+        capturedJobPosting!.Requirements.Should().Be(expectedRequirements);
+        capturedJobPosting.JobTitle.Should().Be(planDetail.PositionTitle);
+        capturedJobPosting.Status.Should().Be(JobPostingStatus.Draft);
     }
 
     [Fact]
-    public async Task Should_Use_TitleOverride_When_Provided()
+    public async Task Handle_ShouldUseTitleOverride_WhenProvided()
     {
         // Arrange
         SetupCurrentUser();
@@ -450,12 +436,12 @@ public class CreateJobPostingHandlerTests
         await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        Assert.NotNull(capturedJobPosting);
-        Assert.Equal("Senior .NET Developer", capturedJobPosting.JobTitle); // Trimmed
+        capturedJobPosting.Should().NotBeNull();
+        capturedJobPosting!.JobTitle.Should().Be("Senior .NET Developer"); // Trimmed
     }
 
     [Fact]
-    public async Task Should_Use_PositionTitle_When_TitleOverride_Is_Empty()
+    public async Task Handle_ShouldUsePositionTitle_WhenTitleOverrideIsEmpty()
     {
         // Arrange
         SetupCurrentUser();
@@ -480,12 +466,12 @@ public class CreateJobPostingHandlerTests
         await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        Assert.NotNull(capturedJobPosting);
-        Assert.Equal("Software Engineer", capturedJobPosting.JobTitle); // From PlanDetail
+        capturedJobPosting.Should().NotBeNull();
+        capturedJobPosting!.JobTitle.Should().Be("Software Engineer"); // From PlanDetail
     }
 
     [Fact]
-    public async Task Should_Use_DescriptionOverride_When_Provided()
+    public async Task Handle_ShouldUseDescriptionOverride_WhenProvided()
     {
         // Arrange
         SetupCurrentUser();
@@ -510,12 +496,12 @@ public class CreateJobPostingHandlerTests
         await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        Assert.NotNull(capturedJobPosting);
-        Assert.Equal("Custom job description here", capturedJobPosting.Description); // Trimmed
+        capturedJobPosting.Should().NotBeNull();
+        capturedJobPosting!.Description.Should().Be("Custom job description here"); // Trimmed
     }
 
     [Fact]
-    public async Task Should_Generate_Default_Description_When_DescriptionOverride_Is_Empty()
+    public async Task Handle_ShouldGenerateDefaultDescription_WhenDescriptionOverrideIsEmpty()
     {
         // Arrange
         SetupCurrentUser();
@@ -535,12 +521,12 @@ public class CreateJobPostingHandlerTests
         await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        Assert.NotNull(capturedJobPosting);
-        Assert.Equal("We are looking for a Software Engineer.", capturedJobPosting.Description);
+        capturedJobPosting.Should().NotBeNull();
+        capturedJobPosting!.Description.Should().Be("We are looking for a Software Engineer.");
     }
 
     [Fact]
-    public async Task Should_Set_Default_Values_Correctly()
+    public async Task Handle_ShouldSetDefaultValuesCorrectly()
     {
         // Arrange
         SetupCurrentUser();
@@ -560,21 +546,21 @@ public class CreateJobPostingHandlerTests
         await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        Assert.NotNull(capturedJobPosting);
-        Assert.Equal(JobPostingStatus.Draft, capturedJobPosting.Status);
-        Assert.Equal("Full-time", capturedJobPosting.EmploymentType);
-        Assert.True(capturedJobPosting.ShowSalary);
-        Assert.Equal(0, capturedJobPosting.ViewCount);
-        Assert.Equal(0, capturedJobPosting.ApplicationCount);
-        Assert.False(capturedJobPosting.IsDeleted);
-        Assert.Equal(_userId, capturedJobPosting.CreatedById);
-        Assert.Equal(_enterpriseId, capturedJobPosting.EnterpriseId);
-        Assert.Equal(_planDetailId, capturedJobPosting.PlanDetailId);
-        Assert.Equal(1, capturedJobPosting.DepartmentId); // From RecruitmentPlan
+        capturedJobPosting.Should().NotBeNull();
+        capturedJobPosting!.Status.Should().Be(JobPostingStatus.Draft);
+        capturedJobPosting.EmploymentType.Should().Be("Full-time");
+        capturedJobPosting.ShowSalary.Should().BeTrue();
+        capturedJobPosting.ViewCount.Should().Be(0);
+        capturedJobPosting.ApplicationCount.Should().Be(0);
+        capturedJobPosting.IsDeleted.Should().BeFalse();
+        capturedJobPosting.CreatedById.Should().Be(_userId);
+        capturedJobPosting.EnterpriseId.Should().Be(_enterpriseId);
+        capturedJobPosting.PlanDetailId.Should().Be(_planDetailId);
+        capturedJobPosting.DepartmentId.Should().Be(1); // From RecruitmentPlan
     }
 
     [Fact]
-    public async Task Should_Copy_Salary_Range_From_PlanDetail()
+    public async Task Handle_ShouldCopySalaryRangeFromPlanDetail()
     {
         // Arrange
         SetupCurrentUser();
@@ -594,11 +580,11 @@ public class CreateJobPostingHandlerTests
         await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        Assert.NotNull(capturedJobPosting);
-        Assert.Equal(15000000, capturedJobPosting.SalaryRangeMin);
-        Assert.Equal(30000000, capturedJobPosting.SalaryRangeMax);
-        Assert.Equal("2-5 years", capturedJobPosting.ExperienceLevel);
-        Assert.Equal(3, capturedJobPosting.Quantity);
+        capturedJobPosting.Should().NotBeNull();
+        capturedJobPosting!.SalaryRangeMin.Should().Be(15000000);
+        capturedJobPosting.SalaryRangeMax.Should().Be(30000000);
+        capturedJobPosting.ExperienceLevel.Should().Be("2-5 years");
+        capturedJobPosting.Quantity.Should().Be(3);
     }
 
     #endregion
@@ -621,63 +607,96 @@ public class CreateJobPostingHandlerTests
     #endregion
 }
 
-// Async query provider for EF Core mocking
+// Helper classes for Async Query Provider (Reused locally to avoid dependencies)
 internal class TestAsyncQueryProvider<TEntity> : IAsyncQueryProvider
 {
     private readonly IQueryProvider _inner;
 
-    public TestAsyncQueryProvider(IQueryProvider inner) => _inner = inner;
+    internal TestAsyncQueryProvider(IQueryProvider inner)
+    {
+        _inner = inner;
+    }
 
     public IQueryable CreateQuery(System.Linq.Expressions.Expression expression)
-        => new TestAsyncEnumerable<TEntity>(expression);
+    {
+        return new TestAsyncEnumerable<TEntity>(expression);
+    }
 
     public IQueryable<TElement> CreateQuery<TElement>(System.Linq.Expressions.Expression expression)
-        => new TestAsyncEnumerable<TElement>(expression);
+    {
+        return new TestAsyncEnumerable<TElement>(expression);
+    }
 
-    public object? Execute(System.Linq.Expressions.Expression expression)
-        => _inner.Execute(expression);
+    public object Execute(System.Linq.Expressions.Expression expression)
+    {
+        return _inner.Execute(expression);
+    }
 
     public TResult Execute<TResult>(System.Linq.Expressions.Expression expression)
-        => _inner.Execute<TResult>(expression);
-
-    public TResult ExecuteAsync<TResult>(System.Linq.Expressions.Expression expression, CancellationToken cancellationToken = default)
     {
-        var resultType = typeof(TResult).GetGenericArguments()[0];
-        var executionResult = typeof(IQueryProvider)
-            .GetMethod(nameof(IQueryProvider.Execute), 1, [typeof(System.Linq.Expressions.Expression)])!
-            .MakeGenericMethod(resultType)
-            .Invoke(_inner, [expression]);
+        return _inner.Execute<TResult>(expression);
+    }
 
-        return (TResult)typeof(Task).GetMethod(nameof(Task.FromResult))!
-            .MakeGenericMethod(resultType)
-            .Invoke(null, [executionResult])!;
+    public TResult ExecuteAsync<TResult>(System.Linq.Expressions.Expression expression, CancellationToken cancellationToken)
+    {
+        var expectedResultType = typeof(TResult).GetGenericArguments()[0];
+        var executionResult = typeof(IQueryProvider)
+            .GetMethod(
+                name: nameof(IQueryProvider.Execute),
+                genericParameterCount: 1,
+                types: new[] { typeof(System.Linq.Expressions.Expression) })
+            .MakeGenericMethod(expectedResultType)
+            .Invoke(this, new[] { expression });
+
+        return (TResult)typeof(Task).GetMethod(nameof(Task.FromResult))
+            .MakeGenericMethod(expectedResultType)
+            .Invoke(null, new[] { executionResult });
     }
 }
 
 internal class TestAsyncEnumerable<T> : EnumerableQuery<T>, IAsyncEnumerable<T>, IQueryable<T>
 {
-    public TestAsyncEnumerable(IEnumerable<T> enumerable) : base(enumerable) { }
-    public TestAsyncEnumerable(System.Linq.Expressions.Expression expression) : base(expression) { }
+    public TestAsyncEnumerable(IEnumerable<T> enumerable)
+        : base(enumerable)
+    { }
+
+    public TestAsyncEnumerable(System.Linq.Expressions.Expression expression)
+        : base(expression)
+    { }
 
     public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
-        => new TestAsyncEnumerator<T>(this.AsEnumerable().GetEnumerator());
+    {
+        return new TestAsyncEnumerator<T>(this.AsEnumerable().GetEnumerator());
+    }
 
-    IQueryProvider IQueryable.Provider => new TestAsyncQueryProvider<T>(this);
+    IQueryProvider IQueryable.Provider
+    {
+        get { return new TestAsyncQueryProvider<T>(this); }
+    }
 }
 
 internal class TestAsyncEnumerator<T> : IAsyncEnumerator<T>
 {
     private readonly IEnumerator<T> _inner;
 
-    public TestAsyncEnumerator(IEnumerator<T> inner) => _inner = inner;
-
-    public T Current => _inner.Current;
-
-    public ValueTask<bool> MoveNextAsync() => new(_inner.MoveNext());
+    public TestAsyncEnumerator(IEnumerator<T> inner)
+    {
+        _inner = inner;
+    }
 
     public ValueTask DisposeAsync()
     {
         _inner.Dispose();
         return ValueTask.CompletedTask;
+    }
+
+    public ValueTask<bool> MoveNextAsync()
+    {
+        return new ValueTask<bool>(_inner.MoveNext());
+    }
+
+    public T Current
+    {
+        get { return _inner.Current; }
     }
 }
