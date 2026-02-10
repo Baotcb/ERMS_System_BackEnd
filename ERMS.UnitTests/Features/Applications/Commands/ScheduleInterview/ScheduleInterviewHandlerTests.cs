@@ -191,12 +191,12 @@ public class ScheduleInterviewHandlerTests
         savedInterview.Status.Should().Be("Scheduled");
         savedInterview.ScheduledById.Should().Be(_userId);
         
-        // 4. Data Integrity - Participants
-        participantsList.Should().HaveCount(1);
-        var savedParticipant = participantsList.First();
-        savedParticipant.InterviewId.Should().Be(savedInterview.Id);
+        // 4. Data Integrity - Participants (Accessed via Navigation Property)
+        savedInterview.Participants.Should().HaveCount(1);
+        var savedParticipant = savedInterview.Participants.First();
+        // Since we didn't add to participantsList (DbSet mock), we check the navigation property
         savedParticipant.EmployeeId.Should().Be(interviewerId);
-        savedParticipant.Role.Should().Be("Interviewer");
+        savedParticipant.Role.Should().Be(InterviewParticipantRoles.Interviewer);
 
         // 5. Verify Transaction & Save
         _contextMock.Verify(c => c.Database.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Once);

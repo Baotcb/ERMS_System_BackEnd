@@ -111,25 +111,27 @@ public sealed class ScheduleInterviewHandler : IRequestHandler<ScheduleInterview
                 CreatedAt = DateTime.UtcNow
             };
 
-            _context.Interviews.Add(interview);
-
-            // 11. Create InterviewParticipant records
-            var participants = new List<InterviewParticipant>();
+            // 11. Create InterviewParticipant records logic integrated into Interview creation or added via navigation
             foreach (var employeeId in request.InterviewerIds)
             {
                 var participant = new InterviewParticipant
                 {
                     Id = Guid.CreateVersion7(),
-                    InterviewId = interview.Id,
                     EmployeeId = employeeId,
-                    Role = "Interviewer",
+                    Role = InterviewParticipantRoles.Interviewer,
                     IsRequired = true,
                     ConfirmationStatus = "Pending",
                     CreatedAt = DateTime.UtcNow
                 };
-                participants.Add(participant);
-                _context.InterviewParticipants.Add(participant);
+                
+                // Add to navigation property
+                interview.Participants.Add(participant);
             }
+
+            // Add the Interview (and its graph) to the context
+            _context.Interviews.Add(interview);
+
+            // 12. Update Application stage to InterviewScheduled
 
             // 12. Update Application stage to InterviewScheduled
             application.Stage = ApplicationStage.InterviewScheduled;
@@ -149,10 +151,10 @@ public sealed class ScheduleInterviewHandler : IRequestHandler<ScheduleInterview
             var participantDtos = interviewerEmployees
                 .Select(e => new InterviewParticipantDto
                 {
-                    ParticipantId = participants.First(p => p.EmployeeId == e.Id).Id,
+                    ParticipantId = interview.Participants.First(p => p.EmployeeId == e.Id).Id,
                     EmployeeId = e.Id,
                     EmployeeName = e.User.FullName,
-                    Role = "Interviewer",
+                    Role = InterviewParticipantRoles.Interviewer,
                     ConfirmationStatus = "Pending"
                 })
                 .ToList();
