@@ -1,5 +1,6 @@
 using ERMS.Application.Features.Applications.Commands.SubmitApplication;
 using ERMS.Application.Interface;
+using FluentAssertions;
 using ERMS.Domain.Constants.Application;
 using ERMS.Domain.Constants.Recruitment;
 using ERMS.Domain.Constants.Roles;
@@ -17,7 +18,7 @@ using System.Text;
 using ApplicationEntity = ERMS.Domain.Entities.Application.Application;
 using CandidateEntity = ERMS.Domain.Entities.Candidate.Candidate;
 
-namespace ERMS.UnitTests.Features.Applications;
+namespace ERMS.UnitTests.Features.Applications.Commands.SubmitApplication;
 
 public class SubmitApplicationHandlerTests
 {
@@ -205,7 +206,7 @@ public class SubmitApplicationHandlerTests
     #region Security Tests
 
     [Fact]
-    public async Task Should_Throw_UnauthorizedAccessException_When_User_Not_Authenticated()
+    public async Task Handle_ShouldThrowUnauthorizedAccessException_WhenUserNotAuthenticated()
     {
         // Arrange
         _currentUserServiceMock.Setup(x => x.UserId).Returns((Guid?)null);
@@ -213,14 +214,13 @@ public class SubmitApplicationHandlerTests
         var command = CreateValidCommand();
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            _handler.Handle(command, CancellationToken.None));
-
-        Assert.Equal("User not authenticated.", exception.Message);
+        await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
+            .Should().ThrowAsync<UnauthorizedAccessException>()
+            .WithMessage("User not authenticated.");
     }
 
     [Fact]
-    public async Task Should_Throw_UnauthorizedAccessException_When_User_Is_Not_Candidate()
+    public async Task Handle_ShouldThrowUnauthorizedAccessException_WhenUserIsNotCandidate()
     {
         // Arrange
         _currentUserServiceMock.Setup(x => x.UserId).Returns(_userId);
@@ -229,14 +229,13 @@ public class SubmitApplicationHandlerTests
         var command = CreateValidCommand();
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            _handler.Handle(command, CancellationToken.None));
-
-        Assert.Equal("Only candidates can submit job applications.", exception.Message);
+        await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
+            .Should().ThrowAsync<UnauthorizedAccessException>()
+            .WithMessage("Only candidates can submit job applications.");
     }
 
     [Fact]
-    public async Task Should_Throw_UnauthorizedAccessException_When_User_Has_No_Roles()
+    public async Task Handle_ShouldThrowUnauthorizedAccessException_WhenUserHasNoRoles()
     {
         // Arrange
         _currentUserServiceMock.Setup(x => x.UserId).Returns(_userId);
@@ -245,10 +244,9 @@ public class SubmitApplicationHandlerTests
         var command = CreateValidCommand();
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            _handler.Handle(command, CancellationToken.None));
-
-        Assert.Equal("Only candidates can submit job applications.", exception.Message);
+        await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
+            .Should().ThrowAsync<UnauthorizedAccessException>()
+            .WithMessage("Only candidates can submit job applications.");
     }
 
     #endregion
@@ -256,7 +254,7 @@ public class SubmitApplicationHandlerTests
     #region Candidate Profile Tests
 
     [Fact]
-    public async Task Should_Throw_Exception_When_Candidate_Profile_Not_Found()
+    public async Task Handle_ShouldThrowException_WhenCandidateProfileNotFound()
     {
         // Arrange
         SetupAuthenticatedCandidate();
@@ -268,14 +266,13 @@ public class SubmitApplicationHandlerTests
         var command = CreateValidCommand();
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<Exception>(() =>
-            _handler.Handle(command, CancellationToken.None));
-
-        Assert.Contains("Candidate profile not found", exception.Message);
+        await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
+            .Should().ThrowAsync<Exception>()
+            .WithMessage("*Candidate profile not found*");
     }
 
     [Fact]
-    public async Task Should_Throw_Exception_When_Candidate_Profile_Is_Deleted()
+    public async Task Handle_ShouldThrowException_WhenCandidateProfileIsDeleted()
     {
         // Arrange
         SetupAuthenticatedCandidate();
@@ -290,10 +287,9 @@ public class SubmitApplicationHandlerTests
         var command = CreateValidCommand();
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<Exception>(() =>
-            _handler.Handle(command, CancellationToken.None));
-
-        Assert.Contains("Candidate profile not found", exception.Message);
+        await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
+            .Should().ThrowAsync<Exception>()
+            .WithMessage("*Candidate profile not found*");
     }
 
     #endregion
@@ -301,7 +297,7 @@ public class SubmitApplicationHandlerTests
     #region Job Posting Validation Tests
 
     [Fact]
-    public async Task Should_Throw_Exception_When_JobPosting_Not_Found()
+    public async Task Handle_ShouldThrowException_WhenJobPostingNotFound()
     {
         // Arrange
         SetupAuthenticatedCandidate();
@@ -318,15 +314,13 @@ public class SubmitApplicationHandlerTests
         var command = CreateValidCommand();
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<Exception>(() =>
-            _handler.Handle(command, CancellationToken.None));
-
-        Assert.Contains("Job posting with ID", exception.Message);
-        Assert.Contains("not found", exception.Message);
+        await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
+            .Should().ThrowAsync<Exception>()
+            .WithMessage("*Job posting with ID*not found*");
     }
 
     [Fact]
-    public async Task Should_Throw_Exception_When_JobPosting_Is_Not_Published()
+    public async Task Handle_ShouldThrowException_WhenJobPostingIsNotPublished()
     {
         // Arrange
         SetupAuthenticatedCandidate();
@@ -346,14 +340,13 @@ public class SubmitApplicationHandlerTests
         var command = CreateValidCommand();
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<Exception>(() =>
-            _handler.Handle(command, CancellationToken.None));
-
-        Assert.Contains("not open for applications", exception.Message);
+        await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
+            .Should().ThrowAsync<Exception>()
+            .WithMessage("*not open for applications*");
     }
 
     [Fact]
-    public async Task Should_Throw_Exception_When_JobPosting_Is_Closed()
+    public async Task Handle_ShouldThrowException_WhenJobPostingIsClosed()
     {
         // Arrange
         SetupAuthenticatedCandidate();
@@ -373,14 +366,13 @@ public class SubmitApplicationHandlerTests
         var command = CreateValidCommand();
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<Exception>(() =>
-            _handler.Handle(command, CancellationToken.None));
-
-        Assert.Contains("not open for applications", exception.Message);
+        await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
+            .Should().ThrowAsync<Exception>()
+            .WithMessage("*not open for applications*");
     }
 
     [Fact]
-    public async Task Should_Throw_Exception_When_Application_Deadline_Has_Passed()
+    public async Task Handle_ShouldThrowException_WhenApplicationDeadlineHasPassed()
     {
         // Arrange
         SetupAuthenticatedCandidate();
@@ -400,10 +392,9 @@ public class SubmitApplicationHandlerTests
         var command = CreateValidCommand();
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<Exception>(() =>
-            _handler.Handle(command, CancellationToken.None));
-
-        Assert.Contains("deadline has passed", exception.Message);
+        await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
+            .Should().ThrowAsync<Exception>()
+            .WithMessage("*deadline has passed*");
     }
 
     #endregion
@@ -411,7 +402,7 @@ public class SubmitApplicationHandlerTests
     #region Duplicate Application Tests
 
     [Fact]
-    public async Task Should_Throw_Exception_When_Candidate_Already_Applied()
+    public async Task Handle_ShouldThrowException_WhenCandidateAlreadyApplied()
     {
         // Arrange
         SetupAuthenticatedCandidate();
@@ -441,14 +432,13 @@ public class SubmitApplicationHandlerTests
         var command = CreateValidCommand();
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<Exception>(() =>
-            _handler.Handle(command, CancellationToken.None));
-
-        Assert.Contains("already applied", exception.Message);
+        await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
+            .Should().ThrowAsync<Exception>()
+            .WithMessage("*already applied*");
     }
 
     [Fact]
-    public async Task Should_Allow_Application_When_Previous_Was_Deleted()
+    public async Task Handle_ShouldAllowApplication_WhenPreviousWasDeleted()
     {
         // Arrange
         SetupAuthenticatedCandidate();
@@ -473,7 +463,7 @@ public class SubmitApplicationHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert - Should succeed because previous application was deleted
-        Assert.NotEqual(Guid.Empty, result.ApplicationId);
+        result.ApplicationId.Should().NotBe(Guid.Empty);
     }
 
     #endregion
@@ -481,7 +471,7 @@ public class SubmitApplicationHandlerTests
     #region AI Failure Graceful Degradation Tests
 
     [Fact]
-    public async Task Should_Submit_Application_With_Default_Scores_When_AI_Fails()
+    public async Task Handle_ShouldSubmitApplicationWithDefaultScores_WhenAIFails()
     {
         // Arrange
         SetupAuthenticatedCandidate();
@@ -500,9 +490,9 @@ public class SubmitApplicationHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert - Application should still be submitted with default scores
-        Assert.NotEqual(Guid.Empty, result.ApplicationId);
-        Assert.Equal(0, result.CVScreeningResult?.OverallScore);
-        Assert.Contains("AI scoring unavailable", result.CVScreeningResult?.Summary ?? "");
+        result.ApplicationId.Should().NotBe(Guid.Empty);
+        result.CVScreeningResult?.OverallScore.Should().Be(0);
+        result.CVScreeningResult?.Summary.Should().Contain("AI scoring unavailable");
     }
 
     #endregion
@@ -510,7 +500,7 @@ public class SubmitApplicationHandlerTests
     #region Successful Submission Tests
 
     [Fact]
-    public async Task Should_Return_Complete_Result_On_Successful_Submission()
+    public async Task Handle_ShouldReturnCompleteResult_OnSuccessfulSubmission()
     {
         // Arrange
         SetupAuthenticatedCandidate();
@@ -522,16 +512,16 @@ public class SubmitApplicationHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        Assert.NotEqual(Guid.Empty, result.ApplicationId);
-        Assert.NotEqual(Guid.Empty, result.ResumeId);
-        Assert.Equal("https://cloudinary.com/resume.pdf", result.ResumeUrl);
-        Assert.Equal(ApplicationStage.Applied, result.Stage);
-        Assert.NotNull(result.CVScreeningResult);
-        Assert.Equal(85, result.CVScreeningResult.OverallScore);
+        result.ApplicationId.Should().NotBe(Guid.Empty);
+        result.ResumeId.Should().NotBe(Guid.Empty);
+        result.ResumeUrl.Should().Be("https://cloudinary.com/resume.pdf");
+        result.Stage.Should().Be(ApplicationStage.Applied);
+        result.CVScreeningResult.Should().NotBeNull();
+        result.CVScreeningResult.OverallScore.Should().Be(85);
     }
 
     [Fact]
-    public async Task Should_Call_Cloudinary_Upload_Once()
+    public async Task Handle_ShouldCallCloudinaryUploadOnce()
     {
         // Arrange
         SetupAuthenticatedCandidate();
@@ -549,7 +539,7 @@ public class SubmitApplicationHandlerTests
     }
 
     [Fact]
-    public async Task Should_Call_PDF_Extractor_Once()
+    public async Task Handle_ShouldCallPdfExtractorOnce()
     {
         // Arrange
         SetupAuthenticatedCandidate();
@@ -567,7 +557,7 @@ public class SubmitApplicationHandlerTests
     }
 
     [Fact]
-    public async Task Should_Call_AI_Service_With_Correct_Parameters()
+    public async Task Handle_ShouldCallAIServiceWithCorrectParameters()
     {
         // Arrange
         SetupAuthenticatedCandidate();
@@ -590,7 +580,7 @@ public class SubmitApplicationHandlerTests
     }
 
     [Fact]
-    public async Task Should_Save_Changes_To_Database()
+    public async Task Handle_ShouldSaveChangesToDatabase()
     {
         // Arrange
         SetupAuthenticatedCandidate();
@@ -610,62 +600,100 @@ public class SubmitApplicationHandlerTests
 
 #region Test Infrastructure
 
-internal class TestAsyncEnumerator<T> : IAsyncEnumerator<T>
-{
-    private readonly IEnumerator<T> _inner;
 
-    public TestAsyncEnumerator(IEnumerator<T> inner) => _inner = inner;
 
-    public ValueTask DisposeAsync()
+// Helper classes for Async Query Provider (Reused locally to avoid dependencies)
+    internal class TestAsyncQueryProvider<TEntity> : IAsyncQueryProvider
     {
-        _inner.Dispose();
-        return ValueTask.CompletedTask;
+        private readonly IQueryProvider _inner;
+
+        internal TestAsyncQueryProvider(IQueryProvider inner)
+        {
+            _inner = inner;
+        }
+
+        public IQueryable CreateQuery(Expression expression)
+        {
+            return new TestAsyncEnumerable<TEntity>(expression);
+        }
+
+        public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
+        {
+            return new TestAsyncEnumerable<TElement>(expression);
+        }
+
+        public object Execute(Expression expression)
+        {
+            return _inner.Execute(expression);
+        }
+
+        public TResult Execute<TResult>(Expression expression)
+        {
+            return _inner.Execute<TResult>(expression);
+        }
+
+        public TResult ExecuteAsync<TResult>(Expression expression, CancellationToken cancellationToken)
+        {
+            var expectedResultType = typeof(TResult).GetGenericArguments()[0];
+            var executionResult = typeof(IQueryProvider)
+                .GetMethod(
+                    name: nameof(IQueryProvider.Execute),
+                    genericParameterCount: 1,
+                    types: new[] { typeof(Expression) })
+                .MakeGenericMethod(expectedResultType)
+                .Invoke(this, new[] { expression });
+
+            return (TResult)typeof(Task).GetMethod(nameof(Task.FromResult))
+                .MakeGenericMethod(expectedResultType)
+                .Invoke(null, new[] { executionResult });
+        }
     }
 
-    public ValueTask<bool> MoveNextAsync() => new(_inner.MoveNext());
-
-    public T Current => _inner.Current;
-}
-
-internal class TestAsyncQueryProvider<TEntity> : IAsyncQueryProvider
-{
-    private readonly IQueryProvider _inner;
-
-    internal TestAsyncQueryProvider(IQueryProvider inner) => _inner = inner;
-
-    public IQueryable CreateQuery(Expression expression) => new TestAsyncEnumerable<TEntity>(expression);
-
-    public IQueryable<TElement> CreateQuery<TElement>(Expression expression) =>
-        new TestAsyncEnumerable<TElement>(expression);
-
-    public object? Execute(Expression expression) => _inner.Execute(expression);
-
-    public TResult Execute<TResult>(Expression expression) => _inner.Execute<TResult>(expression);
-
-    public TResult ExecuteAsync<TResult>(Expression expression, CancellationToken cancellationToken = default)
+    internal class TestAsyncEnumerable<T> : EnumerableQuery<T>, IAsyncEnumerable<T>, IQueryable<T>
     {
-        var expectedResultType = typeof(TResult).GetGenericArguments()[0];
-        var executionResult = typeof(IQueryProvider)
-            .GetMethod(nameof(IQueryProvider.Execute), 1, [typeof(Expression)])
-            ?.MakeGenericMethod(expectedResultType)
-            .Invoke(_inner, [expression]);
+        public TestAsyncEnumerable(IEnumerable<T> enumerable)
+            : base(enumerable)
+        { }
 
-        return (TResult)typeof(Task).GetMethod(nameof(Task.FromResult))
-            ?.MakeGenericMethod(expectedResultType)
-            .Invoke(null, [executionResult])!;
+        public TestAsyncEnumerable(Expression expression)
+            : base(expression)
+        { }
+
+        public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+        {
+            return new TestAsyncEnumerator<T>(this.AsEnumerable().GetEnumerator());
+        }
+
+        IQueryProvider IQueryable.Provider
+        {
+            get { return new TestAsyncQueryProvider<T>(this); }
+        }
     }
-}
 
-internal class TestAsyncEnumerable<T> : EnumerableQuery<T>, IAsyncEnumerable<T>, IQueryable<T>
-{
-    public TestAsyncEnumerable(IEnumerable<T> enumerable) : base(enumerable) { }
+    internal class TestAsyncEnumerator<T> : IAsyncEnumerator<T>
+    {
+        private readonly IEnumerator<T> _inner;
 
-    public TestAsyncEnumerable(Expression expression) : base(expression) { }
+        public TestAsyncEnumerator(IEnumerator<T> inner)
+        {
+            _inner = inner;
+        }
 
-    public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default) =>
-        new TestAsyncEnumerator<T>(this.AsEnumerable().GetEnumerator());
+        public ValueTask DisposeAsync()
+        {
+            _inner.Dispose();
+            return ValueTask.CompletedTask;
+        }
 
-    IQueryProvider IQueryable.Provider => new TestAsyncQueryProvider<T>(this);
-}
+        public ValueTask<bool> MoveNextAsync()
+        {
+            return new ValueTask<bool>(_inner.MoveNext());
+        }
+
+        public T Current
+        {
+            get { return _inner.Current; }
+        }
+    }
 
 #endregion

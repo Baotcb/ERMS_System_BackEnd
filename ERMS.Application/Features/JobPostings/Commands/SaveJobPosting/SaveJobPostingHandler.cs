@@ -35,6 +35,16 @@ namespace ERMS.Application.Features.JobPostings.Commands.SaveJobPosting
             {
                 throw new InvalidOperationException("Candidate profile not found");
             }
+            if (request.JobPostingId == Guid.Empty)
+            {
+                throw new ArgumentException("Invalid Job Posting ID");
+            }
+
+            var jobPosting = await _context.JobPostings
+                .FirstOrDefaultAsync(x => x.Id == request.JobPostingId, cancellationToken);
+            if (jobPosting == null) {
+                throw new InvalidOperationException("Job posting not found");
+            }
 
             var existingSavedJob = await _context.SavedJobs
                 .FirstOrDefaultAsync(x => x.CandidateId == candidate.Id && x.JobPostingId == request.JobPostingId, cancellationToken);
