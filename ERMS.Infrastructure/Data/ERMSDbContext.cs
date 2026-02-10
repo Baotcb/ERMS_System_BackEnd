@@ -376,5 +376,9 @@ namespace ERMS.Infrastructure.Data
                 .HasForeignKey(a => a.CandidateId)
                 .OnDelete(DeleteBehavior.Restrict);
         }
+        public async Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
+        {
+            return await Database.BeginTransactionAsync(cancellationToken);
+        }
     }
 }

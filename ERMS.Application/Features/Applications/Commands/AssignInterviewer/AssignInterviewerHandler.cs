@@ -6,29 +6,29 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-namespace ERMS.Application.Features.Applications.Commands.ScheduleInterview;
+namespace ERMS.Application.Features.Applications.Commands.AssignInterviewer;
 
 /// <summary>
-/// Handler for scheduling an interview for a shortlisted application
-/// Uses transaction to ensure atomicity of Interview, InterviewParticipants, and Application stage update
+/// Handler for assigning interviewers to a shortlisted application.
+/// Creates an interview with status 'PendingSchedule'.
 /// </summary>
-public sealed class ScheduleInterviewHandler : IRequestHandler<ScheduleInterviewCommand, ScheduleInterviewResult>
+public sealed class AssignInterviewerHandler : IRequestHandler<AssignInterviewerCommand, AssignInterviewerResult>
 {
     private readonly IERMSDbContext _context;
     private readonly ICurrentUserService _currentUserService;
-    private readonly ILogger<ScheduleInterviewHandler> _logger;
+    private readonly ILogger<AssignInterviewerHandler> _logger;
 
-    public ScheduleInterviewHandler(
+    public AssignInterviewerHandler(
         IERMSDbContext context,
         ICurrentUserService currentUserService,
-        ILogger<ScheduleInterviewHandler> logger)
+        ILogger<AssignInterviewerHandler> logger)
     {
         _context = context;
         _currentUserService = currentUserService;
         _logger = logger;
     }
 
-    public async Task<ScheduleInterviewResult> Handle(ScheduleInterviewCommand request, CancellationToken cancellationToken)
+    public async Task<AssignInterviewerResult> Handle(AssignInterviewerCommand request, CancellationToken cancellationToken)
     {
         // 1. Validate current user is authenticated
         var userId = _currentUserService.UserId
@@ -38,7 +38,7 @@ public sealed class ScheduleInterviewHandler : IRequestHandler<ScheduleInterview
         var userRoles = _currentUserService.Roles;
         if (userRoles == null || !userRoles.Contains(AppRoles.DepartmentHead))
         {
-            throw new UnauthorizedAccessException("Only Department Head can schedule interviews.");
+            throw new UnauthorizedAccessException("Only Department Head can assign interviewers.");
         }
 
         // 3. Get user's department
@@ -64,13 +64,13 @@ public sealed class ScheduleInterviewHandler : IRequestHandler<ScheduleInterview
         // 7. Department security check
         if (application.JobPosting.DepartmentId != userDepartmentId)
         {
-            throw new UnauthorizedAccessException("You can only schedule interviews for candidates in your department.");
+            throw new UnauthorizedAccessException("You can only assign interviewers for candidates in your department.");
         }
 
         // 8. Validate current stage is "Shortlisted"
         if (!application.Stage.Equals(ApplicationStage.Shortlisted, StringComparison.OrdinalIgnoreCase))
         {
-            throw new Exception($"Cannot schedule interview. Application stage is '{application.Stage}', expected '{ApplicationStage.Shortlisted}'.");
+            throw new Exception($"Cannot assign interviewers. Application stage is '{application.Stage}', expected '{ApplicationStage.Shortlisted}'.");
         }
 
         // 9. Validate interviewers exist and belong to enterprise
@@ -86,32 +86,26 @@ public sealed class ScheduleInterviewHandler : IRequestHandler<ScheduleInterview
             throw new Exception($"Some interviewers were not found: {string.Join(", ", missingIds)}");
         }
 
-        // Store previous stage for response
-        var previousStage = application.Stage;
-
         // BEGIN TRANSACTION
-        await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+        // BEGIN TRANSACTION
+        await using var transaction = await _context.BeginTransactionAsync(cancellationToken);
 
         try
         {
-            // 10. Create Interview record
+            // 10. Create Interview record with PendingSchedule status
             var interview = new Interview
             {
                 Id = Guid.CreateVersion7(),
                 ApplicationId = application.Id,
                 InterviewType = request.InterviewType,
-                RoundNumber = 1,
-                ScheduledAt = request.ScheduledAt,
-                Duration = request.Duration,
-                Location = request.Location?.Trim(),
-                MeetingLink = request.MeetingLink?.Trim(),
-                Status = "Scheduled",
+                RoundNumber = 1, // Defaulting to 1 for now, logic could be enhanced for multi-round
+                Status = InterviewStatus.PendingSchedule,
                 ScheduledById = userId,
                 Note = request.Note?.Trim(),
                 CreatedAt = DateTime.UtcNow
             };
 
-            // 11. Create InterviewParticipant records logic integrated into Interview creation or added via navigation
+            // 11. Create InterviewParticipant records logic integrated into Interview creation via navigation
             foreach (var employeeId in request.InterviewerIds)
             {
                 var participant = new InterviewParticipant
@@ -131,12 +125,7 @@ public sealed class ScheduleInterviewHandler : IRequestHandler<ScheduleInterview
             // Add the Interview (and its graph) to the context
             _context.Interviews.Add(interview);
 
-            // 12. Update Application stage to InterviewScheduled
-
-            // 12. Update Application stage to InterviewScheduled
-            application.Stage = ApplicationStage.InterviewScheduled;
-            application.StageUpdatedAt = DateTime.UtcNow;
-            application.UpdatedAt = DateTime.UtcNow;
+            // NOTE: Do NOT update Application.Stage here. It remains Shortlisted until HR schedules it.
 
             await _context.SaveChangesAsync(cancellationToken);
 
@@ -144,8 +133,8 @@ public sealed class ScheduleInterviewHandler : IRequestHandler<ScheduleInterview
             await transaction.CommitAsync(cancellationToken);
 
             _logger.LogInformation(
-                "Interview {InterviewId} scheduled for Application {ApplicationId} by user {UserId}. Stage changed from {PreviousStage} to {NewStage}",
-                interview.Id, application.Id, userId, previousStage, application.Stage);
+                "Interview {InterviewId} assigned for Application {ApplicationId} by user {UserId}. Status: {Status}",
+                interview.Id, application.Id, userId, interview.Status);
 
             // Build participant DTOs with employee names
             var participantDtos = interviewerEmployees
@@ -159,25 +148,19 @@ public sealed class ScheduleInterviewHandler : IRequestHandler<ScheduleInterview
                 })
                 .ToList();
 
-            return new ScheduleInterviewResult
+            return new AssignInterviewerResult
             {
                 InterviewId = interview.Id,
                 ApplicationId = application.Id,
-                PreviousStage = previousStage,
-                NewStage = application.Stage,
-                ScheduledAt = interview.ScheduledAt,
-                Duration = interview.Duration,
                 InterviewType = interview.InterviewType,
-                Location = interview.Location,
-                MeetingLink = interview.MeetingLink,
-                RoundNumber = interview.RoundNumber,
+                Status = interview.Status,
                 Participants = participantDtos
             };
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync(cancellationToken);
-            _logger.LogError(ex, "Failed to schedule interview for Application {ApplicationId}", request.ApplicationId);
+            _logger.LogError(ex, "Failed to assign interviewers for Application {ApplicationId}", request.ApplicationId);
             throw;
         }
     }
