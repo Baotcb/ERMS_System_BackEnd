@@ -1,3 +1,4 @@
+using ERMS.Domain.Enums;
 using MediatR;
 
 namespace ERMS.Application.Features.Applications.Commands.ConfirmInterviewSchedule;
@@ -9,6 +10,7 @@ namespace ERMS.Application.Features.Applications.Commands.ConfirmInterviewSchedu
 public sealed record ConfirmInterviewScheduleCommand : IRequest<ConfirmInterviewScheduleResult>
 {
     public Guid ApplicationId { get; init; }
+    public InterviewFormat InterviewFormat { get; init; } = InterviewFormat.Online;
     public DateTime ScheduledAt { get; init; }
     public int Duration { get; init; } = 60;
     public string? Location { get; init; }

@@ -1,3 +1,4 @@
+using ERMS.Domain.Enums;
 using FluentValidation;
 
 namespace ERMS.Application.Features.Applications.Commands.ConfirmInterviewSchedule;
@@ -14,6 +15,10 @@ public sealed class ConfirmInterviewScheduleValidator : AbstractValidator<Confir
             .NotEmpty()
             .WithMessage("ApplicationId is required.");
 
+        RuleFor(x => x.InterviewFormat)
+            .IsInEnum()
+            .WithMessage("InterviewFormat must be a valid value (Online or Offline).");
+
         RuleFor(x => x.ScheduledAt)
             .NotEmpty()
             .WithMessage("ScheduledAt is required.")
@@ -28,5 +33,10 @@ public sealed class ConfirmInterviewScheduleValidator : AbstractValidator<Confir
             .MaximumLength(MaxLocationLength)
             .When(x => !string.IsNullOrEmpty(x.Location))
             .WithMessage($"Location must not exceed {MaxLocationLength} characters.");
+
+        RuleFor(x => x.Location)
+            .NotEmpty()
+            .When(x => x.InterviewFormat == InterviewFormat.Offline)
+            .WithMessage("Location is required for offline interviews.");
     }
 }

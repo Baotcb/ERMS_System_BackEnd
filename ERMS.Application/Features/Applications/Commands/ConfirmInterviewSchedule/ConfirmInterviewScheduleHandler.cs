@@ -1,6 +1,7 @@
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Application;
 using ERMS.Domain.Constants.Roles;
+using ERMS.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -9,7 +10,8 @@ namespace ERMS.Application.Features.Applications.Commands.ConfirmInterviewSchedu
 
 /// <summary>
 /// Handler for confirming the interview schedule.
-/// Generates a Google Meet link and updates status to Scheduled.
+/// For Online interviews: generates a Google Meet link and updates status to Scheduled.
+/// For Offline interviews: uses the provided Location, no Meet link is generated.
 /// Restricted to HRManager.
 /// </summary>
 public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInterviewScheduleCommand, ConfirmInterviewScheduleResult>
@@ -71,27 +73,33 @@ public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInt
             throw new UnauthorizedAccessException("You do not have permission to access this application.");
         }
 
-        // 6. Generate Google Meet Link
-        var candidateName = interview.Application.Candidate.User.FullName;
-        var jobTitle = interview.Application.JobPosting.JobTitle;
-        var title = $"Interview for {jobTitle} - {candidateName}";
+        // 6. Handle interview format-specific logic
+        string? meetingLink = null;
 
-        var attendees = interview.Participants
-            .Select(p => p.Employee.User.Email)
-            .Where(email => !string.IsNullOrEmpty(email))
-            .ToList<string>(); // Explicitly cast to List<string> to match interface
-
-        // Add candidate email if available
-        if (!string.IsNullOrEmpty(interview.Application.Candidate.User.Email))
+        if (request.InterviewFormat == InterviewFormat.Online)
         {
-            attendees.Add(interview.Application.Candidate.User.Email);
-        }
+            // Online: generate Google Meet link
+            var candidateName = interview.Application.Candidate.User.FullName;
+            var jobTitle = interview.Application.JobPosting.JobTitle;
+            var title = $"Interview for {jobTitle} - {candidateName}";
 
-        var meetingLink = await _googleCalendarService.CreateMeetingAsync(
-            title, 
-            request.ScheduledAt, 
-            request.Duration, 
-            attendees!);
+            var attendees = interview.Participants
+                .Select(p => p.Employee.User.Email)
+                .Where(email => !string.IsNullOrEmpty(email))
+                .ToList<string>();
+
+            // Add candidate email if available
+            if (!string.IsNullOrEmpty(interview.Application.Candidate.User.Email))
+            {
+                attendees.Add(interview.Application.Candidate.User.Email);
+            }
+
+            meetingLink = await _googleCalendarService.CreateMeetingAsync(
+                title, 
+                request.ScheduledAt, 
+                request.Duration, 
+                attendees!);
+        }
 
         // BEGIN TRANSACTION
         await using var transaction = await _context.BeginTransactionAsync(cancellationToken);
@@ -99,6 +107,7 @@ public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInt
         try
         {
             // 7. Update Interview details
+            interview.InterviewFormat = request.InterviewFormat;
             interview.ScheduledAt = request.ScheduledAt;
             interview.Duration = request.Duration;
             interview.Location = request.Location;
@@ -106,7 +115,6 @@ public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInt
             interview.Status = InterviewStatus.Scheduled;
             
             // 8. Update Application stage
-            var previousStage = interview.Application.Stage;
             interview.Application.Stage = ApplicationStage.InterviewScheduled;
             interview.Application.StageUpdatedAt = DateTime.UtcNow;
             interview.Application.UpdatedAt = DateTime.UtcNow;
@@ -115,13 +123,14 @@ public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInt
             await transaction.CommitAsync(cancellationToken);
 
             _logger.LogInformation(
-                "Interview {InterviewId} confirmed for Application {ApplicationId} by HR {UserId}. Meeting Link: {Link}",
-                interview.Id, interview.ApplicationId, userId, meetingLink);
+                "Interview {InterviewId} confirmed ({Format}) for Application {ApplicationId} by HR {UserId}. Meeting Link: {Link}, Location: {Location}",
+                interview.Id, request.InterviewFormat, interview.ApplicationId, userId, meetingLink, request.Location);
 
             return new ConfirmInterviewScheduleResult
             {
                 InterviewId = interview.Id,
                 Status = interview.Status,
+                InterviewFormat = interview.InterviewFormat,
                 ScheduledAt = interview.ScheduledAt,
                 Duration = interview.Duration,
                 MeetingLink = interview.MeetingLink,

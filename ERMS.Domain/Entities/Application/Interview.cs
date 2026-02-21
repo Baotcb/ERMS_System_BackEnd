@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using ERMS.Domain.Common;
 using ERMS.Domain.Entities.Identity;
+using ERMS.Domain.Enums;
 
 namespace ERMS.Domain.Entities.Application
 {
@@ -9,6 +10,7 @@ namespace ERMS.Domain.Entities.Application
     {
         public Guid ApplicationId { get; set; }
         public string InterviewType { get; set; } = null!;
+        public InterviewFormat InterviewFormat { get; set; } = InterviewFormat.Online;
         public int RoundNumber { get; set; } = 1;
         public DateTime ScheduledAt { get; set; }
         public int Duration { get; set; } = 60;
