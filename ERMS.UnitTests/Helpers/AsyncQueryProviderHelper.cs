@@ -1,4 +1,6 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
+using Moq;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -97,6 +99,30 @@ namespace ERMS.UnitTests.Helpers
         public T Current
         {
             get { return _inner.Current; }
+        }
+    }
+
+    public static class DbContextMockHelper
+    {
+        public static Mock<DbSet<T>> BuildMockDbSet<T>(this IQueryable<T> sourceList) where T : class
+        {
+            var mockSet = new Mock<DbSet<T>>();
+            var queryable = sourceList.AsQueryable();
+
+            mockSet.As<IQueryable<T>>().Setup(m => m.Provider).Returns(new TestAsyncQueryProvider<T>(queryable.Provider));
+            mockSet.As<IQueryable<T>>().Setup(m => m.Expression).Returns(queryable.Expression);
+            mockSet.As<IQueryable<T>>().Setup(m => m.ElementType).Returns(queryable.ElementType);
+            mockSet.As<IQueryable<T>>().Setup(m => m.GetEnumerator()).Returns(queryable.GetEnumerator());
+
+            // Setup for async enumeration if needed using TestAsyncEnumerable/Enumerator? 
+            // Actually TestAsyncQueryProvider handles the provider, so EF async calls use it.
+            // But we might need to set up IAsyncEnumerable directly sometimes.
+            // For now, let's stick to what is standard.
+            
+            mockSet.As<IAsyncEnumerable<T>>().Setup(m => m.GetAsyncEnumerator(It.IsAny<CancellationToken>()))
+                .Returns(new TestAsyncEnumerator<T>(queryable.GetEnumerator()));
+
+            return mockSet;
         }
     }
 }

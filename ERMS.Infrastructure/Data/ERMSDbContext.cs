@@ -317,6 +317,12 @@ namespace ERMS.Infrastructure.Data
                 .HasForeignKey(i => i.ScheduledById)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            builder.Entity<ApplicationEntities.Interview>()
+                .Property(i => i.InterviewFormat)
+                .HasConversion<string>()
+                .HasMaxLength(20)
+                .HasDefaultValue(Domain.Enums.InterviewFormat.Online);
+
             builder.Entity<ApprovalHistory>()
                 .HasOne(a => a.PerformedBy)
                 .WithMany()
@@ -375,6 +381,10 @@ namespace ERMS.Infrastructure.Data
                 .WithMany(c => c.Applications)
                 .HasForeignKey(a => a.CandidateId)
                 .OnDelete(DeleteBehavior.Restrict);
+        }
+        public async Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
+        {
+            return await Database.BeginTransactionAsync(cancellationToken);
         }
     }
 }

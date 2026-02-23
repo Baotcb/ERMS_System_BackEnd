@@ -76,13 +76,10 @@ public class RecruitmentPlansController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
-    [HttpPut("{id}")]
+    [HttpPut]
     [Authorize(Roles = AppRoles.DepartmentHead)]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateRecruitmentPlanCommand command)
+    public async Task<IActionResult> Update([FromBody] UpdateRecruitmentPlanCommand command)
     {
-        if (id != command.Id)
-            return BadRequest(new { message = "ID không khớp" });
-
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
@@ -97,13 +94,13 @@ public class RecruitmentPlansController : ControllerBase
         }
     }
 
-    [HttpDelete("{id}")]
+    [HttpDelete]
     [Authorize(Roles = AppRoles.DepartmentHead)]
-    public async Task<IActionResult> Delete(Guid id)
+    public async Task<IActionResult> Delete([FromBody] DeleteRecruitmentPlanCommand command)
     {
         try
         {
-            await _mediator.Send(new DeleteRecruitmentPlanCommand { Id = id });
+            await _mediator.Send(command);
             return Ok(new { message = "Xóa kế hoạch tuyển dụng thành công" });
         }
         catch (Exception ex)
