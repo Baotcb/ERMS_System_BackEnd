@@ -77,5 +77,6 @@ namespace ERMS.Application.Interface
 
         
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+        Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
     }
 }

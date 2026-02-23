@@ -69,12 +69,10 @@ namespace ERMS.API.Controllers
         /// <summary>
         /// Cập nhật nhân viên
         /// </summary>
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(Guid id, [FromBody] UpdateEmployeeCommand command)
+        /// <remarks>ID must be provided in the request body.</remarks>
+        [HttpPut]
+        public async Task<IActionResult> Update([FromBody] UpdateEmployeeCommand command)
         {
-            if (id != command.Id)
-                return BadRequest(new { message = "ID không khớp" });
-
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
@@ -92,12 +90,13 @@ namespace ERMS.API.Controllers
         /// <summary>
         /// Xóa nhân viên (soft delete)
         /// </summary>
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(Guid id, [FromQuery] Guid enterpriseId)
+        /// <remarks>ID and EnterpriseId must be provided in the request body.</remarks>
+        [HttpDelete]
+        public async Task<IActionResult> Delete([FromBody] DeleteEmployeeCommand command)
         {
             try
             {
-                await _mediator.Send(new DeleteEmployeeCommand { Id = id, EnterpriseId = enterpriseId });
+                await _mediator.Send(command);
                 return Ok(new { message = "Xóa nhân viên thành công" });
             }
             catch (Exception ex)
