@@ -14,4 +14,5 @@ public sealed record ConfirmInterviewScheduleCommand : IRequest<ConfirmInterview
     public DateTime ScheduledAt { get; init; }
     public int Duration { get; init; } = 60;
     public string? Location { get; init; }
+    public string? MeetingLink { get; init; }
 }

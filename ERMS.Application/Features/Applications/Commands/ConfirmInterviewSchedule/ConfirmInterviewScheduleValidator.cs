@@ -8,6 +8,7 @@ public sealed class ConfirmInterviewScheduleValidator : AbstractValidator<Confir
     private const int MinDuration = 15;
     private const int MaxDuration = 480;
     private const int MaxLocationLength = 500;
+    private const int MaxMeetingLinkLength = 2048;
 
     public ConfirmInterviewScheduleValidator()
     {
@@ -38,5 +39,21 @@ public sealed class ConfirmInterviewScheduleValidator : AbstractValidator<Confir
             .NotEmpty()
             .When(x => x.InterviewFormat == InterviewFormat.Offline)
             .WithMessage("Location is required for offline interviews.");
+
+        RuleFor(x => x.MeetingLink)
+            .NotEmpty()
+            .When(x => x.InterviewFormat == InterviewFormat.Online)
+            .WithMessage("MeetingLink is required for online interviews.");
+
+        RuleFor(x => x.MeetingLink)
+            .Must(link => Uri.TryCreate(link, UriKind.Absolute, out var uri)
+                && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+            .When(x => !string.IsNullOrEmpty(x.MeetingLink))
+            .WithMessage("MeetingLink must be a valid HTTP/HTTPS URL.");
+
+        RuleFor(x => x.MeetingLink)
+            .MaximumLength(MaxMeetingLinkLength)
+            .When(x => !string.IsNullOrEmpty(x.MeetingLink))
+            .WithMessage($"MeetingLink must not exceed {MaxMeetingLinkLength} characters.");
     }
 }
