@@ -38,9 +38,15 @@ public sealed class SubmitInterviewFeedbackHandler : IRequestHandler<SubmitInter
             .FirstOrDefaultAsync(e => e.UserId == userId && !e.IsDeleted, cancellationToken)
             ?? throw new UnauthorizedAccessException("User is not an employee.");
 
-        // 3. Load the interview with participants
+        // 3. Get enterprise ID
+        var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
+            ?? throw new UnauthorizedAccessException("User is not associated with any enterprise.");
+
+        // 4. Load the interview with participants and application
         var interview = await _context.Interviews
             .Include(i => i.Participants)
+            .Include(i => i.Application)
+                .ThenInclude(a => a.JobPosting)
             .FirstOrDefaultAsync(i =>
                 i.Id == request.InterviewId &&
                 i.ApplicationId == request.ApplicationId &&
@@ -48,24 +54,30 @@ public sealed class SubmitInterviewFeedbackHandler : IRequestHandler<SubmitInter
                 cancellationToken)
             ?? throw new Exception($"Interview with ID {request.InterviewId} not found for Application {request.ApplicationId}.");
 
-        // 4. Validate interview is in 'Scheduled' status
+        // 5. Validate enterprise ownership
+        if (interview.Application.JobPosting.EnterpriseId != enterpriseId)
+        {
+            throw new UnauthorizedAccessException("You do not have permission to access this application.");
+        }
+
+        // 6. Validate interview is in 'Scheduled' status
         if (!interview.Status.Equals(InterviewStatus.Scheduled, StringComparison.OrdinalIgnoreCase))
         {
             throw new Exception($"Cannot submit feedback. Interview status is '{interview.Status}', expected '{InterviewStatus.Scheduled}'.");
         }
 
-        // 5. Find the participant record matching the caller's EmployeeId
+        // 7. Find the participant record matching the caller's EmployeeId
         var participant = interview.Participants
             .FirstOrDefault(p => p.EmployeeId == employee.Id)
             ?? throw new UnauthorizedAccessException("You are not a participant of this interview.");
 
-        // 6. Guard: participant must not have already submitted feedback
+        // 8. Guard: participant must not have already submitted feedback
         if (participant.FeedbackSubmittedAt != null)
         {
             throw new Exception("You have already submitted feedback for this interview.");
         }
 
-        // 7. Update participant feedback fields
+        // 9. Update participant feedback fields
         participant.Rating = request.Rating;
         participant.Feedback = request.Feedback.Trim();
         participant.Recommendation = request.Recommendation?.Trim();

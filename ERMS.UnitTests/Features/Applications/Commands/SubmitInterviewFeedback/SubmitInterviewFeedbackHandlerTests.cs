@@ -4,6 +4,7 @@ using ERMS.Domain.Constants.Application;
 using ERMS.Domain.Entities.Application;
 using ERMS.Domain.Entities.Identity;
 using ERMS.Domain.Entities.Organization;
+using ERMS.Domain.Entities.Recruitment;
 using ERMS.UnitTests.Helpers;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
@@ -26,6 +27,7 @@ public class SubmitInterviewFeedbackHandlerTests
     private readonly Guid _applicationId = Guid.NewGuid();
     private readonly Guid _interviewId = Guid.NewGuid();
     private readonly Guid _participantId = Guid.NewGuid();
+    private readonly Guid _enterpriseId = Guid.NewGuid();
 
     public SubmitInterviewFeedbackHandlerTests()
     {
@@ -47,6 +49,7 @@ public class SubmitInterviewFeedbackHandlerTests
     private void SetupAuthenticatedUser()
     {
         _mockCurrentUserService.Setup(s => s.UserId).Returns(_userId);
+        _mockCurrentUserService.Setup(s => s.GetEnterpriseIdAsync()).ReturnsAsync(_enterpriseId);
     }
 
     private Employee CreateEmployee() => new()
@@ -58,6 +61,8 @@ public class SubmitInterviewFeedbackHandlerTests
 
     private Interview CreateScheduledInterview(InterviewParticipant? participant = null)
     {
+        var jobPosting = new JobPosting { Id = Guid.NewGuid(), EnterpriseId = _enterpriseId };
+        var application = new ApplicationEntity { Id = _applicationId, Stage = ApplicationStage.InterviewScheduled, JobPosting = jobPosting };
         var interview = new Interview
         {
             Id = _interviewId,
@@ -66,7 +71,7 @@ public class SubmitInterviewFeedbackHandlerTests
             RoundNumber = 1,
             InterviewType = "Technical",
             ScheduledById = Guid.NewGuid(),
-            Application = new ApplicationEntity { Id = _applicationId, Stage = ApplicationStage.InterviewScheduled }
+            Application = application
         };
 
         if (participant != null)
@@ -154,6 +159,32 @@ public class SubmitInterviewFeedbackHandlerTests
         // Assert
         await act.Should().ThrowAsync<UnauthorizedAccessException>()
             .WithMessage("User is not an employee.");
+    }
+
+    [Fact]
+    public async Task Handle_ShouldThrowUnauthorized_WhenEnterpriseDoesNotMatch()
+    {
+        // Arrange
+        SetupAuthenticatedUser();
+        var employee = CreateEmployee();
+        var participant = CreateParticipant();
+        var interview = CreateScheduledInterview(participant);
+        interview.Application.JobPosting.EnterpriseId = Guid.NewGuid(); // Different enterprise
+
+        var employees = new List<Employee> { employee }.AsQueryable().BuildMockDbSet();
+        var interviews = new List<Interview> { interview }.AsQueryable().BuildMockDbSet();
+
+        _mockContext.Setup(c => c.Employees).Returns(employees.Object);
+        _mockContext.Setup(c => c.Interviews).Returns(interviews.Object);
+
+        var command = CreateValidCommand();
+
+        // Act
+        var act = async () => await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<UnauthorizedAccessException>()
+            .WithMessage("You do not have permission to access this application.");
     }
 
     [Fact]
