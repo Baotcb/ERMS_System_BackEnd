@@ -2,6 +2,8 @@ using ERMS.Application.Features.Applications.Commands.SubmitApplication;
 using ERMS.Application.Features.Applications.Commands.ForwardApplication;
 using ERMS.Application.Features.Applications.Commands.AssignInterviewer;
 using ERMS.Application.Features.Applications.Commands.ConfirmInterviewSchedule;
+using ERMS.Application.Features.Applications.Commands.SubmitInterviewFeedback;
+using ERMS.Application.Features.Applications.Commands.SubmitFinalDecision;
 using ERMS.Application.Features.Applications.Queries.GetApplicationsByJob;
 using ERMS.Domain.Constants.Roles;
 using MediatR;
@@ -239,5 +241,83 @@ public class ApplicationsController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
-}
 
+    /// <summary>
+    /// Submit individual interviewer feedback for an interview (Stage 1)
+    /// </summary>
+    /// <remarks>
+    /// **Access:** Authenticated employee who is a participant of the interview
+    /// 
+    /// Allows an interviewer to submit their individual rating, feedback, and recommendation.
+    /// Updates only the InterviewParticipant record.
+    /// Does NOT change Interview status or Application stage.
+    /// </remarks>
+    /// <param name="command">Feedback details (ApplicationId, InterviewId, Rating, Feedback, Recommendation)</param>
+    /// <returns>Submitted feedback confirmation</returns>
+    [HttpPost("submit-interview-feedback")]
+    [ProducesResponseType(typeof(SubmitInterviewFeedbackResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> SubmitFeedback([FromBody] SubmitInterviewFeedbackCommand command)
+    {
+        try
+        {
+            var result = await _mediator.Send(command);
+            return Ok(new
+            {
+                message = "Interview feedback submitted successfully.",
+                data = result
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Submit the final decision on an interview (Stage 2)
+    /// </summary>
+    /// <remarks>
+    /// **Access:** DepartmentHead of the same department as the job posting
+    /// 
+    /// Sets the interview Decision and updates Interview status to 'Completed'.
+    /// Triggers the workflow:
+    /// - **Fail**: Application stage → Rejected
+    /// - **Passed**: Application stage → OfferProcessing
+    /// - **NextRound**: Creates a new Interview with Round + 1
+    /// </remarks>
+    /// <param name="command">Decision details (ApplicationId, InterviewId, Decision, OverallRating, OverallFeedback, Note)</param>
+    /// <returns>Decision result with updated application stage</returns>
+    [HttpPost("submit-final-decision")]
+    [Authorize(Roles = AppRoles.DepartmentHead)]
+    [ProducesResponseType(typeof(SubmitFinalDecisionResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> SubmitFinalDecision([FromBody] SubmitFinalDecisionCommand command)
+    {
+        try
+        {
+            var result = await _mediator.Send(command);
+            return Ok(new
+            {
+                message = "Final interview decision submitted successfully.",
+                data = result
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+}

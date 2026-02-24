@@ -10,13 +10,14 @@ public static class ApplicationStage
     public const string Shortlisted = "Shortlisted";
     public const string InterviewScheduled = "InterviewScheduled";
     public const string Interviewed = "Interviewed";
+    public const string OfferProcessing = "OfferProcessing";
     public const string Offered = "Offered";
     public const string Hired = "Hired";
     public const string Rejected = "Rejected";
     public const string Withdrawn = "Withdrawn";
 
     public static readonly string[] ValidStages = 
-        [Applied, Reviewing, Shortlisted, InterviewScheduled, Interviewed, Offered, Hired, Rejected, Withdrawn];
+        [Applied, Reviewing, Shortlisted, InterviewScheduled, Interviewed, OfferProcessing, Offered, Hired, Rejected, Withdrawn];
 
     public static bool IsValid(string stage)
         => Array.Exists(ValidStages, s => s.Equals(stage, StringComparison.OrdinalIgnoreCase));
