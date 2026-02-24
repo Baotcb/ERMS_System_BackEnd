@@ -67,7 +67,7 @@ namespace ERMS.UnitTests.Features.Auth.Command.GoogleLogin
             // Act & Assert
             await _handler.Invoking(h => h.Handle(request, CancellationToken.None))
                 .Should().ThrowAsync<UnauthorizedAccessException>()
-                .WithMessage("Email Google chýa ðý?c xác th?c.");
+                .WithMessage("Email Google chÆ°a Ä‘Æ°á»£c xÃ¡c thá»±c.");
         }
 
         [Fact]
@@ -235,7 +235,7 @@ namespace ERMS.UnitTests.Features.Auth.Command.GoogleLogin
             // Act & Assert
             await _handler.Invoking(h => h.Handle(request, CancellationToken.None))
                 .Should().ThrowAsync<Exception>()
-                .WithMessage("Tài kho?n doanh nghi?p ð? b? khóa. Vui l?ng liên h? qu?n tr? viên ð? bi?t thêm chi ti?t.");
+                .WithMessage("TÃ i kho?n doanh nghi?p Ã°? b? khÃ³a. Vui l?ng liÃªn h? qu?n tr? viÃªn Ã°? bi?t thÃªm chi ti?t.");
         }
     }
 }
