@@ -28,7 +28,12 @@ namespace ERMS.Application.Features.Auth.Commands.ForgotPassword
         public async Task<string> Handle(ForgotPasswordCommand request, CancellationToken cancellationToken)
         {
             var user = await _userManager.FindByEmailAsync(request.Email);
-            if (user == null) return "Email đã được gửi.";
+            if (user == null)
+            {
+               
+                await Task.Delay(Random.Shared.Next(100, 300), cancellationToken); 
+                return "Email đã được gửi!";
+            }
 
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
 
@@ -52,7 +57,7 @@ namespace ERMS.Application.Features.Auth.Commands.ForgotPassword
 
             await _emailService.SendEmailAsync(user.Email, "Reset Password", emailBody);
 
-            return "Email đã được gửi đi!";
+            return "Email đã được gửi!";
         }
     }
 }
