@@ -200,6 +200,13 @@ namespace ERMS.Infrastructure.Migrations
                     b.Property<int>("Duration")
                         .HasColumnType("int");
 
+                    b.Property<string>("InterviewFormat")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("Online");
+
                     b.Property<string>("InterviewType")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");

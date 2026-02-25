@@ -1,6 +1,7 @@
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Roles;
 using MediatR;
+using ERMS.Domain.Constants.Recruitment;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -43,6 +44,18 @@ public sealed class DeleteJobPostingHandler : IRequestHandler<DeleteJobPostingCo
                 && !jp.IsDeleted,
                 cancellationToken)
             ?? throw new Exception($"JobPosting with ID {request.Id} not found.");
+
+        // Check if job posting is published and has applications
+        if (JobPostingStatus.IsPublished(jobPosting.Status))
+        {
+            var hasApplications = await _context.Applications
+                .AnyAsync(a => a.JobPostingId == request.Id && !a.IsDeleted, cancellationToken);
+
+            if (hasApplications)
+            {
+                throw new InvalidOperationException("Cannot delete a published job posting that has candidate applications. Please close the job posting instead.");
+            }
+        }
 
         jobPosting.IsDeleted = true;
         jobPosting.DeletedAt = DateTime.UtcNow;

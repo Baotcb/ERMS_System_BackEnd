@@ -25,7 +25,7 @@ public class PlanDetailsController : ControllerBase
     /// Lấy danh sách chi tiết kế hoạch theo PlanId
     /// </summary>
     [HttpGet]
-    [Authorize(Roles =AppRoles.DepartmentHead + "," + AppRoles.Director)]
+    [Authorize(Roles =AppRoles.DepartmentHead + "," + AppRoles.Director + "," + AppRoles.HRManager)]
     public async Task<IActionResult> GetAll([FromQuery] Guid recruitmentPlanId)
     {
         try
@@ -77,14 +77,12 @@ public class PlanDetailsController : ControllerBase
     /// </summary>
     /// <remarks>
     /// Plan phải ở status Draft hoặc Rejected. Tự động recalculate TotalBudget.
+    /// ID must be provided in the request body.
     /// </remarks>
-    [HttpPut("{id}")]
+    [HttpPut]
     [Authorize(Roles = AppRoles.DepartmentHead)]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdatePlanDetailCommand command)
+    public async Task<IActionResult> Update([FromBody] UpdatePlanDetailCommand command)
     {
-        if (id != command.Id)
-            return BadRequest(new { message = "ID không khớp" });
-
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
@@ -108,14 +106,15 @@ public class PlanDetailsController : ControllerBase
     /// </summary>
     /// <remarks>
     /// Soft delete. Plan phải ở status Draft hoặc Rejected. Tự động recalculate TotalBudget.
+    /// ID must be provided in the request body.
     /// </remarks>
-    [HttpDelete("{id}")]
+    [HttpDelete]
     [Authorize(Roles = AppRoles.DepartmentHead )]
-    public async Task<IActionResult> Delete(Guid id)
+    public async Task<IActionResult> Delete([FromBody] DeletePlanDetailCommand command)
     {
         try
         {
-            await _mediator.Send(new DeletePlanDetailCommand { Id = id });
+            await _mediator.Send(command);
             return Ok(new { message = "Xóa chi tiết kế hoạch tuyển dụng thành công" });
         }
         catch (UnauthorizedAccessException ex)

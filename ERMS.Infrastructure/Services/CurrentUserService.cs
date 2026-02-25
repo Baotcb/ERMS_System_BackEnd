@@ -52,5 +52,16 @@ namespace ERMS.Infrastructure.Services
 
             return employee?.EnterpriseId;
         }
+
+        public async Task<int?> GetDepartmentIdAsync()
+        {
+            if (UserId == null) return null;
+
+            var employee = await _context.Employees
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.UserId == UserId && !e.IsDeleted);
+
+            return employee?.DepartmentId;
+        }
     }
 }

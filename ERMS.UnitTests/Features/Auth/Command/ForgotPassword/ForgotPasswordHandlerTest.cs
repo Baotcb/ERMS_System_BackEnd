@@ -43,7 +43,7 @@ namespace ERMS.UnitTests.Features.Auth.Command.ForgotPassword
             var result = await _handler.Handle(command, CancellationToken.None);
 
             // Assert
-            result.Should().Be("Email đã được gửi.");
+            result.Should().Be("Email đã được gửi!");
             _userManagerMock.Verify(x => x.GeneratePasswordResetTokenAsync(It.IsAny<User>()), Times.Never);
             _emailServiceMock.Verify(x => x.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
@@ -65,7 +65,7 @@ namespace ERMS.UnitTests.Features.Auth.Command.ForgotPassword
             var result = await _handler.Handle(command, CancellationToken.None);
 
             // Assert
-            result.Should().Be("Email đã được gửi đi!");
+            result.Should().Be("Email đã được gửi!");
             _emailServiceMock.Verify(x => x.SendEmailAsync(user.Email, "Reset Password", It.IsAny<string>()), Times.Once);
         }
     }

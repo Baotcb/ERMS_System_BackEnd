@@ -9,5 +9,6 @@ namespace ERMS.Application.Interface
         Guid? UserId { get; }
         IEnumerable<string> Roles { get; }
         Task<Guid?> GetEnterpriseIdAsync();
+        Task<int?> GetDepartmentIdAsync();
     }
 }
