@@ -28,6 +28,13 @@ namespace ERMS.Infrastructure.Services
                 return userId != null ? Guid.Parse(userId) : null;
             }
         }
+        public string? Email
+        {
+            get
+            {
+                return _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.Email)?.Value;
+            }
+        }
 
         public IEnumerable<string> Roles
         {
@@ -63,5 +70,6 @@ namespace ERMS.Infrastructure.Services
 
             return employee?.DepartmentId;
         }
+        
     }
 }
