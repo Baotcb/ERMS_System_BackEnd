@@ -145,7 +145,7 @@ namespace ERMS.UnitTests.Features.Users.Commands.GetProfile
 
         public object Execute(Expression expression)
         {
-            return _inner.Execute(expression);
+            return _inner.Execute(expression)!;
         }
 
         public TResult Execute<TResult>(Expression expression)
@@ -160,13 +160,13 @@ namespace ERMS.UnitTests.Features.Users.Commands.GetProfile
                 .GetMethod(
                     name: nameof(IQueryProvider.Execute),
                     genericParameterCount: 1,
-                    types: new[] { typeof(Expression) })
+                    types: new[] { typeof(Expression) })!
                 .MakeGenericMethod(expectedResultType)
                 .Invoke(this, new[] { expression });
 
-            return (TResult)typeof(Task).GetMethod(nameof(Task.FromResult))
+            return (TResult)typeof(Task).GetMethod(nameof(Task.FromResult))!
                 .MakeGenericMethod(expectedResultType)
-                .Invoke(null, new[] { executionResult });
+                .Invoke(null, new[] { executionResult })!;
         }
     }
 
