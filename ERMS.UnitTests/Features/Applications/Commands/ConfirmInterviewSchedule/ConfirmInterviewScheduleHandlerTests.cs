@@ -23,6 +23,8 @@ public class ConfirmInterviewScheduleHandlerTests
     private readonly Mock<IERMSDbContext> _mockContext;
     private readonly Mock<ICurrentUserService> _mockCurrentUserService;
     private readonly Mock<IEmailService> _mockEmailService;
+    private readonly Mock<IZoomService> _mockZoomService;
+    private readonly Mock<ICalendarService> _mockCalendarService;
     private readonly Mock<ILogger<ConfirmInterviewScheduleHandler>> _mockLogger;
     private readonly ConfirmInterviewScheduleHandler _handler;
 
@@ -36,11 +38,15 @@ public class ConfirmInterviewScheduleHandlerTests
         _mockContext = new Mock<IERMSDbContext>();
         _mockCurrentUserService = new Mock<ICurrentUserService>();
         _mockEmailService = new Mock<IEmailService>();
+        _mockZoomService = new Mock<IZoomService>();
+        _mockCalendarService = new Mock<ICalendarService>();
         _mockLogger = new Mock<ILogger<ConfirmInterviewScheduleHandler>>();
         _handler = new ConfirmInterviewScheduleHandler(
             _mockContext.Object,
             _mockCurrentUserService.Object,
             _mockEmailService.Object,
+            _mockZoomService.Object,
+            _mockCalendarService.Object,
             _mockLogger.Object);
     }
 
