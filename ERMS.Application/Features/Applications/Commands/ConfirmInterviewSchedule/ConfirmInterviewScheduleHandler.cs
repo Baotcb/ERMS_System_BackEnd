@@ -8,29 +8,28 @@ using Microsoft.Extensions.Logging;
 
 namespace ERMS.Application.Features.Applications.Commands.ConfirmInterviewSchedule;
 
-/// <summary>
-/// Handler for confirming the interview schedule.
-/// For Online interviews: saves the provided MeetingLink.
-/// For Offline interviews: uses the provided Location.
-/// Sends confirmation emails to the Candidate and all Interviewers.
-/// Restricted to HRManager.
-/// </summary>
 public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInterviewScheduleCommand, ConfirmInterviewScheduleResult>
 {
     private readonly IERMSDbContext _context;
     private readonly ICurrentUserService _currentUserService;
     private readonly IEmailService _emailService;
+    private readonly IZoomService _zoomService;
+    private readonly ICalendarService _calendarService;
     private readonly ILogger<ConfirmInterviewScheduleHandler> _logger;
 
     public ConfirmInterviewScheduleHandler(
         IERMSDbContext context,
         ICurrentUserService currentUserService,
         IEmailService emailService,
+        IZoomService zoomService,
+        ICalendarService calendarService,
         ILogger<ConfirmInterviewScheduleHandler> logger)
     {
         _context = context;
         _currentUserService = currentUserService;
         _emailService = emailService;
+        _zoomService = zoomService;
+        _calendarService = calendarService;
         _logger = logger;
     }
 
@@ -74,20 +73,46 @@ public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInt
             throw new UnauthorizedAccessException("You do not have permission to access this application.");
         }
 
-        // BEGIN TRANSACTION
+        // 6. Auto-create Zoom meeting if needed
+        string? meetingLink = request.MeetingLink;
+        if (request.InterviewFormat == InterviewFormat.Online && string.IsNullOrWhiteSpace(meetingLink))
+        {
+            try
+            {
+                var candidateFullName = interview.Application.Candidate.User?.FullName ?? "Candidate";
+                var zoomMeeting = await _zoomService.CreateMeetingAsync(new ZoomMeetingRequest
+                {
+                    Topic = $"Interview for {interview.Application.JobPosting.JobTitle}",
+                    StartTime = request.ScheduledAt,
+                    Duration = request.Duration,
+                    Timezone = "UTC",
+                    Agenda = $"Interview with candidate {candidateFullName}"
+                }, cancellationToken);
+
+                meetingLink = zoomMeeting.JoinUrl;
+                _logger.LogInformation("Auto-created Zoom meeting {MeetingId} for Interview {InterviewId}", 
+                    zoomMeeting.MeetingId, interview.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to auto-create Zoom meeting for Interview {InterviewId}", interview.Id);
+                throw new Exception("Failed to create Zoom meeting. Please try again or provide a meeting link manually.", ex);
+            }
+        }
+
         await using var transaction = await _context.BeginTransactionAsync(cancellationToken);
 
         try
         {
-            // 6. Update Interview details
+            // 7. Update Interview details
             interview.InterviewFormat = request.InterviewFormat;
             interview.ScheduledAt = request.ScheduledAt;
             interview.Duration = request.Duration;
             interview.Location = request.Location;
-            interview.MeetingLink = request.InterviewFormat == InterviewFormat.Online ? request.MeetingLink : null;
+            interview.MeetingLink = request.InterviewFormat == InterviewFormat.Online ? meetingLink : null;
             interview.Status = InterviewStatus.Scheduled;
             
-            // 7. Update Application stage
+            // 8. Update Application stage
             interview.Application.Stage = ApplicationStage.InterviewScheduled;
             interview.Application.StageUpdatedAt = DateTime.UtcNow;
             interview.Application.UpdatedAt = DateTime.UtcNow;
@@ -99,7 +124,7 @@ public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInt
                 "Interview {InterviewId} confirmed ({Format}) for Application {ApplicationId} by HR {UserId}. Meeting Link: {Link}, Location: {Location}",
                 interview.Id, request.InterviewFormat, interview.ApplicationId, userId, interview.MeetingLink, request.Location);
 
-            // 8. Send confirmation emails (fire-and-forget, after commit)
+            // 9. Send confirmation emails with calendar invite (fire-and-forget, after commit)
             await SendConfirmationEmailsAsync(interview);
 
             return new ConfirmInterviewScheduleResult
@@ -144,18 +169,63 @@ public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInt
                     <tr><td style='padding: 8px;' colspan='2'>{locationOrLink}</td></tr>
                 </table>
                 <p style='margin-top: 20px; color: #666;'>Please ensure you are available at the scheduled time. If you have any questions, please contact the HR department.</p>
+                <p style='margin-top: 10px; color: #999; font-size: 12px;'>A calendar invitation (.ics file) is attached to this email. Click on it to add this event to your calendar.</p>
             </div>";
 
-        const string subject = "Interview Schedule Confirmation - ERMS";
+        const string subject = "Interview Schedule Confirmation ";
+
+        // Create calendar event
+        var attendees = new List<string>();
+        var candidateEmail = interview.Application.Candidate.User?.Email;
+        if (!string.IsNullOrEmpty(candidateEmail))
+        {
+            attendees.Add(candidateEmail);
+        }
+
+        foreach (var participant in interview.Participants)
+        {
+            var interviewerEmail = participant.Employee?.User?.Email;
+            if (!string.IsNullOrEmpty(interviewerEmail))
+            {
+                attendees.Add(interviewerEmail);
+            }
+        }
+
+        var calendarDescription = $"Interview for {jobTitle}\n\n";
+        if (interview.InterviewFormat == InterviewFormat.Online)
+        {
+            calendarDescription += $"Join meeting: {interview.MeetingLink}";
+        }
+        else
+        {
+            calendarDescription += $"Location: {interview.Location}";
+        }
+        var icsContent = _calendarService.CreateICalendarEvent(new CalendarEventRequest
+        {
+            Subject = $"Interview: {jobTitle}",
+            Description = calendarDescription,
+            Location = interview.InterviewFormat == InterviewFormat.Online
+                ? interview.MeetingLink ?? "Online"
+                : interview.Location ?? "TBD",
+            StartTime = interview.ScheduledAt,
+            DurationMinutes = interview.Duration,
+            AttendeeEmails = attendees,
+            OrganizerEmail = _currentUserService.Email ?? "hr@erms.com",
+            OrganizerName = interview.Application.JobPosting.Enterprise.EnterpriseName
+        });
+
+        var attachments = new Dictionary<string, byte[]>
+        {
+            { "interview_invite.ics", System.Text.Encoding.UTF8.GetBytes(icsContent) }
+        };
 
         // Send to candidate
-        var candidateEmail = interview.Application.Candidate.User?.Email;
         if (!string.IsNullOrEmpty(candidateEmail))
         {
             try
             {
-                await _emailService.SendEmailAsync(candidateEmail, subject, emailBody);
-                _logger.LogInformation("Interview confirmation email sent to candidate: {Email}", candidateEmail);
+                await _emailService.SendEmailWithAttachmentAsync(candidateEmail, subject, emailBody, attachments);
+                _logger.LogInformation("Interview confirmation email with calendar invite sent to candidate: {Email}", candidateEmail);
             }
             catch (Exception ex)
             {
@@ -171,8 +241,8 @@ public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInt
 
             try
             {
-                await _emailService.SendEmailAsync(interviewerEmail, subject, emailBody);
-                _logger.LogInformation("Interview confirmation email sent to interviewer: {Email}", interviewerEmail);
+                await _emailService.SendEmailWithAttachmentAsync(interviewerEmail, subject, emailBody, attachments);
+                _logger.LogInformation("Interview confirmation email with calendar invite sent to interviewer: {Email}", interviewerEmail);
             }
             catch (Exception ex)
             {

@@ -48,10 +48,10 @@ namespace ERMS.Infrastructure
             services.AddScoped<IPdfTextExtractor, PdfTextExtractor>();
             services.AddHttpClient<IGeminiAIService, GeminiAIService>();
 
-            // External Services
-            services.AddScoped<IGoogleCalendarService, MockGoogleCalendarService>();
 
 
+            services.AddScoped<ICalendarService, CalendarService>();
+            services.AddHttpClient<IZoomService, ZoomService>();
 
 
             return services;
