@@ -54,6 +54,7 @@ public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInt
         var interview = await _context.Interviews
             .Include(i => i.Application)
                 .ThenInclude(a => a.JobPosting)
+                    .ThenInclude(jp => jp.Enterprise)  
             .Include(i => i.Application)
                 .ThenInclude(a => a.Candidate)
                     .ThenInclude(c => c.User)
@@ -172,7 +173,7 @@ public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInt
                 <p style='margin-top: 10px; color: #999; font-size: 12px;'>A calendar invitation (.ics file) is attached to this email. Click on it to add this event to your calendar.</p>
             </div>";
 
-        const string subject = "Interview Schedule Confirmation ";
+        const string subject = "Interview Schedule Confirmation";
 
         // Create calendar event
         var attendees = new List<string>();
@@ -200,6 +201,7 @@ public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInt
         {
             calendarDescription += $"Location: {interview.Location}";
         }
+        
         var icsContent = _calendarService.CreateICalendarEvent(new CalendarEventRequest
         {
             Subject = $"Interview: {jobTitle}",
@@ -211,7 +213,7 @@ public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInt
             DurationMinutes = interview.Duration,
             AttendeeEmails = attendees,
             OrganizerEmail = _currentUserService.Email ?? "hr@erms.com",
-            OrganizerName = interview.Application.JobPosting.Enterprise.EnterpriseName
+            OrganizerName = interview.Application.JobPosting.Enterprise?.EnterpriseName ?? "ERMS HR Department"  
         });
 
         var attachments = new Dictionary<string, byte[]>
