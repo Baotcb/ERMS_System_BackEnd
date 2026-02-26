@@ -5,6 +5,7 @@ using ERMS.Application.Features.Applications.Commands.ConfirmInterviewSchedule;
 using ERMS.Application.Features.Applications.Commands.SubmitInterviewFeedback;
 using ERMS.Application.Features.Applications.Commands.SubmitFinalDecision;
 using ERMS.Application.Features.Applications.Queries.GetApplicationsByJob;
+using ERMS.Application.Features.Interviews.Queries.GetMyInterviews;
 using ERMS.Domain.Constants.Roles;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -26,6 +27,50 @@ public class ApplicationsController : ControllerBase
     public ApplicationsController(IMediator mediator)
     {
         _mediator = mediator;
+    }
+
+    /// <summary>
+    /// Get the current user's assigned interviews as an interviewer
+    /// </summary>
+    /// <remarks>
+    /// **Access:** Any authenticated employee who is an interview participant
+    /// 
+    /// Returns a paginated list of interviews where the current user is assigned as a participant.
+    /// Includes candidate info, job title, schedule details, and the user's participation status.
+    /// </remarks>
+    /// <param name="pageNumber">Page number (default: 1)</param>
+    /// <param name="pageSize">Items per page (default: 20)</param>
+    /// <param name="statusFilter">Optional filter by interview status (e.g., "Scheduled", "Completed")</param>
+    /// <returns>Paginated list of interviewer's interviews</returns>
+    [HttpGet("my-interviews")]
+    [ProducesResponseType(typeof(GetMyInterviewsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetMyInterviews(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? statusFilter = null)
+    {
+        try
+        {
+            var query = new GetMyInterviewsQuery
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                StatusFilter = statusFilter
+            };
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     /// <summary>
