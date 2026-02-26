@@ -48,6 +48,10 @@ public class ConfirmInterviewScheduleHandlerTests
             _mockZoomService.Object,
             _mockCalendarService.Object,
             _mockLogger.Object);
+
+        _mockCalendarService
+            .Setup(c => c.CreateICalendarEvent(It.IsAny<CalendarEventRequest>()))
+            .Returns("BEGIN:VCALENDAR\nEND:VCALENDAR");
     }
 
     private void SetupValidUser()
@@ -185,15 +189,15 @@ public class ConfirmInterviewScheduleHandlerTests
 
         // Assert: email sent to candidate + 1 interviewer = 2 calls
         _mockEmailService.Verify(
-            e => e.SendEmailAsync("jane@candidate.com", It.IsAny<string>(), It.IsAny<string>()),
+            e => e.SendEmailWithAttachmentAsync("jane@candidate.com", It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Dictionary<string, byte[]>>()),
             Times.Once);
 
         _mockEmailService.Verify(
-            e => e.SendEmailAsync("interviewer@company.com", It.IsAny<string>(), It.IsAny<string>()),
+            e => e.SendEmailWithAttachmentAsync("interviewer@company.com", It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Dictionary<string, byte[]>>()),
             Times.Once);
 
         _mockEmailService.Verify(
-            e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
+            e => e.SendEmailWithAttachmentAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Dictionary<string, byte[]>>()),
             Times.Exactly(2));
     }
 
@@ -206,7 +210,7 @@ public class ConfirmInterviewScheduleHandlerTests
         SetupMockContext(interview);
 
         _mockEmailService
-            .Setup(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            .Setup(e => e.SendEmailWithAttachmentAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Dictionary<string, byte[]>>()))
             .ThrowsAsync(new Exception("SMTP connection failed"));
 
         var command = new ConfirmInterviewScheduleCommand
