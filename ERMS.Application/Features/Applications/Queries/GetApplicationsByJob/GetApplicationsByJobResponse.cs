@@ -34,5 +34,11 @@ public sealed class ApplicationListDto
     public decimal? OverallScore { get; set; }
     public decimal? SkillMatchScore { get; set; }
     public decimal? ExperienceMatchScore { get; set; }
+    public decimal? EducationMatchScore { get; set; }
+    public decimal? KeywordMatchScore { get; set; }
+    public List<string>? MatchedSkills { get; set; }
+    public List<string>? MissingSkills { get; set; }
+    public List<string>? Strengths { get; set; }
+    public List<string>? Concerns { get; set; }
     public string? AISummary { get; set; }
 }

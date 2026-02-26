@@ -60,6 +60,10 @@ namespace ERMS.Infrastructure
             services.AddHttpClient<IZoomService, ZoomService>();
 
 
+            // Background CV Scoring
+            services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
+            services.AddHostedService<CvScoringBackgroundService>();
+
             return services;
         }
     }
