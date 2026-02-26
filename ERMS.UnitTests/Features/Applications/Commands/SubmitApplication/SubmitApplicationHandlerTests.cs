@@ -26,7 +26,7 @@ public class SubmitApplicationHandlerTests
     private readonly Mock<ICurrentUserService> _currentUserServiceMock;
     private readonly Mock<ICloudinaryService> _cloudinaryServiceMock;
     private readonly Mock<IPdfTextExtractor> _pdfTextExtractorMock;
-    private readonly Mock<IGeminiAIService> _geminiAIServiceMock;
+    private readonly Mock<IBackgroundTaskQueue> _backgroundQueueMock;
     private readonly Mock<ILogger<SubmitApplicationHandler>> _loggerMock;
     private readonly SubmitApplicationHandler _handler;
 
@@ -40,7 +40,7 @@ public class SubmitApplicationHandlerTests
         _currentUserServiceMock = new Mock<ICurrentUserService>();
         _cloudinaryServiceMock = new Mock<ICloudinaryService>();
         _pdfTextExtractorMock = new Mock<IPdfTextExtractor>();
-        _geminiAIServiceMock = new Mock<IGeminiAIService>();
+        _backgroundQueueMock = new Mock<IBackgroundTaskQueue>();
         _loggerMock = new Mock<ILogger<SubmitApplicationHandler>>();
 
         // Setup successful mocks by default for services to avoid null reference in happy paths
@@ -52,19 +52,13 @@ public class SubmitApplicationHandlerTests
         _pdfTextExtractorMock
             .Setup(x => x.ExtractTextAsync(It.IsAny<Stream>()))
             .ReturnsAsync("John Doe\nSoftware Engineer\n5 years experience in C# and .NET");
-            
-        _geminiAIServiceMock
-            .Setup(x => x.AnalyzeResumeAsync(
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-                It.IsAny<string?>(), It.IsAny<string?>()))
-            .ReturnsAsync(CreateSuccessfulAIResult());
 
         _handler = new SubmitApplicationHandler(
             _contextMock.Object,
             _currentUserServiceMock.Object,
             _cloudinaryServiceMock.Object,
             _pdfTextExtractorMock.Object,
-            _geminiAIServiceMock.Object,
+            _backgroundQueueMock.Object,
             _loggerMock.Object);
     }
 
@@ -150,23 +144,7 @@ public class SubmitApplicationHandlerTests
         };
     }
 
-    private CVScreeningResultDto CreateSuccessfulAIResult()
-    {
-        return new CVScreeningResultDto
-        {
-            OverallScore = 85,
-            SkillMatchScore = 90,
-            ExperienceMatchScore = 80,
-            EducationMatchScore = 75,
-            KeywordMatchScore = 88,
-            MatchedSkills = ["C#", ".NET"],
-            MissingSkills = ["Azure"],
-            Strengths = ["Strong programming background"],
-            Concerns = [],
-            Summary = "Good candidate fit.",
-            RawResponse = "{}"
-        };
-    }
+
 
     private void SetupFullMocksForSuccess()
     {
@@ -192,11 +170,6 @@ public class SubmitApplicationHandlerTests
         var resumesData = new List<Resume>().AsQueryable();
         var resumesMockSet = CreateMockDbSet(resumesData);
         _contextMock.Setup(c => c.Resumes).Returns(resumesMockSet.Object);
-
-        // CVScreeningResults DbSet
-        var screeningData = new List<ERMS.Domain.Entities.Application.CVScreeningResult>().AsQueryable();
-        var screeningMockSet = CreateMockDbSet(screeningData);
-        _contextMock.Setup(c => c.CVScreeningResults).Returns(screeningMockSet.Object);
 
         _contextMock.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
     }
@@ -468,31 +441,45 @@ public class SubmitApplicationHandlerTests
 
     #endregion
 
-    #region AI Failure Graceful Degradation Tests
+    #region Background Queue Tests
 
     [Fact]
-    public async Task Handle_ShouldSubmitApplicationWithDefaultScores_WhenAIFails()
+    public async Task Handle_ShouldEnqueueBackgroundTask_AfterSavingApplication()
     {
         // Arrange
         SetupAuthenticatedCandidate();
         SetupFullMocksForSuccess();
-
-        // Make AI service throw exception
-        _geminiAIServiceMock
-            .Setup(x => x.AnalyzeResumeAsync(
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-                It.IsAny<string?>(), It.IsAny<string?>()))
-            .ThrowsAsync(new Exception("Gemini API rate limit exceeded"));
 
         var command = CreateValidCommand();
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
-        // Assert - Application should still be submitted with default scores
-        result.ApplicationId.Should().NotBe(Guid.Empty);
-        result.CVScreeningResult?.OverallScore.Should().Be(0);
-        result.CVScreeningResult?.Summary.Should().Contain("AI scoring unavailable");
+        // Assert - Background queue should receive the work item with correct data
+        _backgroundQueueMock.Verify(
+            x => x.EnqueueAsync(
+                It.Is<CvScoringWorkItem>(item =>
+                    item.ApplicationId == result.ApplicationId &&
+                    item.ResumeText.Contains("John Doe") &&
+                    item.JobDescription.Contains(".NET developer")),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldReturnNullCVScreeningResult()
+    {
+        // Arrange
+        SetupAuthenticatedCandidate();
+        SetupFullMocksForSuccess();
+
+        var command = CreateValidCommand();
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert - CVScreeningResult should be null (scored asynchronously)
+        result.CVScreeningResult.Should().BeNull();
     }
 
     #endregion
@@ -516,8 +503,7 @@ public class SubmitApplicationHandlerTests
         result.ResumeId.Should().NotBe(Guid.Empty);
         result.ResumeUrl.Should().Be("https://cloudinary.com/resume.pdf");
         result.Stage.Should().Be(ApplicationStage.Applied);
-        result.CVScreeningResult.Should().NotBeNull();
-        result.CVScreeningResult.OverallScore.Should().Be(85);
+        result.CVScreeningResult.Should().BeNull(); // CV scoring is now async
     }
 
     [Fact]
@@ -557,7 +543,7 @@ public class SubmitApplicationHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ShouldCallAIServiceWithCorrectParameters()
+    public async Task Handle_ShouldEnqueueCvScoringWithCorrectParameters()
     {
         // Arrange
         SetupAuthenticatedCandidate();
@@ -568,14 +554,14 @@ public class SubmitApplicationHandlerTests
         // Act
         await _handler.Handle(command, CancellationToken.None);
 
-        // Assert
-        _geminiAIServiceMock.Verify(
-            x => x.AnalyzeResumeAsync(
-                It.Is<string>(s => s.Contains("John Doe")), // Resume text
-                It.Is<string>(s => s.Contains(".NET developer")), // Job description
-                It.IsAny<string>(), // Requirements
-                It.IsAny<string?>(), // Education level
-                It.IsAny<string?>()), // Experience level
+        // Assert - Verify the background queue received correct work item data
+        _backgroundQueueMock.Verify(
+            x => x.EnqueueAsync(
+                It.Is<CvScoringWorkItem>(item =>
+                    item.ResumeText.Contains("John Doe") &&
+                    item.JobDescription.Contains(".NET developer") &&
+                    item.RequiredSkills.Contains("C#")),
+                It.IsAny<CancellationToken>()),
             Times.Once);
     }
 

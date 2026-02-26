@@ -2,12 +2,10 @@ using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Application;
 using ERMS.Domain.Constants.Recruitment;
 using ERMS.Domain.Constants.Roles;
-using ERMS.Domain.Entities.Application;
 using ERMS.Domain.Entities.Candidate;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System.Text.Json;
 
 namespace ERMS.Application.Features.Applications.Commands.SubmitApplication;
 
@@ -20,7 +18,7 @@ public sealed class SubmitApplicationHandler : IRequestHandler<SubmitApplication
     private readonly ICurrentUserService _currentUserService;
     private readonly ICloudinaryService _cloudinaryService;
     private readonly IPdfTextExtractor _pdfTextExtractor;
-    private readonly IGeminiAIService _geminiAIService;
+    private readonly IBackgroundTaskQueue _backgroundQueue;
     private readonly ILogger<SubmitApplicationHandler> _logger;
 
     public SubmitApplicationHandler(
@@ -28,14 +26,14 @@ public sealed class SubmitApplicationHandler : IRequestHandler<SubmitApplication
         ICurrentUserService currentUserService,
         ICloudinaryService cloudinaryService,
         IPdfTextExtractor pdfTextExtractor,
-        IGeminiAIService geminiAIService,
+        IBackgroundTaskQueue backgroundQueue,
         ILogger<SubmitApplicationHandler> logger)
     {
         _context = context;
         _currentUserService = currentUserService;
         _cloudinaryService = cloudinaryService;
         _pdfTextExtractor = pdfTextExtractor;
-        _geminiAIService = geminiAIService;
+        _backgroundQueue = backgroundQueue;
         _logger = logger;
     }
 
@@ -105,43 +103,7 @@ public sealed class SubmitApplicationHandler : IRequestHandler<SubmitApplication
             resumeText = await _pdfTextExtractor.ExtractTextAsync(memoryStream);
         }
 
-        // 8. Call Gemini AI for CV scoring (with graceful degradation)
-        CVScreeningResultDto aiResult;
-        bool aiScoringSucceeded = true;
-
-        try
-        {
-            aiResult = await _geminiAIService.AnalyzeResumeAsync(
-                resumeText,
-                jobPosting.Description,
-                jobPosting.Requirements ?? "",
-                jobPosting.EducationLevel,
-                jobPosting.ExperienceLevel);
-        }
-        catch (Exception ex)
-        {
-            // Log the error but don't fail the entire application submission
-            _logger.LogWarning(ex, "AI scoring failed for candidate {CandidateId}. Using default scores.", candidate.Id);
-            aiScoringSucceeded = false;
-
-            // Create default result with 0 scores - HR can manually review
-            aiResult = new CVScreeningResultDto
-            {
-                OverallScore = 0,
-                SkillMatchScore = 0,
-                ExperienceMatchScore = 0,
-                EducationMatchScore = 0,
-                KeywordMatchScore = 0,
-                MatchedSkills = [],
-                MissingSkills = [],
-                Strengths = [],
-                Concerns = ["AI scoring failed - manual review required"],
-                Summary = $"AI scoring unavailable: {ex.Message}. Please review manually.",
-                RawResponse = ex.ToString()
-            };
-        }
-
-        // 9. Create Resume entity
+        // 8. Create Resume entity
         var resume = new Resume
         {
             Id = Guid.CreateVersion7(),
@@ -158,7 +120,7 @@ public sealed class SubmitApplicationHandler : IRequestHandler<SubmitApplication
 
         _context.Resumes.Add(resume);
 
-        // 10. Create Application entity
+        // 9. Create Application entity
         var application = new Domain.Entities.Application.Application
         {
             Id = Guid.CreateVersion7(),
@@ -178,39 +140,27 @@ public sealed class SubmitApplicationHandler : IRequestHandler<SubmitApplication
 
         _context.Applications.Add(application);
 
-        // 11. Create CVScreeningResult entity
-        var screeningResult = new CVScreeningResult
-        {
-            Id = Guid.CreateVersion7(),
-            ApplicationId = application.Id,
-            OverallScore = aiResult.OverallScore,
-            SkillMatchScore = aiResult.SkillMatchScore,
-            ExperienceMatchScore = aiResult.ExperienceMatchScore,
-            EducationMatchScore = aiResult.EducationMatchScore,
-            KeywordMatchScore = aiResult.KeywordMatchScore,
-            MatchedSkills = JsonSerializer.Serialize(aiResult.MatchedSkills),
-            MissingSkills = JsonSerializer.Serialize(aiResult.MissingSkills),
-            Strengths = JsonSerializer.Serialize(aiResult.Strengths),
-            Concerns = JsonSerializer.Serialize(aiResult.Concerns),
-            Summary = aiResult.Summary,
-            RawResponse = aiResult.RawResponse,
-            ProcessedAt = DateTime.UtcNow,
-            AIModel = "gemini-2.5-flash"
-        };
-
-        _context.CVScreeningResults.Add(screeningResult);
-
-        // 12. Increment application count on job posting
+        // 10. Increment application count on job posting
         jobPosting.ApplicationCount++;
         jobPosting.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation(
-            "Application {ApplicationId} submitted successfully. CV Score: {Score}",
-            application.Id, aiResult.OverallScore);
+        // 11. Enqueue CV scoring for background processing
+        await _backgroundQueue.EnqueueAsync(new CvScoringWorkItem(
+            ApplicationId: application.Id,
+            ResumeText: resumeText,
+            JobDescription: jobPosting.Description,
+            RequiredSkills: jobPosting.Requirements ?? "",
+            EducationLevel: jobPosting.EducationLevel,
+            ExperienceLevel: jobPosting.ExperienceLevel
+        ), cancellationToken);
 
-        // 13. Return result
+        _logger.LogInformation(
+            "Application {ApplicationId} submitted successfully. CV scoring enqueued for background processing.",
+            application.Id);
+
+        // 12. Return result immediately (CV scoring runs in background)
         return new SubmitApplicationResult
         {
             ApplicationId = application.Id,
@@ -218,17 +168,7 @@ public sealed class SubmitApplicationHandler : IRequestHandler<SubmitApplication
             ResumeUrl = resumeUrl,
             Stage = application.Stage,
             AppliedAt = application.AppliedAt,
-            CVScreeningResult = new CVScreeningResultSummary
-            {
-                OverallScore = aiResult.OverallScore,
-                SkillMatchScore = aiResult.SkillMatchScore,
-                ExperienceMatchScore = aiResult.ExperienceMatchScore,
-                EducationMatchScore = aiResult.EducationMatchScore,
-                MatchedSkills = aiResult.MatchedSkills,
-                MissingSkills = aiResult.MissingSkills,
-                Strengths = aiResult.Strengths,
-                Summary = aiResult.Summary
-            }
+            CVScreeningResult = null
         };
     }
 }
