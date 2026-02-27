@@ -55,7 +55,7 @@ public sealed class GetInterviewFeedbackByIdHandler : IRequestHandler<GetIntervi
             .Where(i => i.Id == request.InterviewId)
             .Where(i => !i.IsDeleted && !i.Application.IsDeleted)
             .FirstOrDefaultAsync(cancellationToken)
-            ?? throw new Exception($"Completed interview with ID {request.InterviewId} not found.");
+            ?? throw new Exception($"Interview with ID {request.InterviewId} not found.");
 
         // 6. Security & State Guard Clauses
         if (interview.Application.JobPosting.EnterpriseId != enterpriseId)
@@ -68,9 +68,9 @@ public sealed class GetInterviewFeedbackByIdHandler : IRequestHandler<GetIntervi
             throw new UnauthorizedAccessException("You do not have permission to access interviews from another department.");
         }
 
-        if (interview.Status != InterviewStatus.Completed)
+        if (interview.Status != InterviewStatus.Scheduled)
         {
-            throw new Exception("Feedback review is only available for completed interviews.");
+            throw new Exception("Feedback review is only available for scheduled interviews awaiting decisions.");
         }
 
         if (!interview.Participants.Any(p => p.FeedbackSubmittedAt != null))

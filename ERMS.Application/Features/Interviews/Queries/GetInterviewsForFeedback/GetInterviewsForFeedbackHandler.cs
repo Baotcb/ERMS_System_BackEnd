@@ -53,7 +53,7 @@ public sealed class GetInterviewsForFeedbackHandler : IRequestHandler<GetIntervi
             .Where(i => !i.IsDeleted && !i.Application.IsDeleted)
             .Where(i => i.Application.JobPosting.EnterpriseId == enterpriseId)
             .Where(i => i.Application.JobPosting.DepartmentId == departmentId)
-            .Where(i => i.Status == InterviewStatus.Completed)
+            .Where(i => i.Status == InterviewStatus.Scheduled)
             .Where(i => i.Participants.Any(p => p.FeedbackSubmittedAt != null));
 
         // 6. Get total count

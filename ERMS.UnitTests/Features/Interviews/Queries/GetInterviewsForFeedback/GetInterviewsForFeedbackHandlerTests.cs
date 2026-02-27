@@ -79,7 +79,7 @@ public class GetInterviewsForFeedbackHandlerTests
             Id = Guid.NewGuid(),
             ApplicationId = app1.Id,
             Application = app1,
-            Status = InterviewStatus.Completed,
+            Status = InterviewStatus.Scheduled,
             CompletedAt = DateTime.UtcNow.AddHours(-1),
             RoundNumber = 1,
             InterviewType = "HR",
@@ -98,7 +98,7 @@ public class GetInterviewsForFeedbackHandlerTests
             Id = Guid.NewGuid(),
             ApplicationId = appOtherDept.Id,
             Application = appOtherDept,
-            Status = InterviewStatus.Completed,
+            Status = InterviewStatus.Scheduled,
             IsDeleted = false,
             Participants = new List<InterviewParticipant>
             {
@@ -113,7 +113,7 @@ public class GetInterviewsForFeedbackHandlerTests
             Id = Guid.NewGuid(),
             ApplicationId = appScheduled.Id,
             Application = appScheduled,
-            Status = InterviewStatus.Scheduled,
+            Status = InterviewStatus.Completed,
             IsDeleted = false,
             Participants = new List<InterviewParticipant>
             {
@@ -128,7 +128,7 @@ public class GetInterviewsForFeedbackHandlerTests
             Id = Guid.NewGuid(),
             ApplicationId = appNoFeedback.Id,
             Application = appNoFeedback,
-            Status = InterviewStatus.Completed,
+            Status = InterviewStatus.Scheduled,
             IsDeleted = false,
             Participants = new List<InterviewParticipant>
             {
