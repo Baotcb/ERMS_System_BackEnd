@@ -6,6 +6,8 @@ using ERMS.Application.Features.Applications.Commands.SubmitInterviewFeedback;
 using ERMS.Application.Features.Applications.Commands.SubmitFinalDecision;
 using ERMS.Application.Features.Applications.Queries.GetApplicationsByJob;
 using ERMS.Application.Features.Interviews.Queries.GetAllInterviews;
+using ERMS.Application.Features.Interviews.Queries.GetInterviewFeedbackById;
+using ERMS.Application.Features.Interviews.Queries.GetInterviewsForFeedback;
 using ERMS.Application.Features.Interviews.Queries.GetMyInterviews;
 using ERMS.Domain.Constants.Roles;
 using MediatR;
@@ -401,6 +403,84 @@ public class ApplicationsController : ControllerBase
                 message = "Final interview decision submitted successfully.",
                 data = result
             });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get all completed interviews with submitted feedback for the caller's department
+    /// </summary>
+    /// <remarks>
+    /// **Access:** Department Head only
+    /// 
+    /// Returns a paginated summary list of all interviews in the Department Head's department
+    /// that are `Completed` and have had feedback submitted by at least one participant.
+    /// </remarks>
+    /// <param name="pageNumber">Page number (default: 1)</param>
+    /// <param name="pageSize">Items per page (default: 20)</param>
+    /// <returns>Paginated summary of interviews awaiting final review</returns>
+    [HttpGet("department/interviews-feedback")]
+    [Authorize(Roles = AppRoles.DepartmentHead)]
+    [ProducesResponseType(typeof(GetInterviewsForFeedbackResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetInterviewsForFeedback(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20)
+    {
+        try
+        {
+            var query = new GetInterviewsForFeedbackQuery
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get detailed interview feedback for a specific completed interview
+    /// </summary>
+    /// <remarks>
+    /// **Access:** Department Head only
+    /// 
+    /// Retrieves the exact, detailed individual feedback submitted by all interviewers 
+    /// to assist the Department Head in making the final decision.
+    /// </remarks>
+    /// <param name="id">The Interview ID</param>
+    /// <returns>Detailed candidate and individual feedback data</returns>
+    [HttpGet("department/interviews-feedback/{id}")]
+    [Authorize(Roles = AppRoles.DepartmentHead)]
+    [ProducesResponseType(typeof(GetInterviewFeedbackByIdResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetInterviewFeedbackById(Guid id)
+    {
+        try
+        {
+            var query = new GetInterviewFeedbackByIdQuery { InterviewId = id };
+            var result = await _mediator.Send(query);
+            return Ok(result);
         }
         catch (UnauthorizedAccessException ex)
         {
