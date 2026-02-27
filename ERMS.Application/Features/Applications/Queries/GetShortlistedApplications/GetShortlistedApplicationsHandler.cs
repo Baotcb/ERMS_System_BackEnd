@@ -6,9 +6,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ERMS.Application.Features.Applications.Queries.GetShortlistedApplications;
 
-/// <summary>
-/// Handler for retrieving shortlisted applications for a job posting
-/// Only Department Heads can access candidates for job postings in their department
+/// Handler for retrieving shortlisted applications for a plan detail
+/// Only Department Heads can access candidates for plan details in their department
 /// </summary>
 public sealed class GetShortlistedApplicationsHandler : IRequestHandler<GetShortlistedApplicationsQuery, GetShortlistedApplicationsResponse>
 {
@@ -42,17 +41,18 @@ public sealed class GetShortlistedApplicationsHandler : IRequestHandler<GetShort
         var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
             ?? throw new UnauthorizedAccessException("User is not associated with any enterprise.");
 
-        // 5. Validate job posting exists and get department
-        var jobPosting = await _context.JobPostings
-            .Where(jp => jp.Id == request.JobPostingId && jp.EnterpriseId == enterpriseId && !jp.IsDeleted)
-            .Select(jp => new { jp.Id, jp.JobTitle, jp.DepartmentId })
+        // 5. Validate plan detail exists and get department
+        var planDetail = await _context.PlanDetails
+            .Include(pd => pd.RecruitmentPlan)
+            .Where(pd => pd.Id == request.PlanDetailId && pd.RecruitmentPlan.EnterpriseId == enterpriseId && !pd.IsDeleted)
+            .Select(pd => new { pd.Id, pd.PositionTitle, DepartmentId = pd.RecruitmentPlan.DepartmentId })
             .FirstOrDefaultAsync(cancellationToken)
-            ?? throw new Exception($"Job posting with ID {request.JobPostingId} not found.");
+            ?? throw new Exception($"Plan detail with ID {request.PlanDetailId} not found.");
 
-        // 6. Department security check: User must belong to same department as job posting
-        if (jobPosting.DepartmentId != userDepartmentId)
+        // 6. Department security check: User must belong to same department as plan detail
+        if (planDetail.DepartmentId != userDepartmentId)
         {
-            throw new UnauthorizedAccessException("You can only view candidates for job postings in your department.");
+            throw new UnauthorizedAccessException("You can only view candidates for plan details in your department.");
         }
 
         // 7. Build query for shortlisted applications only
@@ -61,7 +61,8 @@ public sealed class GetShortlistedApplicationsHandler : IRequestHandler<GetShort
                 .ThenInclude(c => c.User)
             .Include(a => a.Resume)
             .Include(a => a.CVScreeningResult)
-            .Where(a => a.JobPostingId == request.JobPostingId 
+            .Include(a => a.JobPosting)
+            .Where(a => a.JobPosting.PlanDetailId == request.PlanDetailId 
                      && a.Stage == ApplicationStage.Shortlisted 
                      && !a.IsDeleted);
 
@@ -97,8 +98,8 @@ public sealed class GetShortlistedApplicationsHandler : IRequestHandler<GetShort
 
         return new GetShortlistedApplicationsResponse
         {
-            JobPostingId = jobPosting.Id,
-            JobTitle = jobPosting.JobTitle,
+            PlanDetailId = planDetail.Id,
+            PositionTitle = planDetail.PositionTitle,
             Items = items,
             TotalCount = totalCount,
             PageNumber = request.PageNumber,

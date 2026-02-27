@@ -49,7 +49,7 @@ public class ConfirmInterviewScheduleHandlerTests
             _mockCalendarService.Object,
             _mockLogger.Object);
 
-        _mockCalendarService
+            _mockCalendarService
             .Setup(c => c.CreateICalendarEvent(It.IsAny<CalendarEventRequest>()))
             .Returns("BEGIN:VCALENDAR\nEND:VCALENDAR");
     }
