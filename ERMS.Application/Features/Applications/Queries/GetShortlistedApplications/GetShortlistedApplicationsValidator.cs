@@ -9,9 +9,9 @@ public sealed class GetShortlistedApplicationsValidator : AbstractValidator<GetS
 {
     public GetShortlistedApplicationsValidator()
     {
-        RuleFor(x => x.JobPostingId)
+        RuleFor(x => x.PlanDetailId)
             .NotEmpty()
-            .WithMessage("JobPostingId is required.");
+            .WithMessage("PlanDetailId is required.");
 
         RuleFor(x => x.PageNumber)
             .GreaterThanOrEqualTo(1)

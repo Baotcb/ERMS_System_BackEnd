@@ -35,6 +35,10 @@ public class RecruitmentPlansController : ControllerBase
             var result = await _mediator.Send(query);
             return Ok(result);
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
         catch (Exception ex)
         {
             return BadRequest(new { message = ex.Message });
@@ -48,6 +52,10 @@ public class RecruitmentPlansController : ControllerBase
         {
             var result = await _mediator.Send(new GetRecruitmentPlanByIdQuery { Id = id });
             return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
         }
         catch (Exception ex)
         {

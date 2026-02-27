@@ -1,4 +1,5 @@
 using ERMS.Application.Interface;
+using ERMS.Domain.Constants.Roles;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -28,6 +29,18 @@ public sealed class GetAllRecruitmentPlansHandler : IRequestHandler<GetAllRecrui
         var query = _context.RecruitmentPlans
             .Where(rp => rp.EnterpriseId == enterpriseId.Value && !rp.IsDeleted)
             .AsQueryable();
+
+        // 2a. Department isolation: limit query to User's Department if user is DepartmentHead
+        var userRoles = _currentUserService.Roles;
+        if (userRoles != null && userRoles.Contains(AppRoles.DepartmentHead))
+        {
+            var userDepartmentId = await _currentUserService.GetDepartmentIdAsync();
+            if (userDepartmentId == null)
+            {
+                throw new UnauthorizedAccessException("Người dùng không thuộc phòng ban nào");
+            }
+            query = query.Where(rp => rp.DepartmentId == userDepartmentId.Value);
+        }
 
         // Search filter
         if (!string.IsNullOrEmpty(request.Search))

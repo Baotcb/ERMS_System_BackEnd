@@ -235,7 +235,7 @@ namespace ERMS.UnitTests.Features.Auth.Command.GoogleLogin
             // Act & Assert
             await _handler.Invoking(h => h.Handle(request, CancellationToken.None))
                 .Should().ThrowAsync<Exception>()
-                .WithMessage("Tài kho?n doanh nghi?p ð? b? khóa. Vui l?ng liên h? qu?n tr? viên ð? bi?t thêm chi ti?t.");
+                .WithMessage("Tài khoản doanh nghiệp đã bị khóa. Vui lòng liên hệ quản trị viên để biết thêm chi tiết.");
         }
     }
 }
