@@ -5,6 +5,7 @@ using ERMS.Application.Features.Applications.Commands.ConfirmInterviewSchedule;
 using ERMS.Application.Features.Applications.Commands.SubmitInterviewFeedback;
 using ERMS.Application.Features.Applications.Commands.SubmitFinalDecision;
 using ERMS.Application.Features.Applications.Queries.GetApplicationsByJob;
+using ERMS.Application.Features.Interviews.Queries.GetAllInterviews;
 using ERMS.Application.Features.Interviews.Queries.GetMyInterviews;
 using ERMS.Domain.Constants.Roles;
 using MediatR;
@@ -55,6 +56,51 @@ public class ApplicationsController : ControllerBase
         try
         {
             var query = new GetMyInterviewsQuery
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                StatusFilter = statusFilter
+            };
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get all interviews assigned to interviewers within the enterprise
+    /// </summary>
+    /// <remarks>
+    /// **Access:** HR Manager, Director
+    /// 
+    /// Returns a paginated list of all interviews across the enterprise that have been assigned an interviewer.
+    /// Includes detailed candidate info, job title, schedule details, and participant summaries.
+    /// </remarks>
+    /// <param name="pageNumber">Page number (default: 1)</param>
+    /// <param name="pageSize">Items per page (default: 20)</param>
+    /// <param name="statusFilter">Optional filter by interview status (e.g., "Scheduled", "Completed")</param>
+    /// <returns>Paginated list of all interviews</returns>
+    [HttpGet("all-interviews")]
+    [Authorize(Roles = $"{AppRoles.HRManager},{AppRoles.Director}")]
+    [ProducesResponseType(typeof(GetAllInterviewsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetAllInterviews(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? statusFilter = null)
+    {
+        try
+        {
+            var query = new GetAllInterviewsQuery
             {
                 PageNumber = pageNumber,
                 PageSize = pageSize,
