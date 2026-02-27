@@ -71,7 +71,7 @@ public class GetInterviewFeedbackByIdHandlerTests
         _mockContext.Setup(x => x.Interviews).Returns(interviews.Object);
 
         var act = async () => await _handler.Handle(new GetInterviewFeedbackByIdQuery { InterviewId = _interviewId }, CancellationToken.None);
-        await act.Should().ThrowAsync<Exception>().WithMessage($"Completed interview with ID {_interviewId} not found.");
+        await act.Should().ThrowAsync<Exception>().WithMessage($"Interview with ID {_interviewId} not found.");
     }
 
     [Fact]
@@ -93,7 +93,7 @@ public class GetInterviewFeedbackByIdHandlerTests
             Id = _interviewId,
             ApplicationId = app.Id,
             Application = app,
-            Status = InterviewStatus.Completed,
+            Status = InterviewStatus.Scheduled,
             RoundNumber = 1,
             InterviewType = "Tech",
             IsDeleted = false,
@@ -155,12 +155,12 @@ public class GetInterviewFeedbackByIdHandlerTests
 
         var job = new JobPosting { EnterpriseId = _enterpriseId, DepartmentId = _departmentId, JobTitle = "Role" };
         var app = new ApplicationEntity { Id = Guid.NewGuid(), JobPosting = job, IsDeleted = false };
-        var interview = new Interview { Id = _interviewId, Application = app, Status = InterviewStatus.Scheduled, IsDeleted = false };
+        var interview = new Interview { Id = _interviewId, Application = app, Status = InterviewStatus.Completed, IsDeleted = false };
 
         var interviews = new List<Interview> { interview }.AsQueryable().BuildMockDbSet();
         _mockContext.Setup(c => c.Interviews).Returns(interviews.Object);
 
         var act = async () => await _handler.Handle(new GetInterviewFeedbackByIdQuery { InterviewId = _interviewId }, CancellationToken.None);
-        await act.Should().ThrowAsync<Exception>().WithMessage("Feedback review is only available for completed interviews.");
+        await act.Should().ThrowAsync<Exception>().WithMessage("Feedback review is only available for scheduled interviews awaiting decisions.");
     }
 }
