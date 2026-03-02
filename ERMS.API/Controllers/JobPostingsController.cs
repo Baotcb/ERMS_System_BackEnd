@@ -10,6 +10,8 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERMS.Application.Features.JobPostings.Commands.SaveJobPosting;
+using ERMS.Application.Features.JobPostings.Commands.UnsaveJobPosting;
+using ERMS.Application.Features.JobPostings.Queries.GetMySavedPosts;
 
 namespace ERMS.API.Controllers;
 
@@ -242,6 +244,87 @@ public class JobPostingsController : ControllerBase
         catch (UnauthorizedAccessException ex)
         {
             return Unauthorized(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get the current candidate's saved job postings
+    /// </summary>
+    /// <remarks>
+    /// **Access:** Candidate only
+    /// 
+    /// Returns a paginated list of all job postings saved by the authenticated candidate.
+    /// Includes job details, company name, and save date.
+    /// </remarks>
+    /// <param name="pageNumber">Page number (default: 1)</param>
+    /// <param name="pageSize">Items per page (default: 20)</param>
+    /// <returns>Paginated list of saved job postings</returns>
+    [HttpGet("my-saved-posts")]
+    [Authorize(Roles = AppRoles.Candidate)]
+    [ProducesResponseType(typeof(GetMySavedPostsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetMySavedPosts(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20)
+    {
+        try
+        {
+            var query = new GetMySavedPostsQuery
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Unsave a job posting (Candidate only)
+    /// </summary>
+    /// <remarks>
+    /// **Access:** Candidate only
+    /// 
+    /// Removes a saved job posting from the candidate's saved list.
+    /// Returns 403 Forbidden if the candidate tries to unsave a post they don't own.
+    /// **JobPostingId must be provided in the request body.**
+    /// </remarks>
+    /// <param name="command">Unsave command with JobPostingId</param>
+    /// <returns>Confirmation of unsave</returns>
+    [HttpDelete("unsave")]
+    [Authorize(Roles = AppRoles.Candidate)]
+    [ProducesResponseType(typeof(UnsaveJobPostingResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> UnsaveJobPosting([FromBody] UnsaveJobPostingCommand command)
+    {
+        try
+        {
+            var result = await _mediator.Send(command);
+            return Ok(new
+            {
+                message = result.Message,
+                data = result
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
         }
         catch (Exception ex)
         {
