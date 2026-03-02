@@ -10,9 +10,6 @@ namespace ERMS.Application.Features.Applications.Commands.CreateOffer
             RuleFor(x => x.ApplicationId)
                 .NotEmpty().WithMessage("ApplicationId là bắt buộc.");
 
-            RuleFor(x => x.DepartmentId)
-                .GreaterThan(0).WithMessage("DepartmentId phải lớn hơn 0.");
-
             RuleFor(x => x.Position)
                 .NotEmpty().WithMessage("Vị trí là bắt buộc.")
                 .MaximumLength(200).WithMessage("Vị trí không được vượt quá 200 ký tự.");
