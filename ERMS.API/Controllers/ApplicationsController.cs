@@ -1,3 +1,5 @@
+using ERMS.Application.Features.Applications.Commands.AcceptOffer;
+using ERMS.Application.Features.Applications.Commands.RejectOffer;
 using ERMS.Application.Features.Applications.Commands.SubmitApplication;
 using ERMS.Application.Features.Applications.Commands.WithdrawApplication;
 using ERMS.Application.Features.Applications.Commands.ForwardApplication;
@@ -6,6 +8,7 @@ using ERMS.Application.Features.Applications.Commands.ConfirmInterviewSchedule;
 using ERMS.Application.Features.Applications.Commands.SubmitInterviewFeedback;
 using ERMS.Application.Features.Applications.Commands.SubmitFinalDecision;
 using ERMS.Application.Features.Applications.Queries.GetApplicationsByJob;
+using ERMS.Application.Features.Applications.Queries.GetMyOffers;
 using ERMS.Application.Features.Interviews.Queries.GetAllInterviews;
 using ERMS.Application.Features.Interviews.Queries.GetInterviewFeedbackById;
 using ERMS.Application.Features.Interviews.Queries.GetInterviewsForFeedback;
@@ -524,6 +527,129 @@ public class ApplicationsController : ControllerBase
         catch (UnauthorizedAccessException ex)
         {
             return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get the current candidate's job offers
+    /// </summary>
+    /// <remarks>
+    /// **Access:** Candidate only
+    /// 
+    /// Returns a paginated list of all offers associated with the candidate's applications.
+    /// Includes offer details, job title, department, salary, and current status.
+    /// </remarks>
+    /// <param name="pageNumber">Page number (default: 1)</param>
+    /// <param name="pageSize">Items per page (default: 20)</param>
+    /// <returns>Paginated list of candidate's offers</returns>
+    [HttpGet("my-offers")]
+    [Authorize(Roles = AppRoles.Candidate)]
+    [ProducesResponseType(typeof(GetMyOffersResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetMyOffers(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20)
+    {
+        try
+        {
+            var query = new GetMyOffersQuery
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Accept a job offer (Candidate only)
+    /// </summary>
+    /// <remarks>
+    /// **Access:** Candidate only
+    /// 
+    /// Allows a candidate to accept an offer that has been sent to them.
+    /// The offer must have status "Sent" and must not be expired.
+    /// Upon acceptance, the offer status changes to "Accepted" and the application stage advances to "Hired".
+    /// **OfferId must be provided in the request body.**
+    /// </remarks>
+    /// <param name="command">Accept command with OfferId</param>
+    /// <returns>Updated offer and application status</returns>
+    [HttpPatch("accept-offer")]
+    [Authorize(Roles = AppRoles.Candidate)]
+    [ProducesResponseType(typeof(AcceptOfferResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> AcceptOffer([FromBody] AcceptOfferCommand command)
+    {
+        try
+        {
+            var result = await _mediator.Send(command);
+            return Ok(new
+            {
+                message = "Offer accepted successfully.",
+                data = result
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Reject a job offer (Candidate only)
+    /// </summary>
+    /// <remarks>
+    /// **Access:** Candidate only
+    /// 
+    /// Allows a candidate to reject an offer that has been sent to them.
+    /// The offer must have status "Sent".
+    /// Upon rejection, the offer status changes to "Rejected" but the application stage remains "Offered".
+    /// An optional CandidateNote can be provided to explain the rejection.
+    /// **OfferId must be provided in the request body.**
+    /// </remarks>
+    /// <param name="command">Reject command with OfferId and optional CandidateNote</param>
+    /// <returns>Updated offer status</returns>
+    [HttpPatch("reject-offer")]
+    [Authorize(Roles = AppRoles.Candidate)]
+    [ProducesResponseType(typeof(RejectOfferResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> RejectOffer([FromBody] RejectOfferCommand command)
+    {
+        try
+        {
+            var result = await _mediator.Send(command);
+            return Ok(new
+            {
+                message = "Offer rejected successfully.",
+                data = result
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
         }
         catch (Exception ex)
         {
