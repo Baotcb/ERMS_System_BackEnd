@@ -1,14 +1,16 @@
 using ERMS.Application.Features.Applications.Commands.AcceptOffer;
-using ERMS.Application.Features.Applications.Commands.RejectOffer;
-using ERMS.Application.Features.Applications.Commands.SubmitApplication;
-using ERMS.Application.Features.Applications.Commands.WithdrawApplication;
-using ERMS.Application.Features.Applications.Commands.ForwardApplication;
 using ERMS.Application.Features.Applications.Commands.AssignInterviewer;
 using ERMS.Application.Features.Applications.Commands.ConfirmInterviewSchedule;
-using ERMS.Application.Features.Applications.Commands.SubmitInterviewFeedback;
+using ERMS.Application.Features.Applications.Commands.CreateOffer;
+using ERMS.Application.Features.Applications.Commands.ForwardApplication;
+using ERMS.Application.Features.Applications.Commands.RejectOffer;
+using ERMS.Application.Features.Applications.Commands.SubmitApplication;
 using ERMS.Application.Features.Applications.Commands.SubmitFinalDecision;
+using ERMS.Application.Features.Applications.Commands.SubmitInterviewFeedback;
+using ERMS.Application.Features.Applications.Commands.WithdrawApplication;
 using ERMS.Application.Features.Applications.Queries.GetApplicationsByJob;
 using ERMS.Application.Features.Applications.Queries.GetMyOffers;
+using ERMS.Application.Features.Applications.Queries.VerifyOfferAccess;
 using ERMS.Application.Features.Interviews.Queries.GetAllInterviews;
 using ERMS.Application.Features.Interviews.Queries.GetInterviewFeedbackById;
 using ERMS.Application.Features.Interviews.Queries.GetInterviewsForFeedback;
@@ -650,6 +652,60 @@ public class ApplicationsController : ControllerBase
         catch (UnauthorizedAccessException ex)
         {
             return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+    [HttpPost("offers")]
+    [Authorize(Roles = AppRoles.HRManager)]
+    public async Task<IActionResult> CreateOffer([FromBody] CreateOfferCommand command)
+    {
+        try
+        {
+            var offerId = await _mediator.Send(command);
+            return Ok(new
+            {
+                message = "Offer created and sent to candidate successfully.",
+                offerId = offerId
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+
+    [HttpGet("offers/verify-access")]
+    [AllowAnonymous]
+    public async Task<IActionResult> VerifyOfferAccess(
+    [FromQuery] Guid offerId,
+    [FromQuery] string token,
+    [FromQuery] string email)
+    {
+        try
+        {
+            var query = new VerifyOfferAccessQuery
+            {
+                OfferId = offerId,
+                Token = token,
+                Email = email
+            };
+
+            var result = await _mediator.Send(query);
+
+            if (!result.IsValid)
+            {
+                return BadRequest(new { message = result.Message });
+            }
+
+            return Ok(result);
         }
         catch (Exception ex)
         {
