@@ -1,5 +1,6 @@
 ﻿using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Application;
+using ERMS.Domain.Constants.Roles;
 using ERMS.Domain.Entities.Application;
 using ERMS.Domain.Entities.Identity;
 using MediatR;
@@ -37,14 +38,17 @@ namespace ERMS.Application.Features.Applications.Commands.CreateOffer
 
         public async Task<Guid> Handle(CreateOfferCommand request, CancellationToken cancellationToken)
         {
-            // 1. Validate current user
+           
             var currentUserId = _currentUserService.UserId;
             if (currentUserId == null)
             {
                 throw new UnauthorizedAccessException("Không tìm thấy thông tin người dùng.");
             }
-
-            // 2. Get Application with related data
+           if(_currentUserService.Roles.ToString() != AppRoles.HRManager)
+            {
+                throw new UnauthorizedAccessException("Bạn không có quyền tạo offer.");
+            }
+           
             var application = await _context.Applications
                 .Include(a => a.Candidate)
                     .ThenInclude(c => c.User)
@@ -67,16 +71,26 @@ namespace ERMS.Application.Features.Applications.Commands.CreateOffer
                 throw new Exception("Đơn ứng tuyển phải ở trạng thái 'OfferProcessing' để tạo offer.");
             }
 
-            // 3. Validate Department
-            var departmentExists = await _context.Departments
-                .AnyAsync(d => d.Id == request.DepartmentId && !d.IsDeleted, cancellationToken);
-
-            if (!departmentExists)
+            if(_currentUserService.GetEnterpriseIdAsync== null)
             {
-                throw new Exception("Phòng ban không tồn tại.");
+                throw new UnauthorizedAccessException("Không tìm thấy thông tin doanh nghiệp.");
+            }
+            var enterpriseId = await _currentUserService.GetEnterpriseIdAsync();
+            if (application.JobPosting.EnterpriseId != enterpriseId.Value)
+            {
+                throw new UnauthorizedAccessException("Bạn không có quyền tạo offer cho đơn ứng tuyển này.");
+            }
+            var department = await _currentUserService.GetDepartmentIdAsync();
+            if(department == null)
+            {
+                throw new UnauthorizedAccessException("Không tìm thấy thông tin phòng ban.");
+            }
+            if (application.JobPosting.DepartmentId != department.Value)
+            {
+                throw new UnauthorizedAccessException("Bạn không có quyền tạo offer cho đơn ứng tuyển này.");
             }
 
-            // 4. Validate dates
+   
             if (request.StartDate < DateTime.UtcNow.Date)
             {
                 throw new Exception("Ngày bắt đầu phải từ hôm nay trở đi.");
@@ -87,17 +101,17 @@ namespace ERMS.Application.Features.Applications.Commands.CreateOffer
                 throw new Exception("Ngày hết hạn phải sau thời điểm hiện tại.");
             }
 
-            // 5. Generate offer code
+
             var offerCode = await GenerateOfferCodeAsync(cancellationToken);
 
-            // 6. Create offer
+    
             var offer = new Offer
             {
                 Id = Guid.NewGuid(),
                 ApplicationId = request.ApplicationId,
                 OfferCode = offerCode,
                 Position = request.Position,
-                DepartmentId = request.DepartmentId,
+                DepartmentId = application.JobPosting.DepartmentId,
                 Salary = request.Salary,
                 SalaryFrequency = request.SalaryFrequency,
                 Bonus = request.Bonus,
@@ -114,16 +128,15 @@ namespace ERMS.Application.Features.Applications.Commands.CreateOffer
                 UpdatedAt = DateTime.UtcNow
             };
 
-            // 7. Update application stage
+
             application.Stage = ApplicationStage.Offered;
             application.StageUpdatedAt = DateTime.UtcNow;
             application.UpdatedAt = DateTime.UtcNow;
 
-            // 8. Save to database
+  
             await _context.Offers.AddAsync(offer, cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
 
-            // 9. Send email to candidate
             await SendOfferEmailAsync(offer, application, cancellationToken);
 
             return offer.Id;
@@ -159,7 +172,6 @@ namespace ERMS.Application.Features.Applications.Commands.CreateOffer
             var candidateUser = candidate.User;
             var jobTitle = application.JobPosting.Description;
 
-            // Generate verification token (similar to password reset)
             var token = await _userManager.GenerateUserTokenAsync(
                 candidateUser,
                 TokenOptions.DefaultProvider,
@@ -168,7 +180,7 @@ namespace ERMS.Application.Features.Applications.Commands.CreateOffer
             var encodedToken = Uri.EscapeDataString(token);
             var encodedOfferId = Uri.EscapeDataString(offer.Id.ToString());
 
-            // Lấy URL của client từ configuration
+       
             var clientUrl = _configuration["ClientSettings:Url"] ?? "http://localhost:3000";
             var offerDetailUrl = $"{clientUrl}/my-offers?offerId={encodedOfferId}&token={encodedToken}";
 
@@ -266,7 +278,7 @@ namespace ERMS.Application.Features.Applications.Commands.CreateOffer
             }
             catch (Exception ex)
             {
-                // Log error but don't fail the transaction
+               
                 Console.WriteLine($"Failed to send email: {ex.Message}");
             }
         }
