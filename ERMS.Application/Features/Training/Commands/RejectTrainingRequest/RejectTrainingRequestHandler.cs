@@ -8,17 +8,17 @@ using System.Threading.Tasks;
 
 namespace ERMS.Application.Features.Training.Commands.ConfirmTrainingRequest
 {
-    public sealed class ConfirmTrainingRequestHandler
-        : IRequestHandler<ConfirmTrainingRequestCommand, bool>
+    public sealed class RejectTrainingRequestHandler
+        : IRequestHandler<RejectTrainingRequestCommand, bool>
     {
         private readonly IERMSDbContext _context;
         private readonly ICurrentUserService _currentUserService;
-        private readonly ILogger<ConfirmTrainingRequestHandler> _logger;
+        private readonly ILogger<RejectTrainingRequestHandler> _logger;
 
-        public ConfirmTrainingRequestHandler(
+        public RejectTrainingRequestHandler(
             IERMSDbContext context,
             ICurrentUserService currentUserService,
-            ILogger<ConfirmTrainingRequestHandler> logger)
+            ILogger<RejectTrainingRequestHandler> logger)
         {
             _context = context;
             _currentUserService = currentUserService;
@@ -26,7 +26,7 @@ namespace ERMS.Application.Features.Training.Commands.ConfirmTrainingRequest
         }
 
         public async Task<bool> Handle(
-            ConfirmTrainingRequestCommand request,
+            RejectTrainingRequestCommand request,
             CancellationToken cancellationToken)
         {
             var userId = _currentUserService.UserId;
@@ -47,11 +47,14 @@ namespace ERMS.Application.Features.Training.Commands.ConfirmTrainingRequest
             if (trainingRequest == null)
                 throw new Exception("Training request not found");
 
-            if (trainingRequest.Status == "Confirmed")
+            if (trainingRequest.Status == "AddedToPlan")
                 throw new Exception("Request already confirmed");
 
+            if (trainingRequest.Status == "Rejected")
+                throw new Exception("Request already rejected");
+
             // ✅ Confirm request
-            trainingRequest.Status = "Confirmed";
+            trainingRequest.Status = "Rejected";
             trainingRequest.ReviewNote = request.ReviewNote;
 
             await _context.SaveChangesAsync(cancellationToken);

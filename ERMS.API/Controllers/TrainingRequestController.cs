@@ -57,15 +57,15 @@ namespace ERMS.API.Controllers
             }
         }
 
-        [HttpPut("confirm")]
-        public async Task<IActionResult> Confirm(
-    [FromBody] ConfirmTrainingRequestCommand command)
+        [HttpPut("reject")]
+        public async Task<IActionResult> Reject(
+    [FromBody] RejectTrainingRequestCommand command)
         {
             var result = await _mediator.Send(command);
 
             return Ok(new
             {
-                message = "Training request confirmed successfully",
+                message = "Training request reject successfully",
                 success = result
             });
         }

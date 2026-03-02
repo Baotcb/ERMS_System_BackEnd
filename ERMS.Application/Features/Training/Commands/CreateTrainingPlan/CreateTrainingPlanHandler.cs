@@ -58,7 +58,7 @@ namespace ERMS.Application.Features.Training.Commands.CreateTrainingPlan
                 .Where(r =>
                     request.TrainingRequestIds.Contains(r.Id)
                     && r.TrainingPlan == null
-                    && r.Status == "Confirmed"
+                    && r.Status == "Pending"
                     && !r.IsDeleted)
                 .ToListAsync(cancellationToken);
 
