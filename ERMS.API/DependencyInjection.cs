@@ -48,12 +48,12 @@ namespace ERMS.API
                 })
                .AddJwtBearer(options =>
                {
-                   // Read token from Authorization header OR from auth_token cookie
+                 
                    options.Events = new JwtBearerEvents
                    {
                        OnMessageReceived = context =>
                        {
-                           // Try to get token from Authorization header first
+                         
                            var token = context.Request.Headers.Authorization.ToString();
                            if (!string.IsNullOrEmpty(token) && token.StartsWith("Bearer "))
                            {
@@ -61,7 +61,7 @@ namespace ERMS.API
                            }
                            else
                            {
-                               // Fall back to auth_token cookie (for HttpOnly cookie auth)
+                               
                                if (context.Request.Cookies.TryGetValue("auth_token", out var cookieToken))
                                {
                                    context.Token = cookieToken;
