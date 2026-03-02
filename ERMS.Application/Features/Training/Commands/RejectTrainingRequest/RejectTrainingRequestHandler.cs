@@ -50,11 +50,11 @@ namespace ERMS.Application.Features.Training.Commands.ConfirmTrainingRequest
             if (trainingRequest.Status == "AddedToPlan")
                 throw new Exception("Request already confirmed");
 
-            if (trainingRequest.Status == "Rejected")
+            if (trainingRequest.Status != "Pending")
                 throw new Exception("Request already rejected");
 
             // ✅ Confirm request
-            trainingRequest.Status = "Rejected";
+            trainingRequest.Status = request.Status;
             trainingRequest.ReviewNote = request.ReviewNote;
 
             await _context.SaveChangesAsync(cancellationToken);

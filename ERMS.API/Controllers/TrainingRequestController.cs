@@ -1,5 +1,6 @@
 ﻿using ERMS.Application.Features.Training.Commands.ConfirmTrainingRequest;
 using ERMS.Application.Features.Training.Commands.CreateTrainingRequest;
+using ERMS.Application.Features.Training.Commands.UpdateTrainingRequest;
 using ERMS.Application.Features.Training.Queries.GetAllTrainingRequests;
 using ERMS.Domain.Constants.Roles;
 using MediatR;
@@ -57,6 +58,8 @@ namespace ERMS.API.Controllers
             }
         }
 
+        [Authorize(Roles = AppRoles.HRManager)]
+
         [HttpPut("reject")]
         public async Task<IActionResult> Reject(
     [FromBody] RejectTrainingRequestCommand command)
@@ -66,6 +69,17 @@ namespace ERMS.API.Controllers
             return Ok(new
             {
                 message = "Training request reject successfully",
+                success = result
+            });
+        }
+
+        [HttpPut("update")]
+        public async Task<IActionResult> Update(UpdateTrainingRequestCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return Ok(new
+            {
+                message = "Training request updated successfully",
                 success = result
             });
         }
