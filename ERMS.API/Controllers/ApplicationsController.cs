@@ -9,6 +9,7 @@ using ERMS.Application.Features.Applications.Commands.SubmitFinalDecision;
 using ERMS.Application.Features.Applications.Commands.SubmitInterviewFeedback;
 using ERMS.Application.Features.Applications.Commands.WithdrawApplication;
 using ERMS.Application.Features.Applications.Queries.GetApplicationsByJob;
+using ERMS.Application.Features.Applications.Queries.GetMyApplications;
 using ERMS.Application.Features.Applications.Queries.GetMyOffers;
 using ERMS.Application.Features.Applications.Queries.VerifyOfferAccess;
 using ERMS.Application.Features.Interviews.Queries.GetAllInterviews;
@@ -529,6 +530,51 @@ public class ApplicationsController : ControllerBase
         catch (UnauthorizedAccessException ex)
         {
             return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get the current candidate's application history
+    /// </summary>
+    /// <remarks>
+    /// **Access:** Candidate only
+    /// 
+    /// Returns a paginated list of all applications submitted by the authenticated candidate.
+    /// Includes job details, current stage/status, AI screening score, and flags for interview/offer existence.
+    /// </remarks>
+    /// <param name="pageNumber">Page number (default: 1)</param>
+    /// <param name="pageSize">Items per page (default: 20)</param>
+    /// <param name="stageFilter">Optional filter by stage (e.g., "Applied", "Shortlisted", "Offered")</param>
+    /// <returns>Paginated list of candidate's applications</returns>
+    [HttpGet("my-applications")]
+    [Authorize(Roles = AppRoles.Candidate)]
+    [ProducesResponseType(typeof(GetMyApplicationsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetMyApplications(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? stageFilter = null)
+    {
+        try
+        {
+            var query = new GetMyApplicationsQuery
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                StageFilter = stageFilter
+            };
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
         }
         catch (Exception ex)
         {
