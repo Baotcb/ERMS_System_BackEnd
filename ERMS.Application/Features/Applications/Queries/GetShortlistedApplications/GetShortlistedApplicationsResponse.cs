@@ -5,8 +5,8 @@ namespace ERMS.Application.Features.Applications.Queries.GetShortlistedApplicati
 /// </summary>
 public sealed record GetShortlistedApplicationsResponse
 {
-    public Guid JobPostingId { get; init; }
-    public string JobTitle { get; init; } = string.Empty;
+    public Guid PlanDetailId { get; init; }
+    public string PositionTitle { get; init; } = string.Empty;
     public IReadOnlyList<ShortlistedApplicationDto> Items { get; init; } = [];
     public int TotalCount { get; init; }
     public int PageNumber { get; init; }
