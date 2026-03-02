@@ -36,17 +36,20 @@ namespace ERMS.Application.Features.Training.Commands.CreateTrainingRequest
             if (userId == null)
                 throw new UnauthorizedAccessException("User not authenticated");
 
+            var enterpriseId = await _currentUserService.GetEnterpriseIdAsync();
+            var departmentId = await _currentUserService.GetDepartmentIdAsync();
+
             // Validate enterprise
             var enterpriseExists = await _context.Enterprises
-                .AnyAsync(e => e.Id == request.EnterpriseId && !e.IsDeleted, cancellationToken);
+                .AnyAsync(e => e.Id == enterpriseId && !e.IsDeleted, cancellationToken);
 
             if (!enterpriseExists)
                 throw new Exception("Doanh nghiệp không tồn tại");
 
             // Validate department
             var departmentExists = await _context.Departments
-                .AnyAsync(d => d.Id == request.DepartmentId
-                            && d.EnterpriseId == request.EnterpriseId
+                .AnyAsync(d => d.Id == departmentId
+                            && d.EnterpriseId == enterpriseId
                             && !d.IsDeleted, cancellationToken);
 
             if (!departmentExists)
@@ -57,7 +60,7 @@ namespace ERMS.Application.Features.Training.Commands.CreateTrainingRequest
             {
                 var planExists = await _context.TrainingPlans
                     .AnyAsync(p => p.Id == request.TrainingPlanId.Value
-                                && p.EnterpriseId == request.EnterpriseId
+                                && p.EnterpriseId == enterpriseId
                                 && !p.IsDeleted, cancellationToken);
 
                 if (!planExists)
@@ -67,9 +70,9 @@ namespace ERMS.Application.Features.Training.Commands.CreateTrainingRequest
             var trainingRequest = new TrainingRequest
             {
                 Id = Guid.CreateVersion7(),
-                EnterpriseId = request.EnterpriseId,
+                EnterpriseId = enterpriseId.Value,
                 TrainingPlanId = request.TrainingPlanId,
-                DepartmentId = request.DepartmentId,
+                DepartmentId = departmentId.Value,
                 RequestedById = userId.Value,
                 Subject = request.Subject,
                 Urgency = request.Urgency,

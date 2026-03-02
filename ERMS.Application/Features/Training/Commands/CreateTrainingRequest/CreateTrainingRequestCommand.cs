@@ -7,9 +7,7 @@ namespace ERMS.Application.Features.Training.Commands.CreateTrainingRequest
 {
     public sealed class CreateTrainingRequestCommand : IRequest<Guid>
     {
-        public Guid EnterpriseId { get; set; }
         public Guid? TrainingPlanId { get; set; }
-        public int DepartmentId { get; set; }
         public Guid RequestedById { get; set; }
         public string Subject { get; set; } = null!;
         public string? Urgency { get; set; }
