@@ -28,6 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Features\Employees\" />
     <Folder Include="Features\Users\Commands\ChangeProfile\" />
     <Folder Include="Features\Users\Commands\GetProfile\" />
     <Folder Include="Features\Users\Commands\LockUser\" />

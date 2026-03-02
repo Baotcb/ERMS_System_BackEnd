@@ -1,7 +1,9 @@
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
 using ERMS.Application.Interface;
+using ERMS.Infrastructure.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace ERMS.Infrastructure.Services;
 
@@ -13,20 +15,21 @@ public class CloudinaryService : ICloudinaryService
 {
     private readonly Cloudinary _cloudinary;
     private readonly ILogger<CloudinaryService> _logger;
+    private readonly CloudinarySettings _settings;
 
-    public CloudinaryService(ILogger<CloudinaryService> logger)
+    public CloudinaryService(ILogger<CloudinaryService> logger, IOptions<CloudinarySettings> options)
     {
         _logger = logger;
+        _settings = options.Value;
 
-        // Load credentials from environment variables (NEVER from appsettings)
-        var cloudName = Environment.GetEnvironmentVariable("CLOUDINARY_CLOUD_NAME")
-            ?? throw new InvalidOperationException("CLOUDINARY_CLOUD_NAME environment variable is not set.");
-        var apiKey = Environment.GetEnvironmentVariable("CLOUDINARY_API_KEY")
-            ?? throw new InvalidOperationException("CLOUDINARY_API_KEY environment variable is not set.");
-        var apiSecret = Environment.GetEnvironmentVariable("CLOUDINARY_API_SECRET")
-            ?? throw new InvalidOperationException("CLOUDINARY_API_SECRET environment variable is not set.");
+        if (string.IsNullOrWhiteSpace(_settings.CloudName))
+            throw new InvalidOperationException("Cloudinary CloudName is not configured in appsettings.");
+        if (string.IsNullOrWhiteSpace(_settings.ApiKey))
+            throw new InvalidOperationException("Cloudinary ApiKey is not configured in appsettings.");
+        if (string.IsNullOrWhiteSpace(_settings.ApiSecret))
+            throw new InvalidOperationException("Cloudinary ApiSecret is not configured in appsettings.");
 
-        var account = new Account(cloudName, apiKey, apiSecret);
+        var account = new Account(_settings.CloudName, _settings.ApiKey, _settings.ApiSecret);
         _cloudinary = new Cloudinary(account);
     }
 

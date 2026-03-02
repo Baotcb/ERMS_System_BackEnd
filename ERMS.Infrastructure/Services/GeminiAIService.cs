@@ -3,28 +3,33 @@ using Microsoft.Extensions.Logging;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using ERMS.Infrastructure.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace ERMS.Infrastructure.Services;
 
 /// <summary>
 /// Gemini AI service using direct REST API calls with HttpClient
-/// API key loaded from environment variable for security
+/// API key and Model loaded from appsettings via IOptions
 /// </summary>
 public class GeminiAIService : IGeminiAIService
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<GeminiAIService> _logger;
-    private readonly string _apiKey;
-    private const string GeminiApiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+    private readonly GeminiSettings _settings;
+    private readonly string _geminiApiUrl;
 
-    public GeminiAIService(HttpClient httpClient, ILogger<GeminiAIService> logger)
+    public GeminiAIService(HttpClient httpClient, ILogger<GeminiAIService> logger, IOptions<GeminiSettings> options)
     {
         _httpClient = httpClient;
         _logger = logger;
+        _settings = options.Value;
 
-        // Load API key from environment variable (NEVER from appsettings)
-        _apiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY")
-            ?? throw new InvalidOperationException("GEMINI_API_KEY environment variable is not set.");
+        if (string.IsNullOrWhiteSpace(_settings.ApiKey))
+            throw new InvalidOperationException("Gemini ApiKey is not configured in appsettings.");
+            
+        var model = string.IsNullOrWhiteSpace(_settings.Model) ? "gemini-2.5-flash" : _settings.Model;
+        _geminiApiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent";
     }
 
     public async Task<CVScreeningResultDto> AnalyzeResumeAsync(
@@ -57,7 +62,7 @@ public class GeminiAIService : IGeminiAIService
             }
         };
 
-        var requestUrl = $"{GeminiApiUrl}?key={_apiKey}";
+        var requestUrl = $"{_geminiApiUrl}?key={_settings.ApiKey}";
 
         try
         {

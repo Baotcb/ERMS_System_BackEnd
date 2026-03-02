@@ -2,6 +2,7 @@ using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Roles;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace ERMS.Application.Features.Applications.Queries.GetApplicationsByJob;
 
@@ -61,12 +62,12 @@ public sealed class GetApplicationsByJobHandler : IRequestHandler<GetApplication
         var totalCount = await query.CountAsync(cancellationToken);
 
         // 8. Sort by CV Score descending (highest first), then by AppliedAt
-        var items = await query
+        var dbItems = await query
             .OrderByDescending(a => a.CVScreeningResult != null ? a.CVScreeningResult.OverallScore : 0)
             .ThenByDescending(a => a.AppliedAt)
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
-            .Select(a => new ApplicationListDto
+            .Select(a => new
             {
                 ApplicationId = a.Id,
                 CandidateId = a.CandidateId,
@@ -78,12 +79,34 @@ public sealed class GetApplicationsByJobHandler : IRequestHandler<GetApplication
                 Status = a.Status,
                 AppliedAt = a.AppliedAt,
                 HRNote = a.HRNote,
-                OverallScore = a.CVScreeningResult != null ? a.CVScreeningResult.OverallScore : null,
-                SkillMatchScore = a.CVScreeningResult != null ? a.CVScreeningResult.SkillMatchScore : null,
-                ExperienceMatchScore = a.CVScreeningResult != null ? a.CVScreeningResult.ExperienceMatchScore : null,
-                AISummary = a.CVScreeningResult != null ? a.CVScreeningResult.Summary : null
+                CVScreeningResult = a.CVScreeningResult
             })
             .ToListAsync(cancellationToken);
+
+        var items = dbItems.Select(x => new ApplicationListDto
+        {
+            ApplicationId = x.ApplicationId,
+            CandidateId = x.CandidateId,
+            CandidateName = x.CandidateName,
+            CandidateEmail = x.CandidateEmail,
+            CandidatePhone = x.CandidatePhone,
+            ResumeUrl = x.ResumeUrl,
+            Stage = x.Stage,
+            Status = x.Status,
+            AppliedAt = x.AppliedAt,
+            HRNote = x.HRNote,
+            // CV Screening Result mapping
+            OverallScore = x.CVScreeningResult?.OverallScore,
+            SkillMatchScore = x.CVScreeningResult?.SkillMatchScore,
+            ExperienceMatchScore = x.CVScreeningResult?.ExperienceMatchScore,
+            EducationMatchScore = x.CVScreeningResult?.EducationMatchScore,
+            KeywordMatchScore = x.CVScreeningResult?.KeywordMatchScore,
+            MatchedSkills = !string.IsNullOrEmpty(x.CVScreeningResult?.MatchedSkills) ? JsonSerializer.Deserialize<List<string>>(x.CVScreeningResult.MatchedSkills, (JsonSerializerOptions?)null) : null,
+            MissingSkills = !string.IsNullOrEmpty(x.CVScreeningResult?.MissingSkills) ? JsonSerializer.Deserialize<List<string>>(x.CVScreeningResult.MissingSkills, (JsonSerializerOptions?)null) : null,
+            Strengths = !string.IsNullOrEmpty(x.CVScreeningResult?.Strengths) ? JsonSerializer.Deserialize<List<string>>(x.CVScreeningResult.Strengths, (JsonSerializerOptions?)null) : null,
+            Concerns = !string.IsNullOrEmpty(x.CVScreeningResult?.Concerns) ? JsonSerializer.Deserialize<List<string>>(x.CVScreeningResult.Concerns, (JsonSerializerOptions?)null) : null,
+            AISummary = x.CVScreeningResult?.Summary
+        }).ToList();
 
         return new GetApplicationsByJobResponse
         {
