@@ -1,4 +1,5 @@
 using ERMS.Application.Features.Applications.Commands.SubmitApplication;
+using ERMS.Application.Features.Applications.Commands.WithdrawApplication;
 using ERMS.Application.Features.Applications.Commands.ForwardApplication;
 using ERMS.Application.Features.Applications.Commands.AssignInterviewer;
 using ERMS.Application.Features.Applications.Commands.ConfirmInterviewSchedule;
@@ -250,6 +251,44 @@ public class ApplicationsController : ControllerBase
         catch (UnauthorizedAccessException ex)
         {
             return Unauthorized(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Withdraw a job application (Candidate only)
+    /// </summary>
+    /// <remarks>
+    /// **Access:** Candidate only
+    /// 
+    /// Allows a candidate to withdraw their own active application.
+    /// The application must not be in a terminal stage (Rejected, Hired, or already Withdrawn).
+    /// </remarks>
+    /// <param name="command">Withdraw command with ApplicationId</param>
+    /// <returns>Updated application status</returns>
+    [HttpPatch("withdraw")]
+    [Authorize(Roles = AppRoles.Candidate)]
+    [ProducesResponseType(typeof(WithdrawApplicationResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> Withdraw([FromBody] WithdrawApplicationCommand command)
+    {
+        try
+        {
+            var result = await _mediator.Send(command);
+            return Ok(new
+            {
+                message = "Application withdrawn successfully.",
+                data = result
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
         }
         catch (Exception ex)
         {
