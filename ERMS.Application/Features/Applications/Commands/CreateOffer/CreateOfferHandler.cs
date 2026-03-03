@@ -44,7 +44,7 @@ namespace ERMS.Application.Features.Applications.Commands.CreateOffer
             {
                 throw new UnauthorizedAccessException("Không tìm thấy thông tin người dùng.");
             }
-           if(_currentUserService.Roles.ToString() != AppRoles.HRManager)
+           if(!_currentUserService.Roles.Contains(AppRoles.HRManager))
             {
                 throw new UnauthorizedAccessException("Bạn không có quyền tạo offer.");
             }
