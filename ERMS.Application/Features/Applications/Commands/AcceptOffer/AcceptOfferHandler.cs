@@ -74,22 +74,17 @@ public sealed class AcceptOfferCommandHandler : IRequestHandler<AcceptOfferComma
         offer.RespondedAt = DateTime.UtcNow;
         offer.UpdatedAt = DateTime.UtcNow;
 
-        // 9. Update Application stage to Hired
-        offer.Application.Stage = ApplicationStage.Hired;
-        offer.Application.StageUpdatedAt = DateTime.UtcNow;
-        offer.Application.UpdatedAt = DateTime.UtcNow;
-
         await _context.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation(
-            "Offer {OfferId} accepted by candidate {CandidateId} (UserId: {UserId}). Application {ApplicationId} stage updated to Hired.",
-            offer.Id, candidate.Id, userId, offer.ApplicationId);
+            "Offer {OfferId} accepted by candidate {CandidateId} (UserId: {UserId}).",
+            offer.Id, candidate.Id, userId);
 
         return new AcceptOfferResult
         {
             OfferId = offer.Id,
             NewOfferStatus = OfferStatus.Accepted,
-            ApplicationStage = ApplicationStage.Hired,
+            ApplicationStage = offer.Application.Stage,
             RespondedAt = offer.RespondedAt ?? DateTime.UtcNow
         };
     }

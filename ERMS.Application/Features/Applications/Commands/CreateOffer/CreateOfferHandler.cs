@@ -85,10 +85,6 @@ namespace ERMS.Application.Features.Applications.Commands.CreateOffer
             {
                 throw new UnauthorizedAccessException("Không tìm thấy thông tin phòng ban.");
             }
-            if (application.JobPosting.DepartmentId != department.Value)
-            {
-                throw new UnauthorizedAccessException("Bạn không có quyền tạo offer cho đơn ứng tuyển này.");
-            }
 
    
             if (request.StartDate < DateTime.UtcNow.Date)
