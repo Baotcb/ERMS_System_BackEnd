@@ -1,4 +1,5 @@
 using ERMS.Application.Features.Applications.Commands.AcceptOffer;
+using ERMS.Application.Features.Applications.Queries.GetAllApplications;
 using ERMS.Application.Features.Applications.Commands.ConfirmHire;
 using ERMS.Application.Features.Applications.Commands.AssignInterviewer;
 using ERMS.Application.Features.Applications.Commands.ConfirmInterviewSchedule;
@@ -835,6 +836,52 @@ public class ApplicationsController : ControllerBase
                 message = "Hire confirmed successfully. Employee account created.",
                 data = result
             });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get all applications across the enterprise (HR Manager only)
+    /// </summary>
+    /// <remarks>
+    /// **Access:** HR Manager only
+    /// 
+    /// Returns a paginated list of all applications submitted to any job posting
+    /// belonging to the authenticated HR's enterprise.
+    /// Includes basic candidate info, job title, stage, applied date, CV URL, and AI overall score.
+    /// </remarks>
+    /// <param name="pageNumber">Page number (default: 1)</param>
+    /// <param name="pageSize">Items per page (default: 20)</param>
+    /// <param name="stageFilter">Optional filter by stage (e.g., "Applied", "Shortlisted")</param>
+    /// <returns>Paginated list of enterprise applications</returns>
+    [HttpGet("enterprise")]
+    [Authorize(Roles = AppRoles.HRManager)]
+    [ProducesResponseType(typeof(GetAllApplicationsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetAllApplications(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? stageFilter = null)
+    {
+        try
+        {
+            var query = new GetAllApplicationsQuery
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                StageFilter = stageFilter
+            };
+            var result = await _mediator.Send(query);
+            return Ok(result);
         }
         catch (UnauthorizedAccessException ex)
         {
