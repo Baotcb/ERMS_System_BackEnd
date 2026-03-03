@@ -173,14 +173,7 @@ public sealed class ConfirmHireHandler : IRequestHandler<ConfirmHireCommand, Con
                 await _emailService.SendEmailAsync(
                     candidateUser.Email,
                     "Chào mừng bạn đến với công ty - Thông tin tài khoản",
-                    $"Xin chào {candidateUser.FullName},\n\n" +
-                    $"Chúc mừng bạn đã chính thức trở thành nhân viên!\n\n" +
-                    $"Thông tin tài khoản của bạn:\n" +
-                    $"- Email: {request.EmployeeEmail}\n" +
-                    $"- Mật khẩu: {generatedPassword}\n\n" +
-                    $"Mã nhân viên: {employeeCode}\n\n" +
-                    $"Vui lòng đổi mật khẩu sau khi đăng nhập lần đầu.\n\n" +
-                    $"Trân trọng.");
+                    CreateWelcomeEmailTemplate(candidateUser.FullName, request.EmployeeEmail, generatedPassword, employeeCode));
             }
             catch (Exception ex)
             {
@@ -239,5 +232,207 @@ public sealed class ConfirmHireHandler : IRequestHandler<ConfirmHireCommand, Con
         }
 
         return new string(password);
+    }
+
+    private static string CreateWelcomeEmailTemplate(string fullName, string email, string password, string employeeCode)
+    {
+        return $@"
+<!DOCTYPE html>
+<html lang='vi'>
+<head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>Thông tin tài khoản - ERMS</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {{
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f6f8ff;
+            color: #1a1e36;
+            -webkit-font-smoothing: antialiased;
+        }}
+        .wrapper {{
+            width: 100%;
+            background-color: #f6f8ff;
+            padding: 60px 20px;
+        }}
+        .container {{
+            max-width: 560px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border: 1px solid #e0e4f2;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.05);
+        }}
+        .accent-bar {{
+            height: 6px;
+            background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%);
+        }}
+        .brand-section {{
+            padding: 40px 45px 15px 45px;
+            text-align: left;
+        }}
+        .brand-logo {{
+            font-size: 32px;
+            font-weight: 700;
+            color: #7c3aed;
+            letter-spacing: 1px;
+        }}
+        .main-content {{
+            padding: 15px 45px 45px 45px;
+        }}
+        .title {{
+            font-size: 26px;
+            font-weight: 700;
+            color: #1e1b4b;
+            margin: 0 0 18px 0;
+            letter-spacing: -0.5px;
+        }}
+        .greeting {{
+            font-size: 17px;
+            font-weight: 600;
+            color: #312e81;
+            margin-bottom: 12px;
+        }}
+        .text {{
+            font-size: 15px;
+            color: #4b5563;
+            margin-bottom: 30px;
+        }}
+        .info-box {{
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }}
+        .info-item {{
+            margin-bottom: 15px;
+        }}
+        .info-item:last-child {{
+            margin-bottom: 0;
+        }}
+        .info-label {{
+            font-size: 13px;
+            color: #64748b;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+            display: block;
+        }}
+        .info-value {{
+            font-size: 16px;
+            color: #1e293b;
+            font-weight: 500;
+            word-break: break-all;
+        }}
+        .password-value {{
+            font-family: monospace;
+            font-size: 18px;
+            color: #4f46e5;
+            letter-spacing: 1px;
+        }}
+        .cta-section {{
+            text-align: center;
+            margin: 35px 0;
+        }}
+        .security-note {{
+            background-color: #fffbfa;
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-size: 13px;
+            color: #b45309;
+            border-left: 4px solid #f59e0b;
+        }}
+        .security-item {{
+            margin-bottom: 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }}
+        .icon {{
+            color: #f59e0b;
+            font-size: 14px;
+        }}
+        .footer {{
+            text-align: center;
+            padding: 40px 45px;
+            background-color: #fcfdfe;
+            border-top: 1px solid #f1f5f9;
+        }}
+        .footer-text {{
+            font-size: 12px;
+            color: #94a3b8;
+            line-height: 2;
+        }}
+        .copyright {{
+            font-size: 11px;
+            color: #cbd5e1;
+            font-weight: 500;
+            margin-top: 20px;
+        }}
+    </style>
+</head>
+<body>
+    <div class='wrapper'>
+        <div class='container'>
+            <div class='accent-bar'></div>
+            <div class='brand-section'>
+                <div class='brand-logo'>ERMS</div>
+            </div>
+
+            <div class='main-content'>
+                <h1 class='title'>Chào mừng đến với công ty!</h1>
+
+                <p class='greeting'>Chào {fullName},</p>
+
+                <p class='text'>
+                    Chúc mừng bạn đã chính thức trở thành nhân viên! Tài khoản hệ thống của bạn đã được thiết lập thành công. Dưới đây là thông tin đăng nhập dành cho bạn:
+                </p>
+
+                <div class='info-box'>
+                    <div class='info-item'>
+                        <span class='info-label'>Mã Nhân Viên</span>
+                        <div class='info-value'>{employeeCode}</div>
+                    </div>
+                    <div class='info-item'>
+                        <span class='info-label'>Email / Tên đăng nhập</span>
+                        <div class='info-value'>{email}</div>
+                    </div>
+                    <div class='info-item'>
+                        <span class='info-label'>Mật khẩu tạm thời</span>
+                        <div class='info-value password-value'>{password}</div>
+                    </div>
+                </div>
+
+                <div class='security-note'>
+                    <div class='security-item'>
+                        <span class='icon'>⚠️</span>
+                        <span>Vì lý do bảo mật, vui lòng đăng nhập và đổi mật khẩu ngay trong lần truy cập đầu tiên.</span>
+                    </div>
+                </div>
+
+                <p style='margin-top: 35px; font-size: 14px; color: #64748b;'>
+                    Trân trọng,<br>
+                    <strong style='color: #4f46e5;'>Phòng Hành chính - Nhân sự (HR)</strong>
+                </p>
+            </div>
+
+            <div class='footer'>
+                <div class='footer-text'>
+                    Email này chứa thông tin bảo mật, vui lòng không chia sẻ cho bất kỳ ai.<br>
+                    Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với bộ phận IT hoặc HR.
+                </div>
+                <div class='copyright'>&copy; 2026 ERMS System. All rights reserved.</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>";
     }
 }
