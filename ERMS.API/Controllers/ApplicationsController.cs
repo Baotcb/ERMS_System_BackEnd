@@ -1,4 +1,5 @@
 using ERMS.Application.Features.Applications.Commands.AcceptOffer;
+using ERMS.Application.Features.Applications.Commands.ConfirmHire;
 using ERMS.Application.Features.Applications.Commands.AssignInterviewer;
 using ERMS.Application.Features.Applications.Commands.ConfirmInterviewSchedule;
 using ERMS.Application.Features.Applications.Commands.CreateOffer;
@@ -632,7 +633,8 @@ public class ApplicationsController : ControllerBase
     /// 
     /// Allows a candidate to accept an offer that has been sent to them.
     /// The offer must have status "Sent" and must not be expired.
-    /// Upon acceptance, the offer status changes to "Accepted" and the application stage advances to "Hired".
+    /// Upon acceptance, the offer status changes to "Accepted".
+    /// The application stage remains unchanged — the final "Hired" state is reserved for HR's Confirm Hire action.
     /// **OfferId must be provided in the request body.**
     /// </remarks>
     /// <param name="command">Accept command with OfferId</param>
@@ -752,6 +754,47 @@ public class ApplicationsController : ControllerBase
             }
 
             return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Confirm hiring a candidate after contract signing (HR Manager only)
+    /// </summary>
+    /// <remarks>
+    /// **Access:** HR Manager only
+    /// 
+    /// Triggered after the candidate physically signs the contract.
+    /// Creates a new corporate User account (Employee role) and Employee profile.
+    /// Updates the Application stage to "Hired".
+    /// Sends the generated account credentials to the new employee via email.
+    /// **ApplicationId and EmployeeEmail must be provided in the request body.**
+    /// </remarks>
+    /// <param name="command">Confirm hire command with ApplicationId and EmployeeEmail</param>
+    /// <returns>Created employee details</returns>
+    [HttpPost("confirm-hire")]
+    [Authorize(Roles = AppRoles.HRManager)]
+    [ProducesResponseType(typeof(ConfirmHireResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> ConfirmHire([FromBody] ConfirmHireCommand command)
+    {
+        try
+        {
+            var result = await _mediator.Send(command);
+            return Ok(new
+            {
+                message = "Hire confirmed successfully. Employee account created.",
+                data = result
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
         }
         catch (Exception ex)
         {
