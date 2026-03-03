@@ -9,9 +9,11 @@ using ERMS.Application.Features.Applications.Commands.SubmitApplication;
 using ERMS.Application.Features.Applications.Commands.SubmitFinalDecision;
 using ERMS.Application.Features.Applications.Commands.SubmitInterviewFeedback;
 using ERMS.Application.Features.Applications.Commands.WithdrawApplication;
+using ERMS.Application.Features.Applications.Queries.GetAllOfferByHR;
 using ERMS.Application.Features.Applications.Queries.GetApplicationsByJob;
 using ERMS.Application.Features.Applications.Queries.GetMyApplications;
 using ERMS.Application.Features.Applications.Queries.GetMyOffers;
+using ERMS.Application.Features.Applications.Queries.GetOfferByIdOfHR;
 using ERMS.Application.Features.Applications.Queries.VerifyOfferAccess;
 using ERMS.Application.Features.Interviews.Queries.GetAllInterviews;
 using ERMS.Application.Features.Interviews.Queries.GetInterviewFeedbackById;
@@ -722,6 +724,48 @@ public class ApplicationsController : ControllerBase
         catch (UnauthorizedAccessException ex)
         {
             return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+
+    [HttpGet("hr/my-offers")]
+    [Authorize(Roles = $"{AppRoles.HRManager},{AppRoles.Director}")]
+    public async Task<IActionResult> GetMyCreatedOffers()
+    {
+        try
+        {
+            var query = new GetAllOfferByHRQuery();
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+
+    [HttpGet("hr/my-offers/{id}")]
+    [Authorize(Roles = $"{AppRoles.HRManager},{AppRoles.Director}")]
+    public async Task<IActionResult> GetCreatedOfferById(Guid id)
+    {
+        try
+        {
+            var query = new GetOfferByIdOfHRQuery { Id = id };
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
         }
         catch (Exception ex)
         {
