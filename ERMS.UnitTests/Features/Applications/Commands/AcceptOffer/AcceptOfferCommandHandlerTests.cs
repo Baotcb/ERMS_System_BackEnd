@@ -292,7 +292,7 @@ public class AcceptOfferCommandHandlerTests
         // Assert
         result.OfferId.Should().Be(_offerId);
         result.NewOfferStatus.Should().Be(OfferStatus.Accepted);
-        result.ApplicationStage.Should().Be(ApplicationStage.Hired);
+        result.ApplicationStage.Should().Be(ApplicationStage.Offered);
         result.RespondedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
     }
 
@@ -317,7 +317,7 @@ public class AcceptOfferCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ShouldUpdateApplicationStageToHired()
+    public async Task Handle_ShouldNotChangeApplicationStage()
     {
         // Arrange
         SetupAuthenticatedCandidate();
@@ -331,9 +331,8 @@ public class AcceptOfferCommandHandlerTests
         // Act
         await _handler.Handle(command, CancellationToken.None);
 
-        // Assert
-        offer.Application.Stage.Should().Be(ApplicationStage.Hired);
-        offer.Application.StageUpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        // Assert — Application stage must remain "Offered", not change to "Hired"
+        offer.Application.Stage.Should().Be(ApplicationStage.Offered);
     }
 
     [Fact]
