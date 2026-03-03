@@ -338,6 +338,36 @@ public class GetAllApplicationsHandlerTests
     }
 
     [Fact]
+    public async Task Handle_ShouldFilterByOfferProcessingStage_WhenRequested()
+    {
+        // Arrange
+        SetupAuthenticatedHRManager();
+
+        var jpId = Guid.NewGuid();
+        var applications = new List<ApplicationEntity>
+        {
+            CreateApplication(Guid.NewGuid(), Guid.NewGuid(), jpId, _enterpriseId, 90, DateTime.UtcNow, ApplicationStage.Applied),
+            CreateApplication(Guid.NewGuid(), Guid.NewGuid(), jpId, _enterpriseId, 85, DateTime.UtcNow, ApplicationStage.OfferProcessing),
+            CreateApplication(Guid.NewGuid(), Guid.NewGuid(), jpId, _enterpriseId, 80, DateTime.UtcNow, ApplicationStage.OfferProcessing)
+        };
+        SetupApplicationsDbSet(applications);
+
+        var query = new GetAllApplicationsQuery
+        {
+            PageNumber = 1,
+            PageSize = 20,
+            StageFilter = ApplicationStage.OfferProcessing
+        };
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Items.Should().HaveCount(2);
+        result.Items.Should().OnlyContain(x => x.Stage == ApplicationStage.OfferProcessing);
+    }
+
+    [Fact]
     public async Task Handle_ShouldReturnAll_WhenStageFilterIsNull()
     {
         // Arrange
