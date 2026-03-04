@@ -9,7 +9,6 @@ namespace ERMS.Domain.Entities.Recruitment
     public class PlanDetail : BaseEntity
     {
         public Guid RecruitmentPlanId { get; set; }
-        public int DepartmentId { get; set; }
         public Guid RequestedById { get; set; }
         public string PositionTitle { get; set; } = null!;
         public int Quantity { get; set; } = 1;
@@ -30,7 +29,7 @@ namespace ERMS.Domain.Entities.Recruitment
         public DateTime? DeletedAt { get; set; }
 
         public virtual RecruitmentPlan RecruitmentPlan { get; set; } = null!;
-        public virtual Department Department { get; set; } = null!;
+
         public virtual Identity.User RequestedBy { get; set; } = null!;
         public virtual Identity.User? Reviewer { get; set; }
         public virtual ICollection<JobPosting> JobPostings { get; set; } = new List<JobPosting>();

@@ -1,11 +1,16 @@
 using ERMS.Application.Features.RecruitmentPlans.Commands.CreateRecruitmentPlan;
 using ERMS.Application.Features.RecruitmentPlans.Commands.DeleteRecruitmentPlan;
 using ERMS.Application.Features.RecruitmentPlans.Commands.UpdateRecruitmentPlan;
+using ERMS.Application.Features.RecruitmentPlans.Commands.ApprovePlan;
+using ERMS.Application.Features.RecruitmentPlans.Commands.RejectPlan;
+using ERMS.Application.Features.RecruitmentPlans.Commands.SubmitPlan;
+using ERMS.Application.Features.RecruitmentPlans.Commands.ResubmitPlan;
 using ERMS.Application.Features.RecruitmentPlans.Queries.GetAllRecruitmentPlans;
 using ERMS.Application.Features.RecruitmentPlans.Queries.GetRecruitmentPlanById;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ERMS.Domain.Constants.Roles;
 
 namespace ERMS.API.Controllers;
 
@@ -21,10 +26,8 @@ public class RecruitmentPlansController : ControllerBase
         _mediator = mediator;
     }
 
-    /// <summary>
-    /// Lấy danh sách kế hoạch tuyển dụng (phân trang)
-    /// </summary>
     [HttpGet]
+    [Authorize(Roles = AppRoles.HRManager +"," + AppRoles.Director + "," + AppRoles.DepartmentHead)]
     public async Task<IActionResult> GetAll([FromQuery] GetAllRecruitmentPlansQuery query)
     {
         try
@@ -32,16 +35,17 @@ public class RecruitmentPlansController : ControllerBase
             var result = await _mediator.Send(query);
             return Ok(result);
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
         catch (Exception ex)
         {
             return BadRequest(new { message = ex.Message });
         }
     }
-
-    /// <summary>
-    /// Lấy chi tiết kế hoạch tuyển dụng theo ID
-    /// </summary>
     [HttpGet("{id}")]
+    [Authorize(Roles = AppRoles.HRManager + "," + AppRoles.Director + "," + AppRoles.DepartmentHead)]
     public async Task<IActionResult> GetById(Guid id)
     {
         try
@@ -49,16 +53,18 @@ public class RecruitmentPlansController : ControllerBase
             var result = await _mediator.Send(new GetRecruitmentPlanByIdQuery { Id = id });
             return Ok(result);
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
         catch (Exception ex)
         {
             return BadRequest(new { message = ex.Message });
         }
     }
 
-    /// <summary>
-    /// Tạo kế hoạch tuyển dụng mới
-    /// </summary>
     [HttpPost]
+    [Authorize(Roles =  AppRoles.DepartmentHead)]
     public async Task<IActionResult> Create([FromBody] CreateRecruitmentPlanCommand command)
     {
         if (!ModelState.IsValid)
@@ -78,16 +84,10 @@ public class RecruitmentPlansController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
-
-    /// <summary>
-    /// Cập nhật kế hoạch tuyển dụng
-    /// </summary>
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateRecruitmentPlanCommand command)
+    [HttpPut]
+    [Authorize(Roles = AppRoles.DepartmentHead)]
+    public async Task<IActionResult> Update([FromBody] UpdateRecruitmentPlanCommand command)
     {
-        if (id != command.Id)
-            return BadRequest(new { message = "ID không khớp" });
-
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
@@ -102,16 +102,114 @@ public class RecruitmentPlansController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Xóa kế hoạch tuyển dụng (soft delete)
-    /// </summary>
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(Guid id)
+    [HttpDelete]
+    [Authorize(Roles = AppRoles.DepartmentHead)]
+    public async Task<IActionResult> Delete([FromBody] DeleteRecruitmentPlanCommand command)
     {
         try
         {
-            await _mediator.Send(new DeleteRecruitmentPlanCommand { Id = id });
+            await _mediator.Send(command);
             return Ok(new { message = "Xóa kế hoạch tuyển dụng thành công" });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPatch("approve")]
+    [Authorize(Roles = AppRoles.Director)]
+    public async Task<IActionResult> ApprovePlan([FromBody] ApprovePlanCommand command)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        try
+        {
+            await _mediator.Send(command);
+            return Ok(new { message = "Phê duyệt kế hoạch tuyển dụng thành công" });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPatch("reject")]
+    [Authorize(Roles = AppRoles.Director)]
+    public async Task<IActionResult> RejectPlan([FromBody] RejectPlanCommand command)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        try
+        {
+            await _mediator.Send(command);
+            return Ok(new { message = "Từ chối kế hoạch tuyển dụng thành công" });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Department Head submit kế hoạch tuyển dụng (Draft → Pending)
+    /// </summary>
+    /// <remarks>
+    /// Chuyển status từ Draft → Pending để chờ Director duyệt
+    /// </remarks>
+    [HttpPatch("submit")]
+    [Authorize(Roles = AppRoles.DepartmentHead)]
+    public async Task<IActionResult> SubmitPlan([FromBody] SubmitPlanCommand command)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        try
+        {
+            await _mediator.Send(command);
+            return Ok(new { message = "Submit kế hoạch tuyển dụng thành công. Đang chờ Director phê duyệt." });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Department Head resubmit kế hoạch đã bị từ chối (Rejected → Pending)
+    /// </summary>
+    /// <remarks>
+    /// Chuyển status từ Rejected → Pending sau khi chỉnh sửa
+    /// </remarks>
+    [HttpPatch("resubmit")]
+    [Authorize(Roles = AppRoles.DepartmentHead)]
+    public async Task<IActionResult> ResubmitPlan([FromBody] ResubmitPlanCommand command)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        try
+        {
+            await _mediator.Send(command);
+            return Ok(new { message = "Resubmit kế hoạch tuyển dụng thành công. Đang chờ Director phê duyệt." });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
         }
         catch (Exception ex)
         {

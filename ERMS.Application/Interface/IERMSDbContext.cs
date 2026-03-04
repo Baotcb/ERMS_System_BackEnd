@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using System.Threading;
 using System.Threading.Tasks;
 using ERMS.Domain.Entities.Identity;
@@ -16,7 +17,8 @@ namespace ERMS.Application.Interface
 {
     public interface IERMSDbContext
     {
-        
+        DatabaseFacade Database { get; }
+
         DbSet<User> Users { get; set; }
 
        
@@ -35,6 +37,7 @@ namespace ERMS.Application.Interface
         DbSet<JobCompetency> JobCompetencies { get; set; }
 
         // ================= Recruitment =================
+        DbSet<RecruitmentCampaign> RecruitmentCampaigns { get; set; }
         DbSet<RecruitmentPlan> RecruitmentPlans { get; set; }
         DbSet<PlanDetail> PlanDetails { get; set; }
         DbSet<JobPosting> JobPostings { get; set; }
@@ -74,5 +77,6 @@ namespace ERMS.Application.Interface
 
         
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+        Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
     }
 }

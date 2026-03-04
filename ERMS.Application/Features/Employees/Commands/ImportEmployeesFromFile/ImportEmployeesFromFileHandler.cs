@@ -203,7 +203,7 @@ namespace ERMS.Application.Features.Employees.Commands.ImportEmployeesFromFile
                         
                         user = new User
                         {
-                            Id = Guid.NewGuid(),
+                            Id = Guid.CreateVersion7(),
                             UserName = row.Email,
                             Email = row.Email,
                             FullName = row.FullName,
@@ -228,7 +228,7 @@ namespace ERMS.Application.Features.Employees.Commands.ImportEmployeesFromFile
                         employeeCount++;
                         var employee = new Employee
                         {
-                            Id = Guid.NewGuid(),
+                            Id = Guid.CreateVersion7(),
                             UserId = user.Id,
                             EnterpriseId = enterpriseId.Value,
                             DepartmentId = department.Id,

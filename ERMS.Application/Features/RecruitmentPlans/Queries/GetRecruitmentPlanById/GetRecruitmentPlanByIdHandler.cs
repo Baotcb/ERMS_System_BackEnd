@@ -1,4 +1,5 @@
 using ERMS.Application.Interface;
+using ERMS.Domain.Constants.Roles;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -33,6 +34,8 @@ public sealed class GetRecruitmentPlanByIdHandler : IRequestHandler<GetRecruitme
             {
                 Id = rp.Id,
                 EnterpriseId = rp.EnterpriseId,
+                CampaignId = rp.CampaignId,
+                CampaignName = rp.Campaign.CampaignName,
                 PlanName = rp.PlanName,
                 PlanCode = rp.PlanCode,
                 Description = rp.Description,
@@ -53,6 +56,27 @@ public sealed class GetRecruitmentPlanByIdHandler : IRequestHandler<GetRecruitme
         if (recruitmentPlan == null)
         {
             throw new Exception("Không tìm thấy kế hoạch tuyển dụng");
+        }
+
+        // 3. Check for DepartmentHead restrictions: Must match DepartmentId
+        var userRoles = _currentUserService.Roles;
+        if (userRoles != null && userRoles.Contains(AppRoles.DepartmentHead))
+        {
+            var userDepartmentId = await _currentUserService.GetDepartmentIdAsync();
+            if (userDepartmentId == null)
+            {
+                throw new UnauthorizedAccessException("Người dùng không thuộc phòng ban nào");
+            }
+
+            var planDepartmentId = await _context.RecruitmentPlans
+                .Where(rp => rp.Id == recruitmentPlan.Id)
+                .Select(rp => rp.DepartmentId)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (planDepartmentId != userDepartmentId.Value)
+            {
+                throw new UnauthorizedAccessException("Bạn chỉ có quyền xem kế hoạch tuyển dụng của phòng ban mình");
+            }
         }
 
         return recruitmentPlan;

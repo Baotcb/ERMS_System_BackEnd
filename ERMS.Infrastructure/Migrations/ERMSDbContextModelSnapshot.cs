@@ -200,6 +200,13 @@ namespace ERMS.Infrastructure.Migrations
                     b.Property<int>("Duration")
                         .HasColumnType("int");
 
+                    b.Property<string>("InterviewFormat")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("Online");
+
                     b.Property<string>("InterviewType")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -1369,9 +1376,6 @@ namespace ERMS.Infrastructure.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("DepartmentId")
-                        .HasColumnType("int");
-
                     b.Property<string>("EducationLevel")
                         .HasColumnType("nvarchar(max)");
 
@@ -1436,8 +1440,6 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DepartmentId");
-
                     b.HasIndex("RecruitmentPlanId");
 
                     b.HasIndex("RequestedById");
@@ -1445,6 +1447,86 @@ namespace ERMS.Infrastructure.Migrations
                     b.HasIndex("ReviewerId");
 
                     b.ToTable("PlanDetails");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.RecruitmentCampaign", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CampaignCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("CampaignName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("EnterpriseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte?>("FiscalQuarter")
+                        .HasColumnType("tinyint");
+
+                    b.Property<int>("FiscalYear")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("MaxTotalPositions")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasDefaultValue("Draft");
+
+                    b.Property<DateTime>("SubmissionEndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("SubmissionStartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("TargetHireEndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("TargetHireStartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("TotalBudgetCeiling")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("EnterpriseId", "CampaignCode")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_RC_Enterprise_Code");
+
+                    b.ToTable("RecruitmentCampaigns");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.RecruitmentPlan", b =>
@@ -1459,6 +1541,9 @@ namespace ERMS.Infrastructure.Migrations
                     b.Property<Guid?>("ApprovedById")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid>("CampaignId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -1468,10 +1553,13 @@ namespace ERMS.Infrastructure.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("DepartmentId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime>("EndDate")
+                    b.Property<DateTime?>("EndDate")
                         .HasColumnType("datetime2");
 
                     b.Property<Guid>("EnterpriseId")
@@ -1488,12 +1576,22 @@ namespace ERMS.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime>("StartDate")
+                    b.Property<DateTime?>("RejectedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime?>("StartDate")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasDefaultValue("Draft");
 
                     b.Property<decimal?>("TotalBudget")
                         .HasPrecision(18, 2)
@@ -1506,7 +1604,11 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("ApprovedById");
 
+                    b.HasIndex("CampaignId");
+
                     b.HasIndex("CreatedById");
+
+                    b.HasIndex("DepartmentId");
 
                     b.HasIndex("EnterpriseId");
 
@@ -2843,12 +2945,6 @@ namespace ERMS.Infrastructure.Migrations
 
             modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.PlanDetail", b =>
                 {
-                    b.HasOne("ERMS.Domain.Entities.Organization.Department", "Department")
-                        .WithMany()
-                        .HasForeignKey("DepartmentId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("ERMS.Domain.Entities.Recruitment.RecruitmentPlan", "RecruitmentPlan")
                         .WithMany("PlanDetails")
                         .HasForeignKey("RecruitmentPlanId")
@@ -2866,8 +2962,6 @@ namespace ERMS.Infrastructure.Migrations
                         .HasForeignKey("ReviewerId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.Navigation("Department");
-
                     b.Navigation("RecruitmentPlan");
 
                     b.Navigation("RequestedBy");
@@ -2875,13 +2969,8 @@ namespace ERMS.Infrastructure.Migrations
                     b.Navigation("Reviewer");
                 });
 
-            modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.RecruitmentPlan", b =>
+            modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.RecruitmentCampaign", b =>
                 {
-                    b.HasOne("ERMS.Domain.Entities.Identity.User", "ApprovedBy")
-                        .WithMany()
-                        .HasForeignKey("ApprovedById")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("ERMS.Domain.Entities.Identity.User", "CreatedBy")
                         .WithMany()
                         .HasForeignKey("CreatedById")
@@ -2891,12 +2980,52 @@ namespace ERMS.Infrastructure.Migrations
                     b.HasOne("ERMS.Domain.Entities.Enterprise.Enterprise", "Enterprise")
                         .WithMany()
                         .HasForeignKey("EnterpriseId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Enterprise");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.RecruitmentPlan", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "ApprovedBy")
+                        .WithMany()
+                        .HasForeignKey("ApprovedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERMS.Domain.Entities.Recruitment.RecruitmentCampaign", "Campaign")
+                        .WithMany("RecruitmentPlans")
+                        .HasForeignKey("CampaignId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Organization.Department", "Department")
+                        .WithMany()
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Enterprise.Enterprise", "Enterprise")
+                        .WithMany()
+                        .HasForeignKey("EnterpriseId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("ApprovedBy");
 
+                    b.Navigation("Campaign");
+
                     b.Navigation("CreatedBy");
+
+                    b.Navigation("Department");
 
                     b.Navigation("Enterprise");
                 });
@@ -3279,6 +3408,11 @@ namespace ERMS.Infrastructure.Migrations
             modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.PlanDetail", b =>
                 {
                     b.Navigation("JobPostings");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.RecruitmentCampaign", b =>
+                {
+                    b.Navigation("RecruitmentPlans");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.RecruitmentPlan", b =>

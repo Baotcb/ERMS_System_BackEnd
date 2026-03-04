@@ -44,7 +44,7 @@ namespace ERMS.Application.Features.Auth.Commands.Register
                 Email = request.Email,
                 FullName = request.FullName,
                 DateJoined = DateTime.UtcNow,
-                SecurityStamp = Guid.NewGuid().ToString()
+                SecurityStamp = Guid.CreateVersion7().ToString()
             };
             var result = await _userManager.CreateAsync(user, request.Password);
             if (!result.Succeeded)
@@ -65,7 +65,7 @@ namespace ERMS.Application.Features.Auth.Commands.Register
             }
             var c = new Candidate
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.CreateVersion7(),
                 UserId = user.Id,
                 CreatedAt = DateTime.UtcNow
             };

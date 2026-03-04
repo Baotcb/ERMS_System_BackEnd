@@ -8,24 +8,12 @@ using ERMS.Application.Features.Auth.Commands.ResendConfirmation;
 using ERMS.Application.Features.Auth.Commands.ResetPassword;
 using ERMS.Application.Features.Auth.Commands.CreateHRAccount;
 using ERMS.Application.Features.Enterprises.Commands.RegisterEnterprise;
-using ERMS.Application.Interface;
-using ERMS.Domain.Constants.Roles;
-using ERMS.Domain.Entities.Identity;
-using Google.Apis.Auth;
 using MediatR;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.IdentityModel.Tokens;
 using System;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Security.Claims;
-using System.Text;
+using System.Threading.Tasks;
 
 namespace ERMS.API.Controllers
 {
@@ -35,26 +23,15 @@ namespace ERMS.API.Controllers
     public class AuthController : ControllerBase
     {
         private readonly ISender _sender;
-        private readonly IConfiguration _config;
-        private readonly ITokenService _tokenService;
         private readonly IMediator _mediator;
-        private readonly UserManager<User> _userManager;
-        private readonly RoleManager<IdentityRole<Guid>> _roleManager;
 
-        public AuthController(ISender sender,
-            IConfiguration config,
-            ITokenService tokenService,
-            IMediator mediator,
-            UserManager<User> userManager,
-            RoleManager<IdentityRole<Guid>> roleManager)
+        public AuthController(ISender sender, IMediator mediator)
         {
             _sender = sender;
-            _config = config;
-            _tokenService = tokenService;
             _mediator = mediator;
-            _userManager = userManager;
-            _roleManager = roleManager;
         }
+
+        // ================= REGISTER =================
         [HttpPost("register")]
         [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody] RegisterCommand command)
@@ -63,18 +40,15 @@ namespace ERMS.API.Controllers
             {
                 var userId = await _sender.Send(command);
 
-                if (await _mediator.Send(new ResendConfirmationCommand { Email = command.Email }))
-                { 
+                var emailSent = await _mediator.Send(
+                    new ResendConfirmationCommand { Email = command.Email });
+
                 return Ok(new
                 {
-                    message = "Đăng ký thành công!",
-                    userId = userId
-                });
-            }
-                return Ok(new
-                {
-                    message = "Đăng ký thành công nhưng không thể gửi email xác thực. Vui lòng liên hệ quản trị viên.",
-                    userId = userId
+                    message = emailSent
+                        ? "Đăng ký thành công!"
+                        : "Đăng ký thành công nhưng không thể gửi email xác thực.",
+                    userId
                 });
             }
             catch (Exception ex)
@@ -82,16 +56,16 @@ namespace ERMS.API.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        // ================= LOGIN =================
         [HttpPost("login")]
+        [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] LoginCommand command)
         {
             try
             {
                 var token = await _sender.Send(command);
-                return Ok(new
-                {
-                    token = token
-                });
+                return Ok(new { token });
             }
             catch (Exception ex)
             {
@@ -99,59 +73,19 @@ namespace ERMS.API.Controllers
             }
         }
 
-
-        [HttpPost("forgot-password")]
-        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordCommand command)
-        {
-            try
-            {
-                var token = await _sender.Send(command);
-
-                return Ok(new { message = "Vui lòng kiểm tra email " });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
-
-        [HttpPost("reset-password")]
-        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordCommand command)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            try
-            {
-                var resultMessage = await _sender.Send(command);
-                return Ok(new { message = resultMessage });
-            }
-            catch (Exception ex)
-            {
-
-                return BadRequest(new { message = ex.Message });
-            }
-        }
-
-        
+        // ================= GOOGLE LOGIN =================
         [HttpPost("google-login")]
+        [AllowAnonymous]
         [DisableRateLimiting]
         public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginCommand command)
         {
+            if (string.IsNullOrWhiteSpace(command.IdToken))
+                return BadRequest(new { message = "Google ID token là bắt buộc." });
+
             try
             {
-                if (string.IsNullOrWhiteSpace(command.IdToken))
-                {
-                    return BadRequest(new { message = "Google ID token là bắt buộc." });
-                }
-
                 var token = await _sender.Send(command);
-                return Ok(new
-                {
-                    token = token
-                });
+                return Ok(new { token });
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -163,14 +97,15 @@ namespace ERMS.API.Controllers
             }
         }
 
-        [Authorize]
-        [HttpPut("change-password")]
-        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordCommand command)
+        // ================= FORGOT / RESET PASSWORD =================
+        [HttpPost("forgot-password")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordCommand command)
         {
             try
             {
-                var resultMessage = await _sender.Send(command);
-                return Ok(new { message = resultMessage });
+                await _sender.Send(command);
+                return Ok(new { message = "Vui lòng kiểm tra email." });
             }
             catch (Exception ex)
             {
@@ -178,113 +113,95 @@ namespace ERMS.API.Controllers
             }
         }
 
+        [HttpPost("reset-password")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordCommand command)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var result = await _sender.Send(command);
+                return Ok(new { message = result });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        // ================= CHANGE PASSWORD =================
+        [Authorize]
+        [HttpPut("change-password")]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordCommand command)
+        {
+            try
+            {
+                var result = await _sender.Send(command);
+                return Ok(new { message = result });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        // ================= EMAIL CONFIRM =================
         [HttpPost("confirm-email")]
+        [AllowAnonymous]
         [DisableRateLimiting]
         public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailCommand command)
         {
             if (!ModelState.IsValid)
-            {
                 return BadRequest(ModelState);
-            }
 
             try
             {
                 var result = await _mediator.Send(command);
-
-                
-                var user = await _userManager.FindByIdAsync(command.UserId);
-                if (user != null)
-                {
-                    var token = await _tokenService.CreateToken(user);
-                    return Ok(new
-                    {
-                        message = result,
-                        success = true,
-                        token = token,
-                        email = user.Email,
-                        fullName = user.FullName
-                    });
-                }
-
-                return Ok(new
-                {
-                    message = result,
-                    success = true
-                });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new
-                {
-                    message = ex.Message,
-                    success = false
-                });
+                return Ok(new { message = result, success = true });
             }
             catch (Exception ex)
             {
                 return BadRequest(new
                 {
-                    message = "Xác thực email thất bại. Vui lòng thử lại hoặc yêu cầu gửi lại email xác thực.",
-                    error = ex.Message,
+                    message = ex.Message,
                     success = false
                 });
             }
         }
 
         [HttpPost("resend-confirmation")]
+        [AllowAnonymous]
         [DisableRateLimiting]
         public async Task<IActionResult> ResendConfirmation([FromBody] ResendConfirmationCommand command)
         {
             if (!ModelState.IsValid)
-            {
                 return BadRequest(ModelState);
-            }
 
             try
             {
                 var result = await _sender.Send(command);
-                
-
                 return Ok(new
                 {
-                    message = "Email xác thực đã được gửi. Vui lòng kiểm tra hộp thư của bạn (bao gồm cả thư mục spam).",
+                    message = "Email xác thực đã được gửi.",
                     success = result
-            });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new
-                {
-                    message = ex.Message,
-                    success = false
                 });
             }
             catch (Exception ex)
             {
-                return BadRequest(new
-                {
-                    message = "Không thể gửi email xác thực. Vui lòng thử lại sau.",
-                    error = ex.Message,
-                    success = false
-                });
+                return BadRequest(new { message = ex.Message });
             }
         }
 
-
-
-
-
+        // ================= ENTERPRISE =================
         [HttpPost("register-enterprise")]
         public async Task<IActionResult> RegisterEnterprise([FromBody] RegisterEnterpriseCommand command)
         {
             try
             {
-                var enterpriseId = await _sender.Send(command);
-                return Ok(new
-                {
-                    message = "Đăng ký doanh nghiệp thành công!",
-                    enterpriseId = enterpriseId
-                });
+                var id = await _sender.Send(command);
+                return Ok(new { message = "Đăng ký doanh nghiệp thành công!", enterpriseId = id });
             }
             catch (Exception ex)
             {
@@ -300,8 +217,8 @@ namespace ERMS.API.Controllers
                 var userId = await _sender.Send(command);
                 return Ok(new
                 {
-                    message = "Tạo tài khoản thành công! Vui lòng kiểm tra email để xác thực.",
-                    userId = userId
+                    message = "Tạo tài khoản thành công! Vui lòng kiểm tra email.",
+                    userId
                 });
             }
             catch (Exception ex)
@@ -309,7 +226,5 @@ namespace ERMS.API.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
-
-    } 
+    }
 }
-

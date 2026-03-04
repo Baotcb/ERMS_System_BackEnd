@@ -37,7 +37,8 @@ namespace ERMS.Infrastructure.Data
         public DbSet<Skill> Skills { get; set; }
         public DbSet<JobCompetency> JobCompetencies { get; set; }
 
-     
+
+        public DbSet<RecruitmentCampaign> RecruitmentCampaigns { get; set; }
         public DbSet<RecruitmentPlan> RecruitmentPlans { get; set; }
         public DbSet<PlanDetail> PlanDetails { get; set; }
         public DbSet<JobPosting> JobPostings { get; set; }
@@ -183,6 +184,44 @@ namespace ERMS.Infrastructure.Data
                 .HasForeignKey(o => o.ApprovedById)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            builder.Entity<RecruitmentCampaign>()
+                .HasOne(c => c.Enterprise)
+                .WithMany()
+                .HasForeignKey(c => c.EnterpriseId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<RecruitmentCampaign>()
+                .HasOne(c => c.CreatedBy)
+                .WithMany()
+                .HasForeignKey(c => c.CreatedById)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<RecruitmentCampaign>()
+                .HasIndex(c => new { c.EnterpriseId, c.CampaignCode })
+                .IsUnique()
+                .HasDatabaseName("UQ_RC_Enterprise_Code");
+
+            builder.Entity<RecruitmentCampaign>()
+                .Property(c => c.CampaignName)
+                .HasMaxLength(200)
+                .IsRequired();
+
+            builder.Entity<RecruitmentCampaign>()
+                .Property(c => c.CampaignCode)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            builder.Entity<RecruitmentCampaign>()
+                .Property(c => c.Status)
+                .HasMaxLength(50)
+                .HasDefaultValue("Draft");
+
+            builder.Entity<RecruitmentPlan>()
+                .HasOne(r => r.Campaign)
+                .WithMany(c => c.RecruitmentPlans)
+                .HasForeignKey(r => r.CampaignId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             builder.Entity<RecruitmentPlan>()
                 .HasOne(r => r.CreatedBy)
                 .WithMany()
@@ -195,6 +234,34 @@ namespace ERMS.Infrastructure.Data
                 .HasForeignKey(r => r.ApprovedById)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            builder.Entity<RecruitmentPlan>()
+                .Property(r => r.Status)
+                .HasMaxLength(50)
+                .HasDefaultValue("Draft");
+
+            builder.Entity<RecruitmentPlan>()
+                .Property(r => r.RejectionReason)
+                .HasMaxLength(1000);
+
+            builder.Entity<RecruitmentPlan>()
+                .HasOne(r => r.Enterprise)
+                .WithMany()
+                .HasForeignKey(r => r.EnterpriseId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<RecruitmentPlan>()
+                .HasOne(r => r.Department)
+                .WithMany()
+                .HasForeignKey(r => r.DepartmentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+
+            builder.Entity<PlanDetail>()
+                .HasOne(p => p.RecruitmentPlan)
+                .WithMany(r => r.PlanDetails)
+                .HasForeignKey(p => p.RecruitmentPlanId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             builder.Entity<PlanDetail>()
                 .HasOne(p => p.RequestedBy)
                 .WithMany()
@@ -206,6 +273,7 @@ namespace ERMS.Infrastructure.Data
                 .WithMany()
                 .HasForeignKey(p => p.ReviewerId)
                 .OnDelete(DeleteBehavior.Restrict);
+
 
             builder.Entity<TrainingPlan>()
                 .HasOne(t => t.CreatedBy)
@@ -249,6 +317,12 @@ namespace ERMS.Infrastructure.Data
                 .HasForeignKey(i => i.ScheduledById)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            builder.Entity<ApplicationEntities.Interview>()
+                .Property(i => i.InterviewFormat)
+                .HasConversion<string>()
+                .HasMaxLength(20)
+                .HasDefaultValue(Domain.Enums.InterviewFormat.Online);
+
             builder.Entity<ApprovalHistory>()
                 .HasOne(a => a.PerformedBy)
                 .WithMany()
@@ -271,12 +345,8 @@ namespace ERMS.Infrastructure.Data
                 .HasForeignKey(j => j.EnterpriseId)
                 .OnDelete(DeleteBehavior.Restrict);
             
-            // PlanDetail: Enterprise -> RecruitmentPlan -> PlanDetail vs Enterprise -> Department -> PlanDetail (PlanDetail -> Department)
-            builder.Entity<PlanDetail>()
-                .HasOne(p => p.Department)
-                .WithMany()
-                .HasForeignKey(p => p.DepartmentId)
-                .OnDelete(DeleteBehavior.Restrict);
+            // PlanDetail: Enterprise -> RecruitmentPlan -> PlanDetail vs Enterprise -> Department -> PlanDetail (PlanDetail -> Department relationship removed)
+
 
             // TrainingRequest: Enterprise -> Department -> TrainingRequest vs Enterprise -> TrainingRequest
             builder.Entity<TrainingRequest>()
@@ -311,6 +381,10 @@ namespace ERMS.Infrastructure.Data
                 .WithMany(c => c.Applications)
                 .HasForeignKey(a => a.CandidateId)
                 .OnDelete(DeleteBehavior.Restrict);
+        }
+        public async Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
+        {
+            return await Database.BeginTransactionAsync(cancellationToken);
         }
     }
 }

@@ -2,6 +2,7 @@ using ERMS.Application.Features.Departments.Commands.CreateDepartment;
 using ERMS.Application.Features.Departments.Commands.DeleteDepartment;
 using ERMS.Application.Features.Departments.Commands.UpdateDepartment;
 using ERMS.Application.Features.Departments.Queries.GetAllDepartments;
+using ERMS.Domain.Constants.Roles;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -26,6 +27,7 @@ namespace ERMS.API.Controllers
         /// Lấy danh sách phòng ban (phân trang)
         /// </summary>
         [HttpGet]
+
         public async Task<IActionResult> GetAll([FromQuery] GetAllDepartmentsQuery query)
         {
             try
@@ -43,6 +45,7 @@ namespace ERMS.API.Controllers
         /// Tạo phòng ban mới
         /// </summary>
         [HttpPost]
+        [Authorize(Roles =AppRoles.HRManager)]
         public async Task<IActionResult> Create([FromBody] CreateDepartmentCommand command)
         {
             if (!ModelState.IsValid)
@@ -66,12 +69,11 @@ namespace ERMS.API.Controllers
         /// <summary>
         /// Cập nhật phòng ban
         /// </summary>
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] UpdateDepartmentCommand command)
+        /// <remarks>ID must be provided in the request body.</remarks>
+        [HttpPut]
+        [Authorize(Roles = AppRoles.HRManager+","+AppRoles.DepartmentHead)]
+        public async Task<IActionResult> Update([FromBody] UpdateDepartmentCommand command)
         {
-            if (id != command.Id)
-                return BadRequest(new { message = "ID không khớp" });
-
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
@@ -89,12 +91,13 @@ namespace ERMS.API.Controllers
         /// <summary>
         /// Xóa phòng ban (soft delete)
         /// </summary>
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id, [FromQuery] Guid enterpriseId)
+        /// <remarks>ID and EnterpriseId must be provided in the request body.</remarks>
+        [HttpDelete]
+        public async Task<IActionResult> Delete([FromBody] DeleteDepartmentCommand command)
         {
             try
             {
-                await _mediator.Send(new DeleteDepartmentCommand { Id = id, EnterpriseId = enterpriseId });
+                await _mediator.Send(command);
                 return Ok(new { message = "Xóa phòng ban thành công" });
             }
             catch (Exception ex)
