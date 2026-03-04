@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
@@ -17,11 +19,13 @@ namespace ERMS.API
             services.AddHttpContextAccessor();
 
 
+
+            string clientUrl = configuration["ClientSettings:Url"];
             services.AddCors(options =>
             {
                 options.AddPolicy("AllowFrontend", policy =>
                 {
-                    policy.WithOrigins("http://localhost:3000", "https://localhost:3000")
+                    policy.WithOrigins("http://localhost:3000", "https://localhost:3000", clientUrl)
                           .AllowAnyHeader()
                           .AllowAnyMethod()
                           .AllowCredentials();
@@ -29,9 +33,44 @@ namespace ERMS.API
             });
 
 
-            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+                .AddCookie(options =>
+                {
+                    options.Cookie.Name = "ERMS.External";
+                    options.Cookie.HttpOnly = true;
+                    options.Cookie.SameSite = SameSiteMode.None;
+                    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+                })
                .AddJwtBearer(options =>
                {
+                 
+                   options.Events = new JwtBearerEvents
+                   {
+                       OnMessageReceived = context =>
+                       {
+                         
+                           var token = context.Request.Headers.Authorization.ToString();
+                           if (!string.IsNullOrEmpty(token) && token.StartsWith("Bearer "))
+                           {
+                               context.Token = token.Substring("Bearer ".Length).Trim();
+                           }
+                           else
+                           {
+                               
+                               if (context.Request.Cookies.TryGetValue("auth_token", out var cookieToken))
+                               {
+                                   context.Token = cookieToken;
+                               }
+                           }
+                           return Task.CompletedTask;
+                       }
+                   };
+
                    options.TokenValidationParameters = new TokenValidationParameters
                    {
                        ValidateIssuer = true,
@@ -54,12 +93,44 @@ namespace ERMS.API
 
                 options.AddFixedWindowLimiter("fixed", limiterOptions =>
                 {
-                    limiterOptions.PermitLimit = 5;
-                    limiterOptions.Window = TimeSpan.FromSeconds(10);
+                    limiterOptions.PermitLimit = 1;
+                    limiterOptions.Window = TimeSpan.FromSeconds(5);
                     limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-                    limiterOptions.QueueLimit = 2;
+                    limiterOptions.QueueLimit = 0;
                 });
             });
+
+
+
+          
+            services.Configure<IdentityOptions>(options =>
+            {
+               
+                options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
+                options.User.RequireUniqueEmail = true;
+
+               
+                options.SignIn.RequireConfirmedEmail = true;        
+                options.SignIn.RequireConfirmedPhoneNumber = false;
+                options.SignIn.RequireConfirmedAccount = false;
+
+              
+                options.Tokens.EmailConfirmationTokenProvider = TokenOptions.DefaultEmailProvider;
+                options.Tokens.ChangeEmailTokenProvider = TokenOptions.DefaultEmailProvider;
+
+              
+                options.Password.RequireDigit = true;
+                options.Password.RequiredLength = 6;
+                options.Password.RequireNonAlphanumeric = false;
+                options.Password.RequireUppercase = false;
+                options.Password.RequireLowercase = false;
+
+              
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+                options.Lockout.MaxFailedAccessAttempts = 5;
+                options.Lockout.AllowedForNewUsers = true;
+            });
+
 
 
             return services;

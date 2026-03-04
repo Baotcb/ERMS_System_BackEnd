@@ -1,5 +1,4 @@
 ﻿using ERMS.Application.Interface;
-using ERMS.Domain.Entities;
 using ERMS.Infrastructure.Data;
 using ERMS.Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
@@ -11,6 +10,9 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Microsoft.AspNetCore.Http;
+using ERMS.Domain.Entities.Identity;
+
+using ERMS.Infrastructure.Configuration;
 
 namespace ERMS.Infrastructure
 {
@@ -18,6 +20,10 @@ namespace ERMS.Infrastructure
     {
         public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
         {
+            // Bind settings using Options Pattern
+            services.Configure<CloudinarySettings>(configuration.GetSection("Cloudinary"));
+            services.Configure<GeminiSettings>(configuration.GetSection("Gemini"));
+
             // 1. DB Context
             services.AddDbContext<ERMSDbContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
@@ -26,21 +32,37 @@ namespace ERMS.Infrastructure
 
 
             // 2. Identity
-            services.AddIdentityCore<User>()
-                .AddRoles<IdentityRole<Guid>>()
-                .AddEntityFrameworkStores<ERMSDbContext>()
-                .AddDefaultTokenProviders();
+            services.AddIdentity<User, IdentityRole<Guid>>(options =>
+            {
+                options.User.RequireUniqueEmail = true;
+            })
+            .AddEntityFrameworkStores<ERMSDbContext>()
+            .AddDefaultTokenProviders();
 
 
-            
+
+
 
             services.AddScoped<ICurrentUserService, CurrentUserService>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddTransient<IEmailService, EmailService>();
+            services.AddScoped<IExcelParserService, ExcelParserService>();
+            services.AddScoped<IGoogleAuthService, GoogleAuthService>();
+
+            // CV Processing Services
+            services.AddScoped<ICloudinaryService, CloudinaryService>();
+            services.AddScoped<IPdfTextExtractor, PdfTextExtractor>();
+            services.AddHttpClient<IGeminiAIService, GeminiAIService>();
 
 
 
+            services.AddScoped<ICalendarService, CalendarService>();
+            services.AddHttpClient<IZoomService, ZoomService>();
 
+
+            // Background CV Scoring
+            services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
+            services.AddHostedService<CvScoringBackgroundService>();
 
             return services;
         }

@@ -86,4 +86,25 @@ stages:
               appName: '$(webAppName)'
               package: '$(Pipeline.Workspace)/drop/api/*.zip'
               runtimeStack: 'DOTNETCORE|10.0'
-              jsonVariableSubstitution: true
+              appSettings: >
+                -ClientSettings__Url "$(ClientSettingsUrl)"
+                -ConnectionStrings__DefaultConnection "$(ConnectionStringsDefaultConnection)"
+                -EmailSettings__SmtpServer "$(EmailSettingsSmtpServer)"
+                -EmailSettings__Port "$(EmailSettingsPort)"
+                -EmailSettings__SenderEmail "$(EmailSettingsSenderEmail)"
+                -EmailSettings__SenderName "$(EmailSettingsSenderName)"
+                -EmailSettings__Password "$(EmailSettingsPassword)"
+                -GoogleAuth__ClientId "$(GoogleAuthClientId)"
+                -GoogleAuth__ClientSecret "$(GoogleAuthClientSecret)"
+                -JwtSettings__Key "$(JwtSettingsKey)"
+                -JwtSettings__Issuer "$(JwtSettingsIssuer)"
+                -JwtSettings__Audience "$(JwtSettingsAudience)"
+                -JwtSettings__DurationInMinutes "$(JwtSettingsDurationInMinutes)"
+                -Cloudinary__CloudName "$(CloudinaryCloudName)"
+                -Cloudinary__ApiKey "$(CloudinaryApiKey)"
+                -Cloudinary__ApiSecret "$(CloudinaryApiSecret)"
+                -Gemini__ApiKey "$(GeminiApiKey)"
+                -Gemini__Model "$(GeminiModel)"
+                -Zoom__AccountId "$(ZoomAccountId)"
+                -Zoom__ClientId "$(ZoomClientId)"
+                -Zoom__ClientSecret "$(ZoomClientSecret)"

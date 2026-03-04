@@ -1,49 +1,69 @@
-﻿using ERMS.Application.Interface;
+using ERMS.Application.Interface;
+using ERMS.Domain.Constants.Roles;
 using MediatR;
+using ERMS.Domain.Constants.Recruitment;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
-namespace ERMS.Application.Features.JobPostings.Commands.DeleteJobPosting
+namespace ERMS.Application.Features.JobPostings.Commands.DeleteJobPosting;
+
+public sealed class DeleteJobPostingHandler : IRequestHandler<DeleteJobPostingCommand, Unit>
 {
-    public class DeleteJobPostingHandler : IRequestHandler<DeleteJobPostingCommand, bool>
+    private readonly IERMSDbContext _context;
+    private readonly ICurrentUserService _currentUserService;
+    private readonly ILogger<DeleteJobPostingHandler> _logger;
+
+    public DeleteJobPostingHandler(
+        IERMSDbContext context,
+        ICurrentUserService currentUserService,
+        ILogger<DeleteJobPostingHandler> logger)
     {
-        private readonly IERMSDbContext _context;
-        private readonly ICurrentUserService _currentUserService;
+        _context = context;
+        _currentUserService = currentUserService;
+        _logger = logger;
+    }
 
-        public DeleteJobPostingHandler(IERMSDbContext context, ICurrentUserService currentUserService)
+    public async Task<Unit> Handle(DeleteJobPostingCommand request, CancellationToken cancellationToken)
+    {
+        var userId = _currentUserService.UserId
+            ?? throw new UnauthorizedAccessException("User not authenticated.");
+
+        var userRoles = _currentUserService.Roles;
+        if (userRoles == null || !userRoles.Contains(AppRoles.HRManager))
         {
-            _context = context;
-            _currentUserService = currentUserService;
+            throw new UnauthorizedAccessException("Only HR Manager can delete job postings.");
         }
 
-        public async Task<bool> Handle(DeleteJobPostingCommand request, CancellationToken cancellationToken)
+        var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
+            ?? throw new UnauthorizedAccessException("User is not associated with any enterprise.");
+
+        var jobPosting = await _context.JobPostings
+            .FirstOrDefaultAsync(jp =>
+                jp.Id == request.Id
+                && jp.EnterpriseId == enterpriseId
+                && !jp.IsDeleted,
+                cancellationToken)
+            ?? throw new Exception($"JobPosting with ID {request.Id} not found.");
+
+        // Check if job posting is published and has applications
+        if (JobPostingStatus.IsPublished(jobPosting.Status))
         {
-            var userId = _currentUserService.UserId;
-            if (userId == null)
+            var hasApplications = await _context.Applications
+                .AnyAsync(a => a.JobPostingId == request.Id && !a.IsDeleted, cancellationToken);
+
+            if (hasApplications)
             {
-                throw new UnauthorizedAccessException("Không tìm thấy thông tin người dùng.");
+                throw new InvalidOperationException("Cannot delete a published job posting that has candidate applications. Please close the job posting instead.");
             }
-
-            var jobPosting = await _context.JobPostings
-                .FirstOrDefaultAsync(j => j.Id == request.Id, cancellationToken);
-
-            if (jobPosting == null)
-            {
-                throw new Exception("Không tìm thấy bài đăng tuyển dụng.");
-            }
-
-            // Kiểm tra quyền
-            if (jobPosting.CreatorId != userId.Value)
-            {
-                throw new UnauthorizedAccessException("Bạn không có quyền xóa bài đăng này.");
-            }
-
-            _context.JobPostings.Remove(jobPosting);
-            await _context.SaveChangesAsync(cancellationToken);
-
-            return true;
         }
+
+        jobPosting.IsDeleted = true;
+        jobPosting.DeletedAt = DateTime.UtcNow;
+        jobPosting.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Soft-deleted JobPosting {JobPostingId}", request.Id);
+        return Unit.Value;
     }
 }

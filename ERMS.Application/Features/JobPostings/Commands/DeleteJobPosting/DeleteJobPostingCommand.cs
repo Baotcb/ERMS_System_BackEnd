@@ -1,10 +1,8 @@
 using MediatR;
-using System;
 
-namespace ERMS.Application.Features.JobPostings.Commands.DeleteJobPosting
+namespace ERMS.Application.Features.JobPostings.Commands.DeleteJobPosting;
+
+public sealed class DeleteJobPostingCommand : IRequest<Unit>
 {
-    public class DeleteJobPostingCommand : IRequest<bool>
-    {
-        public Guid Id { get; set; }
-    }
+    public Guid Id { get; set; }
 }

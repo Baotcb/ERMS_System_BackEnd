@@ -1,11 +1,8 @@
-using ERMS.Application.Features.JobPostings.DTOs;
 using MediatR;
-using System;
 
-namespace ERMS.Application.Features.JobPostings.Queries.GetJobPostingById
+namespace ERMS.Application.Features.JobPostings.Queries.GetJobPostingById;
+
+public sealed class GetJobPostingByIdQuery : IRequest<JobPostingDetailDto?>
 {
-    public class GetJobPostingByIdQuery : IRequest<JobPostingDto>
-    {
-        public Guid Id { get; set; }
-    }
+    public Guid Id { get; set; }
 }

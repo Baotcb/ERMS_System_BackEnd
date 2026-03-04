@@ -1,63 +1,89 @@
-﻿using ERMS.Application.Features.JobPostings.DTOs;
 using ERMS.Application.Interface;
+using ERMS.Domain.Constants.Application;
+using ERMS.Domain.Constants.Roles;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
-namespace ERMS.Application.Features.JobPostings.Queries.GetJobPostingById
+namespace ERMS.Application.Features.JobPostings.Queries.GetJobPostingById;
+
+public sealed class GetJobPostingByIdHandler : IRequestHandler<GetJobPostingByIdQuery, JobPostingDetailDto?>
 {
-    public class GetJobPostingByIdHandler : IRequestHandler<GetJobPostingByIdQuery, JobPostingDto>
+    private readonly IERMSDbContext _context;
+    private readonly ICurrentUserService _currentUserService;
+
+    public GetJobPostingByIdHandler(IERMSDbContext context, ICurrentUserService currentUserService)
     {
-        private readonly IERMSDbContext _context;
+        _context = context;
+        _currentUserService = currentUserService;
+    }
 
-        public GetJobPostingByIdHandler(IERMSDbContext context)
+    public async Task<JobPostingDetailDto?> Handle(GetJobPostingByIdQuery request, CancellationToken cancellationToken)
+    {
+        var userId = _currentUserService.UserId
+            ?? throw new UnauthorizedAccessException("User not authenticated.");
+
+        var userRoles = _currentUserService.Roles;
+        if (userRoles == null || (!userRoles.Contains(AppRoles.HRManager) && !userRoles.Contains(AppRoles.Director)))
         {
-            _context = context;
+            throw new UnauthorizedAccessException("Only HR Manager or Director can view job posting details.");
         }
 
-        public async Task<JobPostingDto> Handle(GetJobPostingByIdQuery request, CancellationToken cancellationToken)
+        var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
+            ?? throw new UnauthorizedAccessException("User is not associated with any enterprise.");
+
+        var jobPosting = await _context.JobPostings
+            .Include(jp => jp.Department)
+            .Include(jp => jp.PlanDetail)
+                .ThenInclude(pd => pd!.RecruitmentPlan)
+                    .ThenInclude(rp => rp.Campaign)
+            .Where(jp => jp.Id == request.Id
+                      && jp.EnterpriseId == enterpriseId
+                      && !jp.IsDeleted)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (jobPosting == null)
+            return null;
+
+        int? quotaUsed = null;
+        if (jobPosting.PlanDetailId.HasValue)
         {
-            var jobPosting = await _context.JobPostings
-                .Include(j => j.Department)
-                .Include(j => j.Creator)
-                    .ThenInclude(c => c.User)
-                .Include(j => j.JobSkills)
-                    .ThenInclude(js => js.Skill)
-                .FirstOrDefaultAsync(j => j.Id == request.Id, cancellationToken);
-
-            if (jobPosting == null)
-            {
-                throw new System.Exception("Không tìm thấy bài đăng tuyển dụng.");
-            }
-
-            return new JobPostingDto
-            {
-                Id = jobPosting.Id,
-                Title = jobPosting.Title,
-                Description = jobPosting.Description,
-                Requirements = jobPosting.Requirements,
-                MinSalary = jobPosting.MinSalary,
-                MaxSalary = jobPosting.MaxSalary,
-                Currency = jobPosting.Currency,
-                Location = jobPosting.Location,
-                DepartmentId = jobPosting.DepartmentId,
-                DepartmentName = jobPosting.Department?.DepartmentName,
-                CreatorId = jobPosting.CreatorId,
-                CreatorName = jobPosting.Creator?.User?.FullName,
-                PostingType = jobPosting.PostingType,
-                Status = jobPosting.Status,
-                PublishDate = jobPosting.PublishDate,
-                ExpiresAt = jobPosting.ExpiresAt,
-                Skills = jobPosting.JobSkills.Select(js => new SkillDto
-                {
-                    Id = js.SkillId,
-                    Name = js.Skill.Name,
-                    Weight = js.Weight,
-                    MinProficiency = js.MinProficiency
-                }).ToList()
-            };
+            quotaUsed = await _context.Applications
+                .Where(a => a.JobPosting.PlanDetailId == jobPosting.PlanDetailId
+                         && a.Stage == ApplicationStage.Hired
+                         && !a.IsDeleted)
+                .CountAsync(cancellationToken);
         }
+
+        return new JobPostingDetailDto
+        {
+            Id = jobPosting.Id,
+            JobTitle = jobPosting.JobTitle,
+            JobCode = jobPosting.JobCode,
+            Description = jobPosting.Description,
+            Requirements = jobPosting.Requirements,
+            Benefits = jobPosting.Benefits,
+            EmploymentType = jobPosting.EmploymentType,
+            ExperienceLevel = jobPosting.ExperienceLevel,
+            EducationLevel = jobPosting.EducationLevel,
+            SalaryRangeMin = jobPosting.SalaryRangeMin,
+            SalaryRangeMax = jobPosting.SalaryRangeMax,
+            ShowSalary = jobPosting.ShowSalary,
+            Location = jobPosting.Location,
+            RemoteOption = jobPosting.RemoteOption,
+            Quantity = jobPosting.Quantity,
+            ApplicationDeadline = jobPosting.ApplicationDeadline,
+            Status = jobPosting.Status,
+            PublishedAt = jobPosting.PublishedAt,
+            ClosedAt = jobPosting.ClosedAt,
+            ViewCount = jobPosting.ViewCount,
+            ApplicationCount = jobPosting.ApplicationCount,
+            CreatedAt = jobPosting.CreatedAt,
+            DepartmentName = jobPosting.Department.DepartmentName,
+            PlanDetailId = jobPosting.PlanDetailId,
+            PlanName = jobPosting.PlanDetail?.RecruitmentPlan?.PlanName,
+            CampaignName = jobPosting.PlanDetail?.RecruitmentPlan?.Campaign?.CampaignName,
+            QuotaUsed = quotaUsed,
+            QuotaTotal = jobPosting.PlanDetail?.Quantity
+        };
     }
 }

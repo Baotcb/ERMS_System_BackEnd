@@ -1,6 +1,7 @@
 ﻿using ERMS.Application.Features.Users.DTO;
 using ERMS.Application.Interface;
 using ERMS.Domain.Entities;
+using ERMS.Domain.Entities.Identity;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -52,10 +53,8 @@ namespace ERMS.Application.Features.Users.Commands.GetProfile
                 FullName = user.FullName,
                 DateOfBirth = user.DateOfBirth,
                 Hometown = user.Hometown,
-                Phones = user.Phones,
                 DepartmentId = user.DepartmentId,
                 DepartmentName = user.Department?.DepartmentName,
-                Status = user.Status,
                 DateJoined = user.DateJoined
             };
         }

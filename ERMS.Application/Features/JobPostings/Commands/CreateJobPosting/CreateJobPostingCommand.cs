@@ -1,22 +1,14 @@
-﻿using MediatR;
-using System;
-using System.Collections.Generic;
+using MediatR;
 
-namespace ERMS.Application.Features.JobPostings.Commands.CreateJobPosting
+namespace ERMS.Application.Features.JobPostings.Commands.CreateJobPosting;
+
+public sealed class CreateJobPostingCommand : IRequest<Guid>
 {
-    public class CreateJobPostingCommand : IRequest<Guid>
-    {
-        public string Title { get; set; } = string.Empty;
-        public string? Description { get; set; }
-        public string? Requirements { get; set; }
-        public decimal? MinSalary { get; set; }
-        public decimal? MaxSalary { get; set; }
-        public string Currency { get; set; } = "VND";
-        public string? Location { get; set; }
-        public int? DepartmentId { get; set; }
-        public string PostingType { get; set; } = "External"; 
-        public DateTime? PublishDate { get; set; }
-        public DateTime? ExpiresAt { get; set; }
-        public List<int>? SkillIds { get; set; } 
-    }
+    public Guid PlanDetailId { get; set; }
+    public DateTime ApplicationDeadline { get; set; }
+    public string? TitleOverride { get; set; }
+    public string? DescriptionOverride { get; set; }
+    public string? Benefits { get; set; }
+    public string? Location { get; set; }
+    public string? RemoteOption { get; set; }
 }

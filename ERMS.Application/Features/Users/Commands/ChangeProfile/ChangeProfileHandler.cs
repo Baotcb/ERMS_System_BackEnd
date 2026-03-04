@@ -1,6 +1,7 @@
 ﻿using ERMS.Application.Features.Users.DTO;
 using ERMS.Application.Interface;
 using ERMS.Domain.Entities;
+using ERMS.Domain.Entities.Identity;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using System;
@@ -33,7 +34,6 @@ namespace ERMS.Application.Features.Users.Commands.ChangeProfile
             user.FullName = request.FullName;
             user.DateOfBirth = request.DateOfBirth;
             user.Hometown = request.Hometown;
-            user.Phones = request.Phones;
             var result = await _userManager.UpdateAsync(user);
             if (!result.Succeeded)
             {
@@ -47,10 +47,8 @@ namespace ERMS.Application.Features.Users.Commands.ChangeProfile
                 FullName = user.FullName,
                 DateOfBirth = user.DateOfBirth,
                 Hometown = user.Hometown,
-                Phones = user.Phones,
                 DepartmentId = user.DepartmentId,
                 DepartmentName = user.Department?.DepartmentName,
-                Status = user.Status,
                 DateJoined = user.DateJoined
             };
         }

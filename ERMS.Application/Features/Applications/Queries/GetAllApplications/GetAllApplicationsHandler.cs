@@ -1,136 +1,89 @@
-using ERMS.Application.Features.Applications.DTOs;
 using ERMS.Application.Interface;
+using ERMS.Domain.Constants.Roles;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
-namespace ERMS.Application.Features.Applications.Queries.GetAllApplications
+namespace ERMS.Application.Features.Applications.Queries.GetAllApplications;
+
+/// <summary>
+/// Handler for retrieving all applications across the enterprise for HR Manager
+/// </summary>
+public sealed class GetAllApplicationsHandler : IRequestHandler<GetAllApplicationsQuery, GetAllApplicationsResponse>
 {
-    public class GetAllApplicationsHandler : IRequestHandler<GetAllApplicationsQuery, PagedResponse<ApplicationDto>>
-    {
-        private readonly IERMSDbContext _context;
+    private readonly IERMSDbContext _context;
+    private readonly ICurrentUserService _currentUserService;
 
-        public GetAllApplicationsHandler(IERMSDbContext context)
+    public GetAllApplicationsHandler(IERMSDbContext context, ICurrentUserService currentUserService)
+    {
+        _context = context;
+        _currentUserService = currentUserService;
+    }
+
+    public async Task<GetAllApplicationsResponse> Handle(GetAllApplicationsQuery request, CancellationToken cancellationToken)
+    {
+        // 1. Validate current user is authenticated
+        var userId = _currentUserService.UserId
+            ?? throw new UnauthorizedAccessException("User not authenticated.");
+
+        // 2. Role check: HRManager only
+        var userRoles = _currentUserService.Roles;
+        if (userRoles == null || !userRoles.Contains(AppRoles.HRManager))
         {
-            _context = context;
+            throw new UnauthorizedAccessException("Only HR Manager can view all enterprise applications.");
         }
 
-        public async Task<PagedResponse<ApplicationDto>> Handle(GetAllApplicationsQuery request, CancellationToken cancellationToken)
+        // 3. Enterprise scoping
+        var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
+            ?? throw new UnauthorizedAccessException("User is not associated with any enterprise.");
+
+        // 4. Build query: Applications whose JobPosting belongs to the enterprise
+        var query = _context.Applications
+            .Include(a => a.Candidate)
+                .ThenInclude(c => c.User)
+            .Include(a => a.JobPosting)
+            .Include(a => a.Resume)
+            .Include(a => a.CVScreeningResult)
+            .Where(a => a.JobPosting.EnterpriseId == enterpriseId
+                     && !a.JobPosting.IsDeleted
+                     && !a.IsDeleted);
+
+        // 5. Optional stage filter
+        if (!string.IsNullOrWhiteSpace(request.StageFilter))
         {
-            var query = _context.Applications
-                .Include(a => a.Job)
-                .Include(a => a.Candidate)
-                    .ThenInclude(c => c.User)
-                .Include(a => a.Resume)
-                .AsQueryable();
+            query = query.Where(a => a.Stage == request.StageFilter);
+        }
 
-            // Filter by JobId
-            if (request.JobId.HasValue)
+        // 6. Get total count before pagination
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        // 7. Sort by AppliedAt descending (newest first), then paginate
+        var items = await query
+            .OrderByDescending(a => a.AppliedAt)
+            .Skip((request.PageNumber - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .Select(a => new EnterpriseApplicationDto
             {
-                query = query.Where(a => a.JobId == request.JobId.Value);
-            }
-
-            // Filter by CandidateId
-            if (request.CandidateId.HasValue)
-            {
-                query = query.Where(a => a.CandidateId == request.CandidateId.Value);
-            }
-
-            // Filter by Status
-            if (!string.IsNullOrEmpty(request.Status))
-            {
-                query = query.Where(a => a.Status == request.Status);
-            }
-
-            // Filter by ApplicantType
-            if (!string.IsNullOrEmpty(request.ApplicantType))
-            {
-                query = query.Where(a => a.ApplicantType == request.ApplicantType);
-            }
-
-            // Filter by Category
-            if (!string.IsNullOrEmpty(request.Category))
-            {
-                query = query.Where(a => a.Category == request.Category);
-            }
-
-            // Search: Tìm kiếm theo JobTitle, CandidateName, CandidateEmail
-            if (!string.IsNullOrEmpty(request.SearchTerm))
-            {
-                var searchTerm = request.SearchTerm.ToLower();
-                query = query.Where(a =>
-                    (a.Job != null && a.Job.Title.ToLower().Contains(searchTerm)) ||
-                    (a.Candidate != null && a.Candidate.User != null && 
-                     (!string.IsNullOrEmpty(a.Candidate.User.FullName) && a.Candidate.User.FullName.ToLower().Contains(searchTerm))) ||
-                    (a.Candidate != null && a.Candidate.User != null && 
-                     (!string.IsNullOrEmpty(a.Candidate.User.Email) && a.Candidate.User.Email.ToLower().Contains(searchTerm)))
-                );
-            }
-
-            // Get total count before pagination
-            var totalCount = await query.CountAsync(cancellationToken);
-
-            // Sorting
-            switch (request.SortBy?.ToLower())
-            {
-                case "matchingscore":
-                    query = request.SortDescending
-                        ? query.OrderByDescending(a => a.MatchingScore ?? 0)
-                        : query.OrderBy(a => a.MatchingScore ?? 0);
-                    break;
-                case "createdat":
-                    query = request.SortDescending
-                        ? query.OrderByDescending(a => a.CreatedAt)
-                        : query.OrderBy(a => a.CreatedAt);
-                    break;
-                case "appliedat":
-                default:
-                    query = request.SortDescending
-                        ? query.OrderByDescending(a => a.AppliedAt)
-                        : query.OrderBy(a => a.AppliedAt);
-                    break;
-            }
-
-            // Pagination
-            var applications = await query
-                .Skip((request.PageNumber - 1) * request.PageSize)
-                .Take(request.PageSize)
-                .ToListAsync(cancellationToken);
-
-            var applicationDtos = applications.Select(a => new ApplicationDto
-            {
-                Id = a.Id,
-                JobId = a.JobId,
-                JobTitle = a.Job?.Title,
-                CandidateId = a.CandidateId,
-                CandidateName = a.Candidate?.User?.FullName,
-                CandidateEmail = a.Candidate?.User?.Email,
-                ResumeId = a.ResumeId,
-                ResumeTitle = a.Resume?.Title,
-                CvUrl = a.CvUrl,
-                CoverLetter = a.CoverLetter,
-                MatchingScore = a.MatchingScore,
-                Category = a.Category,
-                ApplicantType = a.ApplicantType,
+                ApplicationId = a.Id,
+                Stage = a.Stage,
                 Status = a.Status,
                 AppliedAt = a.AppliedAt,
-                WithdrawnAt = a.WithdrawnAt,
-                WithdrawReason = a.WithdrawReason,
-                CreatedAt = a.CreatedAt,
-                UpdatedAt = a.UpdatedAt
-            }).ToList();
+                CandidateId = a.CandidateId,
+                CandidateName = a.Candidate.User.FullName,
+                CandidateEmail = a.Candidate.User.Email,
+                CandidatePhone = a.Candidate.User.PhoneNumber,
+                JobPostingId = a.JobPostingId,
+                JobTitle = a.JobPosting.JobTitle,
+                ResumeUrl = a.Resume != null ? a.Resume.FileUrl : null,
+                OverallScore = a.CVScreeningResult != null ? a.CVScreeningResult.OverallScore : null
+            })
+            .ToListAsync(cancellationToken);
 
-            return new PagedResponse<ApplicationDto>
-            {
-                Data = applicationDtos,
-                PageNumber = request.PageNumber,
-                PageSize = request.PageSize,
-                TotalCount = totalCount
-            };
-        }
+        return new GetAllApplicationsResponse
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageNumber = request.PageNumber,
+            PageSize = request.PageSize
+        };
     }
 }
-

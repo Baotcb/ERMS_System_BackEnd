@@ -1,61 +1,73 @@
-﻿using ERMS.Application.Interface;
+using ERMS.Application.Interface;
+using ERMS.Domain.Constants.Roles;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
-namespace ERMS.Application.Features.JobPostings.Commands.UpdateJobPosting
+namespace ERMS.Application.Features.JobPostings.Commands.UpdateJobPosting;
+
+public sealed class UpdateJobPostingHandler : IRequestHandler<UpdateJobPostingCommand, Unit>
 {
-    public class UpdateJobPostingHandler : IRequestHandler<UpdateJobPostingCommand, bool>
+    private readonly IERMSDbContext _context;
+    private readonly ICurrentUserService _currentUserService;
+    private readonly ILogger<UpdateJobPostingHandler> _logger;
+
+    public UpdateJobPostingHandler(
+        IERMSDbContext context,
+        ICurrentUserService currentUserService,
+        ILogger<UpdateJobPostingHandler> logger)
     {
-        private readonly IERMSDbContext _context;
-        private readonly ICurrentUserService _currentUserService;
+        _context = context;
+        _currentUserService = currentUserService;
+        _logger = logger;
+    }
 
-        public UpdateJobPostingHandler(IERMSDbContext context, ICurrentUserService currentUserService)
+    public async Task<Unit> Handle(UpdateJobPostingCommand request, CancellationToken cancellationToken)
+    {
+        var userId = _currentUserService.UserId
+            ?? throw new UnauthorizedAccessException("User not authenticated.");
+
+        var userRoles = _currentUserService.Roles;
+        if (userRoles == null || !userRoles.Contains(AppRoles.HRManager))
         {
-            _context = context;
-            _currentUserService = currentUserService;
+            throw new UnauthorizedAccessException("Only HR Manager can update job postings.");
         }
 
-        public async Task<bool> Handle(UpdateJobPostingCommand request, CancellationToken cancellationToken)
+        var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
+            ?? throw new UnauthorizedAccessException("User is not associated with any enterprise.");
+
+        var jobPosting = await _context.JobPostings
+            .FirstOrDefaultAsync(jp =>
+                jp.Id == request.Id
+                && jp.EnterpriseId == enterpriseId
+                && !jp.IsDeleted,
+                cancellationToken)
+            ?? throw new Exception($"JobPosting with ID {request.Id} not found.");
+
+        // Update only allowed fields
+        if (request.Description != null)
+            jobPosting.Description = request.Description.Trim();
+
+        if (request.Benefits != null)
+            jobPosting.Benefits = request.Benefits.Trim();
+
+        if (request.ApplicationDeadline.HasValue)
         {
-            var userId = _currentUserService.UserId;
-            if (userId == null)
-            {
-                throw new UnauthorizedAccessException("Không tìm thấy thông tin người dùng.");
-            }
-
-            var jobPosting = await _context.JobPostings
-                .FirstOrDefaultAsync(j => j.Id == request.Id, cancellationToken);
-
-            if (jobPosting == null)
-            {
-                throw new Exception("Không tìm thấy bài đăng tuyển dụng.");
-            }
-
-            // Kiểm tra quyền (chỉ creator hoặc admin mới được sửa)
-            if (jobPosting.CreatorId != userId.Value)
-            {
-                throw new UnauthorizedAccessException("Bạn không có quyền chỉnh sửa bài đăng này.");
-            }
-
-            jobPosting.Title = request.Title;
-            jobPosting.Description = request.Description;
-            jobPosting.Requirements = request.Requirements;
-            jobPosting.MinSalary = request.MinSalary;
-            jobPosting.MaxSalary = request.MaxSalary;
-            jobPosting.Currency = request.Currency;
-            jobPosting.Location = request.Location;
-            jobPosting.DepartmentId = request.DepartmentId;
-            jobPosting.PostingType = request.PostingType;
-            jobPosting.Status = request.Status;
-            jobPosting.PublishDate = request.PublishDate;
-            jobPosting.ExpiresAt = request.ExpiresAt;
-
-            await _context.SaveChangesAsync(cancellationToken);
-
-            return true;
+            if (request.ApplicationDeadline.Value <= DateTime.UtcNow)
+                throw new Exception("Application deadline must be in the future.");
+            jobPosting.ApplicationDeadline = request.ApplicationDeadline.Value;
         }
+
+        if (request.Location != null)
+            jobPosting.Location = request.Location.Trim();
+
+        if (request.RemoteOption != null)
+            jobPosting.RemoteOption = request.RemoteOption.Trim();
+
+        jobPosting.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Updated JobPosting {JobPostingId}", request.Id);
+        return Unit.Value;
     }
 }

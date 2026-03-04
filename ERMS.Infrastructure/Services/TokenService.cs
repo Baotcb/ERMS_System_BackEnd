@@ -1,5 +1,6 @@
 ﻿using ERMS.Application.Interface;
 using ERMS.Domain.Entities;
+using ERMS.Domain.Entities.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
