@@ -28,4 +28,7 @@ public sealed class RecruitmentCampaignDetailDto
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public int TotalPlansCount { get; set; }
+    public decimal UsedBudget { get; set; }
+    public decimal PendingBudget { get; set; }
+    public decimal RemainingBudget { get; set; }
 }
