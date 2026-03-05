@@ -47,7 +47,16 @@ public sealed class GetRecruitmentCampaignByIdHandler : IRequestHandler<GetRecru
                 CreatedByName = c.CreatedBy.FullName,
                 CreatedAt = c.CreatedAt,
                 UpdatedAt = c.UpdatedAt,
-                TotalPlansCount = c.RecruitmentPlans.Count(p => !p.IsDeleted)
+                TotalPlansCount = c.RecruitmentPlans.Count(p => !p.IsDeleted),
+                UsedBudget = c.RecruitmentPlans
+                    .Where(p => !p.IsDeleted && p.Status == "Approved")
+                    .Sum(p => p.TotalBudget ?? 0),
+                PendingBudget = c.RecruitmentPlans
+                    .Where(p => !p.IsDeleted && p.Status == "Pending")
+                    .Sum(p => p.TotalBudget ?? 0),
+                RemainingBudget = (c.TotalBudgetCeiling ?? 0) - c.RecruitmentPlans
+                    .Where(p => !p.IsDeleted && p.Status == "Approved")
+                    .Sum(p => p.TotalBudget ?? 0)
             })
             .FirstOrDefaultAsync(cancellationToken);
 

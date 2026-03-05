@@ -8,6 +8,7 @@ public sealed class GetAllRecruitmentPlansQuery : IRequest<GetAllRecruitmentPlan
     public int PageSize { get; set; } = 20;
     public string? Search { get; set; }
     public string? Status { get; set; }
+    public Guid? CampaignId { get; set; }
 }
 
 public sealed class GetAllRecruitmentPlansResult
