@@ -1,11 +1,21 @@
-using ERMS.Application.Features.Applications.Commands.SubmitApplication;
-using ERMS.Application.Features.Applications.Commands.WithdrawApplication;
-using ERMS.Application.Features.Applications.Commands.ForwardApplication;
+using ERMS.Application.Features.Applications.Commands.AcceptOffer;
+using ERMS.Application.Features.Applications.Queries.GetAllApplications;
+using ERMS.Application.Features.Applications.Commands.ConfirmHire;
 using ERMS.Application.Features.Applications.Commands.AssignInterviewer;
 using ERMS.Application.Features.Applications.Commands.ConfirmInterviewSchedule;
-using ERMS.Application.Features.Applications.Commands.SubmitInterviewFeedback;
+using ERMS.Application.Features.Applications.Commands.CreateOffer;
+using ERMS.Application.Features.Applications.Commands.ForwardApplication;
+using ERMS.Application.Features.Applications.Commands.RejectOffer;
+using ERMS.Application.Features.Applications.Commands.SubmitApplication;
 using ERMS.Application.Features.Applications.Commands.SubmitFinalDecision;
+using ERMS.Application.Features.Applications.Commands.SubmitInterviewFeedback;
+using ERMS.Application.Features.Applications.Commands.WithdrawApplication;
+using ERMS.Application.Features.Applications.Queries.GetAllOfferByHR;
 using ERMS.Application.Features.Applications.Queries.GetApplicationsByJob;
+using ERMS.Application.Features.Applications.Queries.GetMyApplications;
+using ERMS.Application.Features.Applications.Queries.GetMyOffers;
+using ERMS.Application.Features.Applications.Queries.GetOfferByIdOfHR;
+using ERMS.Application.Features.Applications.Queries.VerifyOfferAccess;
 using ERMS.Application.Features.Interviews.Queries.GetAllInterviews;
 using ERMS.Application.Features.Interviews.Queries.GetInterviewFeedbackById;
 using ERMS.Application.Features.Interviews.Queries.GetInterviewsForFeedback;
@@ -524,6 +534,358 @@ public class ApplicationsController : ControllerBase
         catch (UnauthorizedAccessException ex)
         {
             return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get the current candidate's application history
+    /// </summary>
+    /// <remarks>
+    /// **Access:** Candidate only
+    /// 
+    /// Returns a paginated list of all applications submitted by the authenticated candidate.
+    /// Includes job details, current stage/status, AI screening score, and flags for interview/offer existence.
+    /// </remarks>
+    /// <param name="pageNumber">Page number (default: 1)</param>
+    /// <param name="pageSize">Items per page (default: 20)</param>
+    /// <param name="stageFilter">Optional filter by stage (e.g., "Applied", "Shortlisted", "Offered")</param>
+    /// <returns>Paginated list of candidate's applications</returns>
+    [HttpGet("my-applications")]
+    [Authorize(Roles = AppRoles.Candidate)]
+    [ProducesResponseType(typeof(GetMyApplicationsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetMyApplications(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? stageFilter = null)
+    {
+        try
+        {
+            var query = new GetMyApplicationsQuery
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                StageFilter = stageFilter
+            };
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get the current candidate's job offers
+    /// </summary>
+    /// <remarks>
+    /// **Access:** Candidate only
+    /// 
+    /// Returns a paginated list of all offers associated with the candidate's applications.
+    /// Includes offer details, job title, department, salary, and current status.
+    /// </remarks>
+    /// <param name="pageNumber">Page number (default: 1)</param>
+    /// <param name="pageSize">Items per page (default: 20)</param>
+    /// <returns>Paginated list of candidate's offers</returns>
+    [HttpGet("my-offers")]
+    [Authorize(Roles = AppRoles.Candidate)]
+    [ProducesResponseType(typeof(GetMyOffersResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetMyOffers(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20)
+    {
+        try
+        {
+            var query = new GetMyOffersQuery
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Accept a job offer (Candidate only)
+    /// </summary>
+    /// <remarks>
+    /// **Access:** Candidate only
+    /// 
+    /// Allows a candidate to accept an offer that has been sent to them.
+    /// The offer must have status "Sent" and must not be expired.
+    /// Upon acceptance, the offer status changes to "Accepted".
+    /// The application stage remains unchanged — the final "Hired" state is reserved for HR's Confirm Hire action.
+    /// **OfferId must be provided in the request body.**
+    /// </remarks>
+    /// <param name="command">Accept command with OfferId</param>
+    /// <returns>Updated offer and application status</returns>
+    [HttpPatch("accept-offer")]
+    [Authorize(Roles = AppRoles.Candidate)]
+    [ProducesResponseType(typeof(AcceptOfferResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> AcceptOffer([FromBody] AcceptOfferCommand command)
+    {
+        try
+        {
+            var result = await _mediator.Send(command);
+            return Ok(new
+            {
+                message = "Offer accepted successfully.",
+                data = result
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Reject a job offer (Candidate only)
+    /// </summary>
+    /// <remarks>
+    /// **Access:** Candidate only
+    /// 
+    /// Allows a candidate to reject an offer that has been sent to them.
+    /// The offer must have status "Sent".
+    /// Upon rejection, the offer status changes to "Rejected" but the application stage remains "Offered".
+    /// An optional CandidateNote can be provided to explain the rejection.
+    /// **OfferId must be provided in the request body.**
+    /// </remarks>
+    /// <param name="command">Reject command with OfferId and optional CandidateNote</param>
+    /// <returns>Updated offer status</returns>
+    [HttpPatch("reject-offer")]
+    [Authorize(Roles = AppRoles.Candidate)]
+    [ProducesResponseType(typeof(RejectOfferResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> RejectOffer([FromBody] RejectOfferCommand command)
+    {
+        try
+        {
+            var result = await _mediator.Send(command);
+            return Ok(new
+            {
+                message = "Offer rejected successfully.",
+                data = result
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+    [HttpPost("offers")]
+    [Authorize(Roles = AppRoles.HRManager)]
+    public async Task<IActionResult> CreateOffer([FromBody] CreateOfferCommand command)
+    {
+        try
+        {
+            var offerId = await _mediator.Send(command);
+            return Ok(new
+            {
+                message = "Offer created and sent to candidate successfully.",
+                offerId = offerId
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+
+    [HttpGet("hr/my-offers")]
+    [Authorize(Roles = $"{AppRoles.HRManager},{AppRoles.Director}")]
+    public async Task<IActionResult> GetMyCreatedOffers()
+    {
+        try
+        {
+            var query = new GetAllOfferByHRQuery();
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+
+    [HttpGet("hr/my-offers/{id}")]
+    [Authorize(Roles = $"{AppRoles.HRManager},{AppRoles.Director}")]
+    public async Task<IActionResult> GetCreatedOfferById(Guid id)
+    {
+        try
+        {
+            var query = new GetOfferByIdOfHRQuery { Id = id };
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+
+    [HttpGet("offers/verify-access")]
+    [AllowAnonymous]
+    public async Task<IActionResult> VerifyOfferAccess(
+    [FromQuery] Guid offerId,
+    [FromQuery] string token,
+    [FromQuery] string email)
+    {
+        try
+        {
+            var query = new VerifyOfferAccessQuery
+            {
+                OfferId = offerId,
+                Token = token,
+                Email = email
+            };
+
+            var result = await _mediator.Send(query);
+
+            if (!result.IsValid)
+            {
+                return BadRequest(new { message = result.Message });
+            }
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Confirm hiring a candidate after contract signing (HR Manager only)
+    /// </summary>
+    /// <remarks>
+    /// **Access:** HR Manager only
+    /// 
+    /// Triggered after the candidate physically signs the contract.
+    /// Creates a new corporate User account (Employee role) and Employee profile.
+    /// Updates the Application stage to "Hired".
+    /// Sends the generated account credentials to the new employee via email.
+    /// **ApplicationId and EmployeeEmail must be provided in the request body.**
+    /// </remarks>
+    /// <param name="command">Confirm hire command with ApplicationId and EmployeeEmail</param>
+    /// <returns>Created employee details</returns>
+    [HttpPost("confirm-hire")]
+    [Authorize(Roles = AppRoles.HRManager)]
+    [ProducesResponseType(typeof(ConfirmHireResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> ConfirmHire([FromBody] ConfirmHireCommand command)
+    {
+        try
+        {
+            var result = await _mediator.Send(command);
+            return Ok(new
+            {
+                message = "Hire confirmed successfully. Employee account created.",
+                data = result
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get all applications across the enterprise (HR Manager only)
+    /// </summary>
+    /// <remarks>
+    /// **Access:** HR Manager only
+    /// 
+    /// Returns a paginated list of all applications submitted to any job posting
+    /// belonging to the authenticated HR's enterprise.
+    /// Includes basic candidate info, job title, stage, applied date, CV URL, and AI overall score.
+    /// </remarks>
+    /// <param name="pageNumber">Page number (default: 1)</param>
+    /// <param name="pageSize">Items per page (default: 20)</param>
+    /// <param name="stageFilter">Optional filter by stage (e.g., "Applied", "Shortlisted")</param>
+    /// <returns>Paginated list of enterprise applications</returns>
+    [HttpGet("enterprise")]
+    [Authorize(Roles = AppRoles.HRManager)]
+    [ProducesResponseType(typeof(GetAllApplicationsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetAllApplications(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? stageFilter = null)
+    {
+        try
+        {
+            var query = new GetAllApplicationsQuery
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                StageFilter = stageFilter
+            };
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
         }
         catch (Exception ex)
         {

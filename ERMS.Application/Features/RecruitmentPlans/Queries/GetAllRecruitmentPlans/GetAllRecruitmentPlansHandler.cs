@@ -57,6 +57,12 @@ public sealed class GetAllRecruitmentPlansHandler : IRequestHandler<GetAllRecrui
             query = query.Where(rp => rp.Status == request.Status);
         }
 
+        // Campaign filter
+        if (request.CampaignId.HasValue && request.CampaignId.Value != Guid.Empty)
+        {
+            query = query.Where(rp => rp.CampaignId == request.CampaignId.Value);
+        }
+
         var totalCount = await query.CountAsync(cancellationToken);
 
         var items = await query
