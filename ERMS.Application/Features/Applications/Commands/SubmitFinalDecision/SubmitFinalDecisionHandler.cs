@@ -35,22 +35,22 @@ public sealed class SubmitFinalDecisionHandler : IRequestHandler<SubmitFinalDeci
     {
         // 1. Validate current user is authenticated
         var userId = _currentUserService.UserId
-            ?? throw new UnauthorizedAccessException("User not authenticated.");
+            ?? throw new UnauthorizedAccessException("Người dùng chưa được xác thực.");
 
         // 2. Role check: DepartmentHead ONLY
         var userRoles = _currentUserService.Roles;
         if (userRoles == null || !userRoles.Contains(AppRoles.DepartmentHead))
         {
-            throw new UnauthorizedAccessException("Only Department Head can submit the final interview decision.");
+            throw new UnauthorizedAccessException("Chỉ Trưởng phòng mới có quyền đưa ra quyết định phỏng vấn cuối cùng.");
         }
 
         // 3. Get user's department
         var userDepartmentId = await _currentUserService.GetDepartmentIdAsync()
-            ?? throw new UnauthorizedAccessException("User is not associated with any department.");
+            ?? throw new UnauthorizedAccessException("Người dùng không thuộc phòng ban nào.");
 
         // 4. Get enterprise ID
         var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
-            ?? throw new UnauthorizedAccessException("User is not associated with any enterprise.");
+            ?? throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
 
         // 5. Load the interview with Application, JobPosting, and Participants
         var interview = await _context.Interviews
@@ -62,24 +62,24 @@ public sealed class SubmitFinalDecisionHandler : IRequestHandler<SubmitFinalDeci
                 i.ApplicationId == request.ApplicationId &&
                 !i.IsDeleted,
                 cancellationToken)
-            ?? throw new Exception($"Interview with ID {request.InterviewId} not found for Application {request.ApplicationId}.");
+            ?? throw new Exception($"Không tìm thấy buổi phỏng vấn với ID {request.InterviewId} cho hồ sơ {request.ApplicationId}.");
 
         // 6. Validate enterprise ownership
         if (interview.Application.JobPosting.EnterpriseId != enterpriseId)
         {
-            throw new UnauthorizedAccessException("You do not have permission to access this application.");
+            throw new UnauthorizedAccessException("Bạn không có quyền truy cập hồ sơ ứng tuyển này.");
         }
 
         // 7. Department security check
         if (interview.Application.JobPosting.DepartmentId != userDepartmentId)
         {
-            throw new UnauthorizedAccessException("You can only make decisions for interviews in your department.");
+            throw new UnauthorizedAccessException("Bạn chỉ có thể đưa ra quyết định cho các buổi phỏng vấn trong phòng ban mình.");
         }
 
         // 8. Validate interview is in 'Scheduled' status
         if (!interview.Status.Equals(InterviewStatus.Scheduled, StringComparison.OrdinalIgnoreCase))
         {
-            throw new Exception($"Cannot submit decision. Interview status is '{interview.Status}', expected '{InterviewStatus.Scheduled}'.");
+            throw new Exception($"Không thể gửi quyết định. Trạng thái phỏng vấn là '{interview.Status}', yêu cầu '{InterviewStatus.Scheduled}'.");
         }
 
         // BEGIN TRANSACTION
@@ -142,7 +142,7 @@ public sealed class SubmitFinalDecisionHandler : IRequestHandler<SubmitFinalDeci
                         if (validEmployeeIds.Count != request.NextRoundInterviewerIds!.Count)
                         {
                             var missingIds = request.NextRoundInterviewerIds.Where(id => !validEmployeeIds.Contains(id)).ToList();
-                            throw new Exception($"Some new interviewers were not found or do not belong to your enterprise: {string.Join(", ", missingIds)}");
+                            throw new Exception($"Một số người phỏng vấn mới không được tìm thấy hoặc không thuộc doanh nghiệp của bạn: {string.Join(", ", missingIds)}");
                         }
                     }
 

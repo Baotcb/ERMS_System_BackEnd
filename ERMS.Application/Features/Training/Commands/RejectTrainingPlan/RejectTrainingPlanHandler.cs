@@ -45,10 +45,10 @@ namespace ERMS.Application.Features.Training.Commands.RejectTrainingPlan
                     cancellationToken);
 
             if (plan == null)
-                throw new Exception("Training plan not found");
+                throw new Exception("Không tìm thấy kế hoạch đào tạo");
 
             if (plan.Status == "Approved")
-                throw new Exception("Approved plan cannot be rejected");
+                throw new Exception("Kế hoạch đã được phê duyệt, không thể từ chối");
 
             // ✅ Reject
             plan.Status = "Rejected";

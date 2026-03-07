@@ -1,4 +1,4 @@
-using ERMS.Application.Features.Employees.Commands.DeleteEmployee;
+﻿using ERMS.Application.Features.Employees.Commands.DeleteEmployee;
 using ERMS.Application.Interface;
 using ERMS.Domain.Entities.Identity;
 using ERMS.Domain.Entities.Organization;
@@ -47,7 +47,7 @@ public class DeleteEmployeeHandlerTest
         var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
             _handler.Handle(command, CancellationToken.None));
 
-        exception.Message.Should().Be("User not belong to enterprise");
+        exception.Message.Should().Be("Người dùng không thuộc doanh nghiệp nào.");
     }
 
     [Fact]

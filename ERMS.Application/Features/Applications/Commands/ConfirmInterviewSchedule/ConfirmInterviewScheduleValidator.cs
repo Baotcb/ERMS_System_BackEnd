@@ -14,46 +14,46 @@ public sealed class ConfirmInterviewScheduleValidator : AbstractValidator<Confir
     {
         RuleFor(x => x.ApplicationId)
             .NotEmpty()
-            .WithMessage("ApplicationId is required.");
+            .WithMessage("ApplicationId là bắt buộc.");
 
         RuleFor(x => x.InterviewFormat)
             .IsInEnum()
-            .WithMessage("InterviewFormat must be a valid value (Online or Offline).");
+            .WithMessage("Hình thức phỏng vấn phải hợp lệ (Online hoặc Offline).");
 
         RuleFor(x => x.ScheduledAt)
             .NotEmpty()
-            .WithMessage("ScheduledAt is required.")
+            .WithMessage("Thời gian phỏng vấn là bắt buộc.")
             .GreaterThan(DateTime.UtcNow)
-            .WithMessage("ScheduledAt must be in the future.");
+            .WithMessage("Thời gian phỏng vấn phải trong tương lai.");
 
         RuleFor(x => x.Duration)
             .InclusiveBetween(MinDuration, MaxDuration)
-            .WithMessage($"Duration must be between {MinDuration} and {MaxDuration} minutes.");
+            .WithMessage($"Thời lượng phải từ {MinDuration} đến {MaxDuration} phút.");
 
         RuleFor(x => x.Location)
             .MaximumLength(MaxLocationLength)
             .When(x => !string.IsNullOrEmpty(x.Location))
-            .WithMessage($"Location must not exceed {MaxLocationLength} characters.");
+            .WithMessage($"Địa điểm không được vượt quá {MaxLocationLength} ký tự.");
 
         RuleFor(x => x.Location)
             .NotEmpty()
             .When(x => x.InterviewFormat == InterviewFormat.Offline)
-            .WithMessage("Location is required for offline interviews.");
+            .WithMessage("Địa điểm là bắt buộc cho phỏng vấn trực tiếp.");
 
         RuleFor(x => x.MeetingLink)
             .NotEmpty()
             .When(x => x.InterviewFormat == InterviewFormat.Online)
-            .WithMessage("MeetingLink is required for online interviews.");
+            .WithMessage("Link cuộc hỌp là bắt buộc cho phỏng vấn trực tuyến.");
 
         RuleFor(x => x.MeetingLink)
             .Must(link => Uri.TryCreate(link, UriKind.Absolute, out var uri)
                 && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
             .When(x => !string.IsNullOrEmpty(x.MeetingLink))
-            .WithMessage("MeetingLink must be a valid HTTP/HTTPS URL.");
+            .WithMessage("Link cuộc hỌp phải là URL HTTP/HTTPS hợp lệ.");
 
         RuleFor(x => x.MeetingLink)
             .MaximumLength(MaxMeetingLinkLength)
             .When(x => !string.IsNullOrEmpty(x.MeetingLink))
-            .WithMessage($"MeetingLink must not exceed {MaxMeetingLinkLength} characters.");
+            .WithMessage($"Link cuộc hỌp không được vượt quá {MaxMeetingLinkLength} ký tự.");
     }
 }

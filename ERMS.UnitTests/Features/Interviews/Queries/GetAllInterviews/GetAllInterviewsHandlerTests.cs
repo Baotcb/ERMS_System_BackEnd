@@ -1,4 +1,4 @@
-using ERMS.Application.Features.Interviews.Queries.GetAllInterviews;
+﻿using ERMS.Application.Features.Interviews.Queries.GetAllInterviews;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Roles;
 using ERMS.Domain.Entities.Application;
@@ -65,7 +65,7 @@ public class GetAllInterviewsHandlerTests
         var ex = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
             _handler.Handle(query, CancellationToken.None));
         
-        ex.Message.Should().Be("Only HR Managers or Directors can view all interviews.");
+        ex.Message.Should().Be("Chỉ HR Manager hoặc Giám đốc mới có quyền xem tất cả buổi phỏng vấn.");
     }
 
     [Fact]
@@ -82,7 +82,7 @@ public class GetAllInterviewsHandlerTests
         var ex = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
             _handler.Handle(query, CancellationToken.None));
             
-        ex.Message.Should().Be("User is not associated with any enterprise.");
+        ex.Message.Should().Be("Người dùng không thuộc doanh nghiệp nào.");
     }
 
     [Fact]

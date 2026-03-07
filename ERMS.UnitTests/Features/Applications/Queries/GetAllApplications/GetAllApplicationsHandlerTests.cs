@@ -1,4 +1,4 @@
-using ERMS.Application.Features.Applications.Queries.GetAllApplications;
+﻿using ERMS.Application.Features.Applications.Queries.GetAllApplications;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Application;
 using ERMS.Domain.Constants.Roles;
@@ -170,7 +170,7 @@ public class GetAllApplicationsHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(query, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("User not authenticated.");
+            .WithMessage("Người dùng chưa được xác thực.");
     }
 
     [Fact]
@@ -185,7 +185,7 @@ public class GetAllApplicationsHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(query, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("Only HR Manager can view all enterprise applications.");
+            .WithMessage("Chỉ HR Manager mới có quyền xem tất cả hồ sơ ứng tuyển của doanh nghiệp.");
     }
 
     [Fact]
@@ -200,7 +200,7 @@ public class GetAllApplicationsHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(query, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("Only HR Manager can view all enterprise applications.");
+            .WithMessage("Chỉ HR Manager mới có quyền xem tất cả hồ sơ ứng tuyển của doanh nghiệp.");
     }
 
     [Fact]
@@ -215,7 +215,7 @@ public class GetAllApplicationsHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(query, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("Only HR Manager can view all enterprise applications.");
+            .WithMessage("Chỉ HR Manager mới có quyền xem tất cả hồ sơ ứng tuyển của doanh nghiệp.");
     }
 
     [Fact]
@@ -231,7 +231,7 @@ public class GetAllApplicationsHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(query, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("User is not associated with any enterprise.");
+            .WithMessage("Người dùng không thuộc doanh nghiệp nào.");
     }
 
     #endregion

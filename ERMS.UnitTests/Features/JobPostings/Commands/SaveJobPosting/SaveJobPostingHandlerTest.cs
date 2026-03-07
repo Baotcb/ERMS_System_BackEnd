@@ -1,4 +1,4 @@
-using ERMS.Application.Features.JobPostings.Commands.SaveJobPosting;
+﻿using ERMS.Application.Features.JobPostings.Commands.SaveJobPosting;
 using ERMS.Application.Interface;
 using ERMS.Domain.Entities.Candidate;
 using ERMS.Domain.Entities.Recruitment;
@@ -42,7 +42,7 @@ namespace ERMS.UnitTests.Features.JobPostings.Commands.SaveJobPosting
             // Act & Assert
             await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
                 .Should().ThrowAsync<InvalidOperationException>()
-                .WithMessage("Candidate profile not found");
+                .WithMessage("Không tìm thấy hồ sơ ứng viên");
         }
 
         [Fact]
@@ -61,7 +61,7 @@ namespace ERMS.UnitTests.Features.JobPostings.Commands.SaveJobPosting
             // Act & Assert
             await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
                 .Should().ThrowAsync<InvalidOperationException>()
-                .WithMessage("Job posting not found");
+                .WithMessage("Không tìm thấy tin tuyển dụng");
         }
 
         [Fact]

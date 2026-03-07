@@ -1,4 +1,4 @@
-using ERMS.Application.Features.Applications.Commands.ConfirmHire;
+﻿using ERMS.Application.Features.Applications.Commands.ConfirmHire;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Application;
 using ERMS.Domain.Constants.Roles;
@@ -234,7 +234,7 @@ public class ConfirmHireCommandHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("User not authenticated.");
+            .WithMessage("Người dùng chưa được xác thực.");
     }
 
     [Fact]
@@ -263,7 +263,7 @@ public class ConfirmHireCommandHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("*enterprise*");
+            .WithMessage("*doanh nghiệp*");
     }
 
     [Fact]
@@ -296,7 +296,7 @@ public class ConfirmHireCommandHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("*Application*not found*");
+            .WithMessage("*Không tìm thấy hồ sơ ứng tuyển**");
     }
 
     #endregion
@@ -314,7 +314,7 @@ public class ConfirmHireCommandHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("*Cannot confirm hire*Accepted*");
+            .WithMessage("*Không thể xác nhận tuyển dụng*Accepted*");
     }
 
     [Fact]
@@ -328,7 +328,7 @@ public class ConfirmHireCommandHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("*does not have an active offer*");
+            .WithMessage("*không có đề nghị đang hoạt động*");
     }
 
     [Fact]
@@ -342,7 +342,7 @@ public class ConfirmHireCommandHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("*already been confirmed as hired*");
+            .WithMessage("*đã được xác nhận tuyển dụng*");
     }
 
     [Fact]

@@ -1,4 +1,4 @@
-using ERMS.Application.Features.Interviews.Queries.GetMyInterviews;
+﻿using ERMS.Application.Features.Interviews.Queries.GetMyInterviews;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Application;
 using ERMS.Domain.Entities.Application;
@@ -171,7 +171,7 @@ public class GetMyInterviewsHandlerTests
 
         // Assert
         await act.Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("User not authenticated.");
+            .WithMessage("Người dùng chưa được xác thực.");
     }
 
     [Fact]
@@ -187,7 +187,7 @@ public class GetMyInterviewsHandlerTests
 
         // Assert
         await act.Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("User is not associated with any enterprise.");
+            .WithMessage("Người dùng không thuộc doanh nghiệp nào.");
     }
 
     [Fact]
@@ -205,7 +205,7 @@ public class GetMyInterviewsHandlerTests
 
         // Assert
         await act.Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("User is not an employee.");
+            .WithMessage("Người dùng không phải là nhân viên.");
     }
 
     [Fact]

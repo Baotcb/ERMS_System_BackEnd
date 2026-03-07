@@ -15,35 +15,35 @@ public sealed class SubmitFinalDecisionValidator : AbstractValidator<SubmitFinal
     {
         RuleFor(x => x.ApplicationId)
             .NotEmpty()
-            .WithMessage("ApplicationId is required.");
+            .WithMessage("ApplicationId là bắt buộc.");
 
         RuleFor(x => x.InterviewId)
             .NotEmpty()
-            .WithMessage("InterviewId is required.");
+            .WithMessage("InterviewId là bắt buộc.");
 
         RuleFor(x => x.Decision)
             .NotEmpty()
-            .WithMessage("Decision is required.")
+            .WithMessage("Quyết định là bắt buộc.")
             .Must(d => InterviewDecision.IsValid(d))
-            .WithMessage($"Decision must be one of: {string.Join(", ", InterviewDecision.ValidDecisions)}.");
+            .WithMessage($"Quyết định phải là một trong: {string.Join(", ", InterviewDecision.ValidDecisions)}.");
 
         RuleFor(x => x.OverallRating)
             .InclusiveBetween(1, 5)
             .When(x => x.OverallRating.HasValue)
-            .WithMessage("OverallRating must be between 1 and 5.");
+            .WithMessage("Điểm đánh giá tổng thể phải từ 1 đến 5.");
 
         RuleFor(x => x.OverallFeedback)
             .MaximumLength(MaxFeedbackLength)
             .When(x => !string.IsNullOrEmpty(x.OverallFeedback))
-            .WithMessage($"OverallFeedback must not exceed {MaxFeedbackLength} characters.");
+            .WithMessage($"Đánh giá tổng thể không được vượt quá {MaxFeedbackLength} ký tự.");
 
         RuleFor(x => x.Note)
             .MaximumLength(MaxNoteLength)
             .When(x => !string.IsNullOrEmpty(x.Note))
-            .WithMessage($"Note must not exceed {MaxNoteLength} characters.");
+            .WithMessage($"Ghi chú không được vượt quá {MaxNoteLength} ký tự.");
 
         RuleFor(x => x.NextRoundInterviewerIds)
             .Must(ids => ids == null || ids.All(id => id != Guid.Empty))
-            .WithMessage("NextRoundInterviewerIds cannot contain empty GUIDs.");
+            .WithMessage("NextRoundInterviewerIds không được chứa GUID rỗng.");
     }
 }

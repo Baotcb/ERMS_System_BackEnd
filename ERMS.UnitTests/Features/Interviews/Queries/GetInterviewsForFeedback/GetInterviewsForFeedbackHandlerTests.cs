@@ -1,4 +1,4 @@
-using ERMS.Application.Features.Interviews.Queries.GetInterviewsForFeedback;
+﻿using ERMS.Application.Features.Interviews.Queries.GetInterviewsForFeedback;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Application;
 using ERMS.Domain.Constants.Roles;
@@ -50,7 +50,7 @@ public class GetInterviewsForFeedbackHandlerTests
     {
         _mockCurrentUserService.Setup(s => s.UserId).Returns((Guid?)null);
         var act = async () => await _handler.Handle(new GetInterviewsForFeedbackQuery(), CancellationToken.None);
-        await act.Should().ThrowAsync<UnauthorizedAccessException>().WithMessage("User not authenticated.");
+        await act.Should().ThrowAsync<UnauthorizedAccessException>().WithMessage("Người dùng chưa được xác thực.");
     }
 
     [Fact]
@@ -59,7 +59,7 @@ public class GetInterviewsForFeedbackHandlerTests
         _mockCurrentUserService.Setup(s => s.UserId).Returns(_userId);
         _mockCurrentUserService.Setup(s => s.Roles).Returns(new List<string> { AppRoles.Employee });
         var act = async () => await _handler.Handle(new GetInterviewsForFeedbackQuery(), CancellationToken.None);
-        await act.Should().ThrowAsync<UnauthorizedAccessException>().WithMessage("Only Department Heads can view interview feedback overviews.");
+        await act.Should().ThrowAsync<UnauthorizedAccessException>().WithMessage("Chỉ Trưởng phòng mới có quyền xem tổng quan đánh giá phỏng vấn.");
     }
 
     [Fact]

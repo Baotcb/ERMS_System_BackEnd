@@ -30,19 +30,19 @@ public sealed class UnsaveJobPostingHandler : IRequestHandler<UnsaveJobPostingCo
     {
         // 1. Validate current user is authenticated
         var userId = _currentUserService.UserId
-            ?? throw new UnauthorizedAccessException("User not authenticated.");
+            ?? throw new UnauthorizedAccessException("Người dùng chưa được xác thực.");
 
         // 2. Role check: Candidate ONLY
         var userRoles = _currentUserService.Roles;
         if (userRoles == null || !userRoles.Contains(AppRoles.Candidate))
         {
-            throw new UnauthorizedAccessException("Only candidates can unsave job postings.");
+            throw new UnauthorizedAccessException("Chỉ ứng viên mới có quyền bỏ lưu tin tuyển dụng.");
         }
 
         // 3. Resolve the Candidate profile from the current user
         var candidate = await _context.Candidates
             .FirstOrDefaultAsync(c => c.UserId == userId && !c.IsDeleted, cancellationToken)
-            ?? throw new Exception("Candidate profile not found.");
+            ?? throw new Exception("Không tìm thấy hồ sơ ứng viên.");
 
         // 4. Find the saved job record
         var savedJob = await _context.SavedJobs
@@ -51,13 +51,13 @@ public sealed class UnsaveJobPostingHandler : IRequestHandler<UnsaveJobPostingCo
 
         if (savedJob == null)
         {
-            throw new Exception("Saved job not found.");
+            throw new Exception("Không tìm thấy bài đăng đã lưu.");
         }
 
         // 5. Ownership check (defense in depth — query already filters by CandidateId)
         if (savedJob.CandidateId != candidate.Id)
         {
-            throw new UnauthorizedAccessException("You do not have permission to unsave this post.");
+            throw new UnauthorizedAccessException("Bạn không có quyền bỏ lưu bài đăng này.");
         }
 
         // 6. Remove and save
@@ -71,7 +71,7 @@ public sealed class UnsaveJobPostingHandler : IRequestHandler<UnsaveJobPostingCo
         return new UnsaveJobPostingResult
         {
             JobPostingId = request.JobPostingId,
-            Message = "Job posting unsaved successfully."
+            Message = "Đã bỏ lưu tin tuyển dụng thành công."
         };
     }
 }

@@ -1,4 +1,4 @@
-using ERMS.Application.Features.Applications.Queries.GetMyApplications;
+﻿using ERMS.Application.Features.Applications.Queries.GetMyApplications;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Application;
 using ERMS.Domain.Constants.Roles;
@@ -211,7 +211,7 @@ public class GetMyApplicationsHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(query, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("User not authenticated.");
+            .WithMessage("Người dùng chưa được xác thực.");
     }
 
     [Fact]
@@ -226,7 +226,7 @@ public class GetMyApplicationsHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(query, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("Only candidates can view their applications.");
+            .WithMessage("Chỉ ứng viên mới có quyền xem hồ sơ ứng tuyển của mình.");
     }
 
     [Fact]
@@ -241,7 +241,7 @@ public class GetMyApplicationsHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(query, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("Only candidates can view their applications.");
+            .WithMessage("Chỉ ứng viên mới có quyền xem hồ sơ ứng tuyển của mình.");
     }
 
     [Fact]
@@ -256,7 +256,7 @@ public class GetMyApplicationsHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(query, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("Candidate profile not found.");
+            .WithMessage("Không tìm thấy hồ sơ ứng viên.");
     }
 
     [Fact]
@@ -273,7 +273,7 @@ public class GetMyApplicationsHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(query, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("Candidate profile not found.");
+            .WithMessage("Không tìm thấy hồ sơ ứng viên.");
     }
 
     #endregion

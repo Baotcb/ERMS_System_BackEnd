@@ -30,17 +30,17 @@ public sealed class SubmitInterviewFeedbackHandler : IRequestHandler<SubmitInter
     {
         // 1. Validate current user is authenticated
         var userId = _currentUserService.UserId
-            ?? throw new UnauthorizedAccessException("User not authenticated.");
+            ?? throw new UnauthorizedAccessException("Người dùng chưa được xác thực.");
 
         // 2. Resolve EmployeeId from UserId
         var employee = await _context.Employees
             .AsNoTracking()
             .FirstOrDefaultAsync(e => e.UserId == userId && !e.IsDeleted, cancellationToken)
-            ?? throw new UnauthorizedAccessException("User is not an employee.");
+            ?? throw new UnauthorizedAccessException("Người dùng không phải là nhân viên.");
 
         // 3. Get enterprise ID
         var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
-            ?? throw new UnauthorizedAccessException("User is not associated with any enterprise.");
+            ?? throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
 
         // 4. Load the interview with participants and application
         var interview = await _context.Interviews
@@ -52,29 +52,29 @@ public sealed class SubmitInterviewFeedbackHandler : IRequestHandler<SubmitInter
                 i.ApplicationId == request.ApplicationId &&
                 !i.IsDeleted,
                 cancellationToken)
-            ?? throw new Exception($"Interview with ID {request.InterviewId} not found for Application {request.ApplicationId}.");
+            ?? throw new Exception($"Không tìm thấy buổi phỏng vấn với ID {request.InterviewId} cho hồ sơ {request.ApplicationId}.");
 
         // 5. Validate enterprise ownership
         if (interview.Application.JobPosting.EnterpriseId != enterpriseId)
         {
-            throw new UnauthorizedAccessException("You do not have permission to access this application.");
+            throw new UnauthorizedAccessException("Bạn không có quyền truy cập hồ sơ ứng tuyển này.");
         }
 
         // 6. Validate interview is in 'Scheduled' status
         if (!interview.Status.Equals(InterviewStatus.Scheduled, StringComparison.OrdinalIgnoreCase))
         {
-            throw new Exception($"Cannot submit feedback. Interview status is '{interview.Status}', expected '{InterviewStatus.Scheduled}'.");
+            throw new Exception($"Không thể gửi đánh giá. Trạng thái phỏng vấn là '{interview.Status}', yêu cầu '{InterviewStatus.Scheduled}'.");
         }
 
         // 7. Find the participant record matching the caller's EmployeeId
         var participant = interview.Participants
             .FirstOrDefault(p => p.EmployeeId == employee.Id)
-            ?? throw new UnauthorizedAccessException("You are not a participant of this interview.");
+            ?? throw new UnauthorizedAccessException("Bạn không phải là người tham gia buổi phỏng vấn này.");
 
         // 8. Guard: participant must not have already submitted feedback
         if (participant.FeedbackSubmittedAt != null)
         {
-            throw new Exception("You have already submitted feedback for this interview.");
+            throw new Exception("Bạn đã gửi đánh giá cho buổi phỏng vấn này rồi.");
         }
 
         // 9. Update participant feedback fields

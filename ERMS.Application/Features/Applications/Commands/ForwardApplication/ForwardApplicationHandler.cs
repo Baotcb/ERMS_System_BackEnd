@@ -31,35 +31,35 @@ public sealed class ForwardApplicationHandler : IRequestHandler<ForwardApplicati
     {
         // 1. Validate current user is authenticated
         var userId = _currentUserService.UserId
-            ?? throw new UnauthorizedAccessException("User not authenticated.");
+            ?? throw new UnauthorizedAccessException("Người dùng chưa được xác thực.");
 
         // 2. Role check: HRManager ONLY (strict authorization)
         var userRoles = _currentUserService.Roles;
         if (userRoles == null || !userRoles.Contains(AppRoles.HRManager))
         {
-            throw new UnauthorizedAccessException("Only HR Manager can forward applications.");
+            throw new UnauthorizedAccessException("Chỉ HR Manager mới có quyền chuyển tiếp hồ sơ ứng tuyển.");
         }
 
         // 3. Enterprise scoping
         var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
-            ?? throw new UnauthorizedAccessException("User is not associated with any enterprise.");
+            ?? throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
 
         // 4. Load the application with related JobPosting
         var application = await _context.Applications
             .Include(a => a.JobPosting)
             .FirstOrDefaultAsync(a => a.Id == request.ApplicationId && !a.IsDeleted, cancellationToken)
-            ?? throw new Exception($"Application with ID {request.ApplicationId} not found.");
+            ?? throw new Exception($"Không tìm thấy hồ sơ ứng tuyển với ID {request.ApplicationId}.");
 
         // 5. Validate enterprise ownership
         if (application.JobPosting.EnterpriseId != enterpriseId)
         {
-            throw new UnauthorizedAccessException("You do not have permission to access this application.");
+            throw new UnauthorizedAccessException("Bạn không có quyền truy cập hồ sơ ứng tuyển này.");
         }
 
         // 6. Validate current stage is "Applied"
         if (!application.Stage.Equals(ApplicationStage.Applied, StringComparison.OrdinalIgnoreCase))
         {
-            throw new Exception($"Cannot forward application. Current stage is '{application.Stage}', expected '{ApplicationStage.Applied}'.");
+            throw new Exception($"Không thể chuyển tiếp hồ sơ. Giai đoạn hiện tại là '{application.Stage}', yêu cầu '{ApplicationStage.Applied}'.");
         }
 
         // 7. Store previous stage for response
