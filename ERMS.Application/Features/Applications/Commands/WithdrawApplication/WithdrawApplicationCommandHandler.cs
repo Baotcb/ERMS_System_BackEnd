@@ -37,35 +37,35 @@ public sealed class WithdrawApplicationCommandHandler : IRequestHandler<Withdraw
     {
         // 1. Validate current user is authenticated
         var userId = _currentUserService.UserId
-            ?? throw new UnauthorizedAccessException("User not authenticated.");
+            ?? throw new UnauthorizedAccessException("Người dùng chưa được xác thực.");
 
         // 2. Role check: Candidate ONLY
         var userRoles = _currentUserService.Roles;
         if (userRoles == null || !userRoles.Contains(AppRoles.Candidate))
         {
-            throw new UnauthorizedAccessException("Only candidates can withdraw applications.");
+            throw new UnauthorizedAccessException("Chỉ ứng viên mới có quyền rút hồ sơ ứng tuyển.");
         }
 
         // 3. Resolve the Candidate profile from the current user
         var candidate = await _context.Candidates
             .FirstOrDefaultAsync(c => c.UserId == userId && !c.IsDeleted, cancellationToken)
-            ?? throw new Exception("Candidate profile not found.");
+            ?? throw new Exception("Không tìm thấy hồ sơ ứng viên.");
 
         // 4. Load the application
         var application = await _context.Applications
             .FirstOrDefaultAsync(a => a.Id == request.ApplicationId && !a.IsDeleted, cancellationToken)
-            ?? throw new Exception($"Application with ID {request.ApplicationId} not found.");
+            ?? throw new Exception($"Không tìm thấy hồ sơ ứng tuyển với ID {request.ApplicationId}.");
 
         // 5. Validate ownership — the candidate can only withdraw their own application
         if (application.CandidateId != candidate.Id)
         {
-            throw new UnauthorizedAccessException("You do not have permission to withdraw this application.");
+            throw new UnauthorizedAccessException("Bạn không có quyền rút hồ sơ này.");
         }
 
         // 6. Validate the application is not in a terminal stage
         if (Array.Exists(TerminalStages, s => s.Equals(application.Stage, StringComparison.OrdinalIgnoreCase)))
         {
-            throw new Exception($"Cannot withdraw application. Current stage is '{application.Stage}', which is a terminal stage.");
+            throw new Exception($"Không thể rút hồ sơ ứng tuyển. Giai đoạn hiện tại là '{application.Stage}', đã ở trạng thái kết thúc.");
         }
 
         // 7. Store previous stage for response

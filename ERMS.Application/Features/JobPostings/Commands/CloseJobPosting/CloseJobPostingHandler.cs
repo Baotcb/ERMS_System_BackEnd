@@ -26,16 +26,16 @@ public sealed class CloseJobPostingHandler : IRequestHandler<CloseJobPostingComm
     public async Task<Unit> Handle(CloseJobPostingCommand request, CancellationToken cancellationToken)
     {
         var userId = _currentUserService.UserId
-            ?? throw new UnauthorizedAccessException("User not authenticated.");
+            ?? throw new UnauthorizedAccessException("Người dùng chưa được xác thực.");
 
         var userRoles = _currentUserService.Roles;
         if (userRoles == null || !userRoles.Contains(AppRoles.HRManager))
         {
-            throw new UnauthorizedAccessException("Only HR Manager can close job postings.");
+            throw new UnauthorizedAccessException("Chỉ HR Manager mới có quyền đóng tin tuyển dụng.");
         }
 
         var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
-            ?? throw new UnauthorizedAccessException("User is not associated with any enterprise.");
+            ?? throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
 
         var jobPosting = await _context.JobPostings
             .FirstOrDefaultAsync(jp =>
@@ -43,11 +43,11 @@ public sealed class CloseJobPostingHandler : IRequestHandler<CloseJobPostingComm
                 && jp.EnterpriseId == enterpriseId
                 && !jp.IsDeleted,
                 cancellationToken)
-            ?? throw new Exception($"JobPosting with ID {request.Id} not found.");
+            ?? throw new Exception($"Không tìm thấy tin tuyển dụng với ID {request.Id}.");
 
         if (!JobPostingStatus.CanClose(jobPosting.Status))
         {
-            throw new Exception($"Cannot close. Current status '{jobPosting.Status}' must be 'Published'.");
+            throw new Exception($"Không thể đóng tin. Trạng thái hiện tại '{jobPosting.Status}' phải là 'Published'.");
         }
 
         jobPosting.Status = JobPostingStatus.Closed;

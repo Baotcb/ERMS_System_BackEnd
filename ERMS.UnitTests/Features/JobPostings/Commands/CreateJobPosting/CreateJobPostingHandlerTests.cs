@@ -1,4 +1,4 @@
-using ERMS.Application.Features.JobPostings.Commands.CreateJobPosting;
+﻿using ERMS.Application.Features.JobPostings.Commands.CreateJobPosting;
 using ERMS.Application.Interface;
 using FluentAssertions;
 using ERMS.Domain.Constants.Application;
@@ -119,7 +119,7 @@ public class CreateJobPostingHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("User not authenticated.");
+            .WithMessage("Người dùng chưa được xác thực.");
     }
 
     [Fact]
@@ -135,7 +135,7 @@ public class CreateJobPostingHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("Only HR Manager can create job postings.");
+            .WithMessage("Chỉ HR Manager mới có quyền tạo tin tuyển dụng.");
     }
 
     [Fact]
@@ -151,7 +151,7 @@ public class CreateJobPostingHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("Only HR Manager can create job postings.");
+            .WithMessage("Chỉ HR Manager mới có quyền tạo tin tuyển dụng.");
     }
 
     [Fact]
@@ -167,7 +167,7 @@ public class CreateJobPostingHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("User is not associated with any enterprise.");
+            .WithMessage("Người dùng không thuộc doanh nghiệp nào.");
     }
 
     #endregion
@@ -189,7 +189,7 @@ public class CreateJobPostingHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("*PlanDetail with ID*not found*");
+            .WithMessage("*Không tìm thấy chi tiết kế hoạch với ID**");
     }
 
     [Fact]
@@ -210,7 +210,7 @@ public class CreateJobPostingHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("*RecruitmentPlan must be 'Approved' by Director*");
+            .WithMessage("*Kế hoạch tuyển dụng phải được Giám đốc phê duyệt*");
     }
 
     [Fact]
@@ -231,7 +231,7 @@ public class CreateJobPostingHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("*PlanDetail status must be 'Approved'*");
+            .WithMessage("*Trạng thái chi tiết kế hoạch phải là 'Approved'*");
     }
 
     [Fact]
@@ -248,7 +248,7 @@ public class CreateJobPostingHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("*RequiredSkills is empty*");
+            .WithMessage("*kỹ năng*trống*");
     }
 
     [Fact]
@@ -265,7 +265,7 @@ public class CreateJobPostingHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("*RequiredSkills is empty*");
+            .WithMessage("*kỹ năng*trống*");
     }
 
     #endregion
@@ -312,7 +312,7 @@ public class CreateJobPostingHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("*Quota exhausted*");
+            .WithMessage("*Hết chỉ tiêu*");
     }
 
     [Fact]

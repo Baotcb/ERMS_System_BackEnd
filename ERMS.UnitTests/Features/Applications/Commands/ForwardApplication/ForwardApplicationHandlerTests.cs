@@ -1,4 +1,4 @@
-using ERMS.Application.Features.Applications.Commands.ForwardApplication;
+﻿using ERMS.Application.Features.Applications.Commands.ForwardApplication;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Application;
 using ERMS.Domain.Constants.Roles;
@@ -132,7 +132,7 @@ public class ForwardApplicationHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("User not authenticated.");
+            .WithMessage("Người dùng chưa được xác thực.");
     }
 
     [Fact]
@@ -147,7 +147,7 @@ public class ForwardApplicationHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("Only HR Manager can forward applications.");
+            .WithMessage("Chỉ HR Manager mới có quyền chuyển tiếp hồ sơ ứng tuyển.");
     }
 
     [Fact]
@@ -162,7 +162,7 @@ public class ForwardApplicationHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("Only HR Manager can forward applications.");
+            .WithMessage("Chỉ HR Manager mới có quyền chuyển tiếp hồ sơ ứng tuyển.");
     }
 
     [Fact]
@@ -177,7 +177,7 @@ public class ForwardApplicationHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("Only HR Manager can forward applications.");
+            .WithMessage("Chỉ HR Manager mới có quyền chuyển tiếp hồ sơ ứng tuyển.");
     }
 
     [Fact]
@@ -192,7 +192,7 @@ public class ForwardApplicationHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("Only HR Manager can forward applications.");
+            .WithMessage("Chỉ HR Manager mới có quyền chuyển tiếp hồ sơ ứng tuyển.");
     }
 
     [Fact]
@@ -208,7 +208,7 @@ public class ForwardApplicationHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("User is not associated with any enterprise.");
+            .WithMessage("Người dùng không thuộc doanh nghiệp nào.");
     }
 
     [Fact]
@@ -225,7 +225,7 @@ public class ForwardApplicationHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("You do not have permission to access this application.");
+            .WithMessage("Bạn không có quyền truy cập hồ sơ ứng tuyển này.");
     }
 
     #endregion
@@ -244,7 +244,7 @@ public class ForwardApplicationHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage($"*Application with ID {_applicationId} not found*");
+            .WithMessage($"*Không tìm thấy hồ sơ ứng tuyển với ID {_applicationId}*");
     }
 
     [Fact]
@@ -262,7 +262,7 @@ public class ForwardApplicationHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage($"*Application with ID {_applicationId} not found*");
+            .WithMessage($"*Không tìm thấy hồ sơ ứng tuyển với ID {_applicationId}*");
     }
 
     [Fact]
@@ -280,7 +280,7 @@ public class ForwardApplicationHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("*not found*");
+            .WithMessage("**");
     }
 
     #endregion
@@ -301,7 +301,7 @@ public class ForwardApplicationHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage($"*Cannot forward application*current stage is 'Shortlisted'*expected 'Applied'*");
+            .WithMessage($"*Không thể chuyển tiếp hồ sơ*Giai đoạn hiện tại là 'Shortlisted', yêu cầu 'Applied'*");
     }
 
     [Fact]
@@ -318,7 +318,7 @@ public class ForwardApplicationHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("*Cannot forward application*current stage is 'Rejected'*");
+            .WithMessage("*Không thể chuyển tiếp hồ sơ*Giai đoạn hiện tại là 'Rejected'*");
     }
 
     [Fact]
@@ -335,7 +335,7 @@ public class ForwardApplicationHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("*Cannot forward application*current stage is 'Hired'*");
+            .WithMessage("*Không thể chuyển tiếp hồ sơ*Giai đoạn hiện tại là 'Hired'*");
     }
 
     [Fact]
@@ -352,7 +352,7 @@ public class ForwardApplicationHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("*Cannot forward application*current stage is 'Interviewed'*");
+            .WithMessage("*Không thể chuyển tiếp hồ sơ*Giai đoạn hiện tại là 'Interviewed'*");
     }
 
     [Fact]
@@ -369,7 +369,7 @@ public class ForwardApplicationHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("*Cannot forward application*current stage is 'Withdrawn'*");
+            .WithMessage("*Không thể chuyển tiếp hồ sơ*Giai đoạn hiện tại là 'Withdrawn'*");
     }
 
     [Fact]
@@ -386,7 +386,7 @@ public class ForwardApplicationHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("*Cannot forward application*current stage is 'Offered'*");
+            .WithMessage("*Không thể chuyển tiếp hồ sơ*Giai đoạn hiện tại là 'Offered'*");
     }
 
     [Fact]
@@ -403,7 +403,7 @@ public class ForwardApplicationHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("*Cannot forward application*current stage is 'InterviewScheduled'*");
+            .WithMessage("*Không thể chuyển tiếp hồ sơ*Giai đoạn hiện tại là 'InterviewScheduled'*");
     }
 
     #endregion

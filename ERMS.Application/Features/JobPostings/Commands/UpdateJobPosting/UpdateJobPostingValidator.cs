@@ -8,7 +8,7 @@ public sealed class UpdateJobPostingValidator : AbstractValidator<UpdateJobPosti
     {
         RuleFor(x => x.Id)
             .NotEmpty()
-            .WithMessage("Job posting ID is required.");
+            .WithMessage("ID tin tuyển dụng là bắt buộc.");
 
         RuleFor(x => x.Description)
             .MaximumLength(5000)
@@ -25,6 +25,6 @@ public sealed class UpdateJobPostingValidator : AbstractValidator<UpdateJobPosti
         RuleFor(x => x.ApplicationDeadline)
             .GreaterThan(DateTime.UtcNow)
             .When(x => x.ApplicationDeadline.HasValue)
-            .WithMessage("Application deadline must be in the future.");
+            .WithMessage("Hạn nộp hồ sơ phải trong tương lai.");
     }
 }

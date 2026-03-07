@@ -1,4 +1,4 @@
-using ERMS.Application.Features.JobPostings.Commands.UnsaveJobPosting;
+﻿using ERMS.Application.Features.JobPostings.Commands.UnsaveJobPosting;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Roles;
 using ERMS.Domain.Entities.Candidate;
@@ -77,7 +77,7 @@ public class UnsaveJobPostingHandlerTests
         var cmd = new UnsaveJobPostingCommand { JobPostingId = _jobPostingId };
         await _handler.Invoking(h => h.Handle(cmd, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("User not authenticated.");
+            .WithMessage("Người dùng chưa được xác thực.");
     }
 
     [Fact]
@@ -88,7 +88,7 @@ public class UnsaveJobPostingHandlerTests
         var cmd = new UnsaveJobPostingCommand { JobPostingId = _jobPostingId };
         await _handler.Invoking(h => h.Handle(cmd, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("Only candidates can unsave job postings.");
+            .WithMessage("Chỉ ứng viên mới có quyền bỏ lưu tin tuyển dụng.");
     }
 
     [Fact]
@@ -99,7 +99,7 @@ public class UnsaveJobPostingHandlerTests
         var cmd = new UnsaveJobPostingCommand { JobPostingId = _jobPostingId };
         await _handler.Invoking(h => h.Handle(cmd, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("Candidate profile not found.");
+            .WithMessage("Không tìm thấy hồ sơ ứng viên.");
     }
 
     #endregion
@@ -116,7 +116,7 @@ public class UnsaveJobPostingHandlerTests
         var cmd = new UnsaveJobPostingCommand { JobPostingId = _jobPostingId };
         await _handler.Invoking(h => h.Handle(cmd, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("Saved job not found.");
+            .WithMessage("Không tìm thấy bài đăng đã lưu.");
     }
 
     [Fact]
@@ -138,7 +138,7 @@ public class UnsaveJobPostingHandlerTests
         var result = await _handler.Handle(cmd, CancellationToken.None);
 
         result.JobPostingId.Should().Be(_jobPostingId);
-        result.Message.Should().Be("Job posting unsaved successfully.");
+        result.Message.Should().Be("Đã bỏ lưu tin tuyển dụng thành công.");
         _contextMock.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -161,7 +161,7 @@ public class UnsaveJobPostingHandlerTests
         var cmd = new UnsaveJobPostingCommand { JobPostingId = _jobPostingId };
         await _handler.Invoking(h => h.Handle(cmd, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("Saved job not found.");
+            .WithMessage("Không tìm thấy bài đăng đã lưu.");
     }
 
     #endregion

@@ -1,4 +1,4 @@
-using ERMS.Application.Features.Interviews.Queries.GetInterviewFeedbackById;
+﻿using ERMS.Application.Features.Interviews.Queries.GetInterviewFeedbackById;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Application;
 using ERMS.Domain.Constants.Roles;
@@ -51,7 +51,7 @@ public class GetInterviewFeedbackByIdHandlerTests
     {
         _mockCurrentUserService.Setup(s => s.UserId).Returns((Guid?)null);
         var act = async () => await _handler.Handle(new GetInterviewFeedbackByIdQuery { InterviewId = _interviewId }, CancellationToken.None);
-        await act.Should().ThrowAsync<UnauthorizedAccessException>().WithMessage("User not authenticated.");
+        await act.Should().ThrowAsync<UnauthorizedAccessException>().WithMessage("Người dùng chưa được xác thực.");
     }
 
     [Fact]
@@ -60,7 +60,7 @@ public class GetInterviewFeedbackByIdHandlerTests
         _mockCurrentUserService.Setup(s => s.UserId).Returns(_userId);
         _mockCurrentUserService.Setup(s => s.Roles).Returns(new List<string> { AppRoles.Employee });
         var act = async () => await _handler.Handle(new GetInterviewFeedbackByIdQuery { InterviewId = _interviewId }, CancellationToken.None);
-        await act.Should().ThrowAsync<UnauthorizedAccessException>().WithMessage("Only Department Heads can view detailed interview feedback.");
+        await act.Should().ThrowAsync<UnauthorizedAccessException>().WithMessage("Chỉ Trưởng phòng mới có quyền xem chi tiết đánh giá phỏng vấn.");
     }
 
     [Fact]
@@ -71,7 +71,7 @@ public class GetInterviewFeedbackByIdHandlerTests
         _mockContext.Setup(x => x.Interviews).Returns(interviews.Object);
 
         var act = async () => await _handler.Handle(new GetInterviewFeedbackByIdQuery { InterviewId = _interviewId }, CancellationToken.None);
-        await act.Should().ThrowAsync<Exception>().WithMessage($"Interview with ID {_interviewId} not found.");
+        await act.Should().ThrowAsync<Exception>().WithMessage($"Không tìm thấy buổi phỏng vấn với ID {_interviewId}.");
     }
 
     [Fact]
@@ -145,7 +145,7 @@ public class GetInterviewFeedbackByIdHandlerTests
         var act = async () => await _handler.Handle(new GetInterviewFeedbackByIdQuery { InterviewId = _interviewId }, CancellationToken.None);
 
         // Assert
-        await act.Should().ThrowAsync<UnauthorizedAccessException>().WithMessage("You do not have permission to access interviews from another department.");
+        await act.Should().ThrowAsync<UnauthorizedAccessException>().WithMessage("Bạn không có quyền truy cập buổi phỏng vấn của phòng ban khác.");
     }
 
     [Fact]
@@ -161,6 +161,6 @@ public class GetInterviewFeedbackByIdHandlerTests
         _mockContext.Setup(c => c.Interviews).Returns(interviews.Object);
 
         var act = async () => await _handler.Handle(new GetInterviewFeedbackByIdQuery { InterviewId = _interviewId }, CancellationToken.None);
-        await act.Should().ThrowAsync<Exception>().WithMessage("Feedback review is only available for scheduled interviews awaiting decisions.");
+        await act.Should().ThrowAsync<Exception>().WithMessage("Xem đánh giá chỉ khả dụng cho các buổi phỏng vấn đã lên lịch đang chờ quyết định.");
     }
 }

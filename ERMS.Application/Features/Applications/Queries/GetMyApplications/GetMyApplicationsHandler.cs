@@ -30,19 +30,19 @@ public sealed class GetMyApplicationsHandler : IRequestHandler<GetMyApplications
     {
         // 1. Validate current user is authenticated
         var userId = _currentUserService.UserId
-            ?? throw new UnauthorizedAccessException("User not authenticated.");
+            ?? throw new UnauthorizedAccessException("Người dùng chưa được xác thực.");
 
         // 2. Role check: Candidate ONLY
         var userRoles = _currentUserService.Roles;
         if (userRoles == null || !userRoles.Contains(AppRoles.Candidate))
         {
-            throw new UnauthorizedAccessException("Only candidates can view their applications.");
+            throw new UnauthorizedAccessException("Chỉ ứng viên mới có quyền xem hồ sơ ứng tuyển của mình.");
         }
 
         // 3. Resolve the Candidate profile from the current user
         var candidate = await _context.Candidates
             .FirstOrDefaultAsync(c => c.UserId == userId && !c.IsDeleted, cancellationToken)
-            ?? throw new Exception("Candidate profile not found.");
+            ?? throw new Exception("Không tìm thấy hồ sơ ứng viên.");
 
         // 4. Build query for the candidate's applications
         var query = _context.Applications

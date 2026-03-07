@@ -24,7 +24,7 @@ namespace ERMS.Application.Features.Employees.Commands.UpdateEmployee
         public async Task<bool> Handle(UpdateEmployeeCommand request, CancellationToken cancellationToken)
         {
             var enterpriseId = await _currentUserService.GetEnterpriseIdAsync();
-            if (enterpriseId == null) throw new UnauthorizedAccessException("User not belong to enterprise");
+            if (enterpriseId == null) throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
             var employee = await _context.Employees
                 .FirstOrDefaultAsync(e => e.Id == request.Id 
                                        && e.EnterpriseId == enterpriseId 

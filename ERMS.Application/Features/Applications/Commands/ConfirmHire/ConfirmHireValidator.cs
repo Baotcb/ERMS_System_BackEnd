@@ -8,12 +8,12 @@ public sealed class ConfirmHireValidator : AbstractValidator<ConfirmHireCommand>
     {
         RuleFor(x => x.ApplicationId)
             .NotEmpty()
-            .WithMessage("ApplicationId is required.");
+            .WithMessage("ApplicationId là bắt buộc.");
 
         RuleFor(x => x.EmployeeEmail)
             .NotEmpty()
-            .WithMessage("EmployeeEmail is required.")
+            .WithMessage("Email nhân viên là bắt buộc.")
             .EmailAddress()
-            .WithMessage("EmployeeEmail must be a valid email address.");
+            .WithMessage("Email nhân viên phải là địa chỉ email hợp lệ.");
     }
 }

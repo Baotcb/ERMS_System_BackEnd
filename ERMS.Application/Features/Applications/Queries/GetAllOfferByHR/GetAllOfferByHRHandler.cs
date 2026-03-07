@@ -26,11 +26,11 @@ namespace ERMS.Application.Features.Applications.Queries.GetAllOfferByHR
             var userId = _currentUserService.UserId;
             if (userId == null)
             {
-                throw new UnauthorizedAccessException("User is not authenticated");
+                throw new UnauthorizedAccessException("Người dùng chưa được xác thực.");
             }
             if(!_currentUserService.Roles.Contains(AppRoles.HRManager))
             {
-                throw new UnauthorizedAccessException("User does not have permission to view offers");
+                throw new UnauthorizedAccessException("Người dùng không có quyền xem đề nghị.");
             }
 
             var offers = await _context.Offers

@@ -1,4 +1,4 @@
-using ERMS.Application.Features.Enterprises.Commands.ViewPaymentHistoryEnterprise;
+﻿using ERMS.Application.Features.Enterprises.Commands.ViewPaymentHistoryEnterprise;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Roles;
 using ERMS.Domain.Entities.Enterprise;
@@ -59,7 +59,7 @@ namespace ERMS.UnitTests.Features.EnterpriseStatusConstants.Commands.ViewPayment
             // Act & Assert
             await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
                 .Should().ThrowAsync<UnauthorizedAccessException>()
-                .WithMessage("You do not have permission to view payment history for this enterprise.");
+                .WithMessage("Bạn không có quyền xem lịch sử thanh toán của doanh nghiệp này.");
         }
 
         [Fact]
@@ -73,7 +73,7 @@ namespace ERMS.UnitTests.Features.EnterpriseStatusConstants.Commands.ViewPayment
             // Act & Assert
             await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
                 .Should().ThrowAsync<InvalidOperationException>()
-                .WithMessage("No payment history found for the specified enterprise.");
+                .WithMessage("Không tìm thấy lịch sử thanh toán cho doanh nghiệp được chỉ định.");
         }
 
         [Fact]

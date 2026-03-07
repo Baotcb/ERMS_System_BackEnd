@@ -24,7 +24,7 @@ namespace ERMS.Application.Features.JobPostings.Commands.SaveJobPosting
             var userId = _currentUserService.UserId;
             if (userId == null)
             {
-                throw new UnauthorizedAccessException("User not authenticated");
+                throw new UnauthorizedAccessException("Người dùng chưa được xác thực");
             }
 
           
@@ -33,17 +33,17 @@ namespace ERMS.Application.Features.JobPostings.Commands.SaveJobPosting
 
             if (candidate == null)
             {
-                throw new InvalidOperationException("Candidate profile not found");
+                throw new InvalidOperationException("Không tìm thấy hồ sơ ứng viên");
             }
             if (request.JobPostingId == Guid.Empty)
             {
-                throw new ArgumentException("Invalid Job Posting ID");
+                throw new ArgumentException("ID tin tuyển dụng không hợp lệ");
             }
 
             var jobPosting = await _context.JobPostings
                 .FirstOrDefaultAsync(x => x.Id == request.JobPostingId, cancellationToken);
             if (jobPosting == null) {
-                throw new InvalidOperationException("Job posting not found");
+                throw new InvalidOperationException("Không tìm thấy tin tuyển dụng");
             }
 
             var existingSavedJob = await _context.SavedJobs

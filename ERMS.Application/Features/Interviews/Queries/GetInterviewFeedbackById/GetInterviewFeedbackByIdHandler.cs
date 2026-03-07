@@ -25,22 +25,22 @@ public sealed class GetInterviewFeedbackByIdHandler : IRequestHandler<GetIntervi
     {
         // 1. Validate current user is authenticated
         var userId = _currentUserService.UserId
-            ?? throw new UnauthorizedAccessException("User not authenticated.");
+            ?? throw new UnauthorizedAccessException("Người dùng chưa được xác thực.");
 
         // 2. Role check: DepartmentHead ONLY
         var userRoles = _currentUserService.Roles;
         if (userRoles == null || !userRoles.Contains(AppRoles.DepartmentHead))
         {
-            throw new UnauthorizedAccessException("Only Department Heads can view detailed interview feedback.");
+            throw new UnauthorizedAccessException("Chỉ Trưởng phòng mới có quyền xem chi tiết đánh giá phỏng vấn.");
         }
 
         // 3. Department scoping
         var departmentId = await _currentUserService.GetDepartmentIdAsync()
-            ?? throw new UnauthorizedAccessException("User is not associated with any department.");
+            ?? throw new UnauthorizedAccessException("Người dùng không thuộc phòng ban nào.");
 
         // 4. Enterprise scoping
         var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
-            ?? throw new UnauthorizedAccessException("User is not associated with any enterprise.");
+            ?? throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
 
         // 5. Query the precise interview
         var interview = await _context.Interviews
@@ -55,27 +55,27 @@ public sealed class GetInterviewFeedbackByIdHandler : IRequestHandler<GetIntervi
             .Where(i => i.Id == request.InterviewId)
             .Where(i => !i.IsDeleted && !i.Application.IsDeleted)
             .FirstOrDefaultAsync(cancellationToken)
-            ?? throw new Exception($"Interview with ID {request.InterviewId} not found.");
+            ?? throw new Exception($"Không tìm thấy buổi phỏng vấn với ID {request.InterviewId}.");
 
         // 6. Security & State Guard Clauses
         if (interview.Application.JobPosting.EnterpriseId != enterpriseId)
         {
-            throw new UnauthorizedAccessException("You do not have permission to access this enterprise's data.");
+            throw new UnauthorizedAccessException("Bạn không có quyền truy cập dữ liệu doanh nghiệp này.");
         }
 
         if (interview.Application.JobPosting.DepartmentId != departmentId)
         {
-            throw new UnauthorizedAccessException("You do not have permission to access interviews from another department.");
+            throw new UnauthorizedAccessException("Bạn không có quyền truy cập buổi phỏng vấn của phòng ban khác.");
         }
 
         if (interview.Status != InterviewStatus.Scheduled)
         {
-            throw new Exception("Feedback review is only available for scheduled interviews awaiting decisions.");
+            throw new Exception("Xem đánh giá chỉ khả dụng cho các buổi phỏng vấn đã lên lịch đang chờ quyết định.");
         }
 
         if (!interview.Participants.Any(p => p.FeedbackSubmittedAt != null))
         {
-            throw new Exception("This interview has not received any feedback yet.");
+            throw new Exception("Buổi phỏng vấn này chưa nhận được đánh giá nào.");
         }
 
         // 7. Map to Detailed DTO

@@ -26,16 +26,16 @@ public sealed class PublishJobPostingHandler : IRequestHandler<PublishJobPosting
     public async Task<Unit> Handle(PublishJobPostingCommand request, CancellationToken cancellationToken)
     {
         var userId = _currentUserService.UserId
-            ?? throw new UnauthorizedAccessException("User not authenticated.");
+            ?? throw new UnauthorizedAccessException("Người dùng chưa được xác thực.");
 
         var userRoles = _currentUserService.Roles;
         if (userRoles == null || !userRoles.Contains(AppRoles.HRManager))
         {
-            throw new UnauthorizedAccessException("Only HR Manager can publish job postings.");
+            throw new UnauthorizedAccessException("Chỉ HR Manager mới có quyền đăng tin tuyển dụng.");
         }
 
         var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
-            ?? throw new UnauthorizedAccessException("User is not associated with any enterprise.");
+            ?? throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
 
         var jobPosting = await _context.JobPostings
             .FirstOrDefaultAsync(jp =>
@@ -43,12 +43,12 @@ public sealed class PublishJobPostingHandler : IRequestHandler<PublishJobPosting
                 && jp.EnterpriseId == enterpriseId
                 && !jp.IsDeleted,
                 cancellationToken)
-            ?? throw new Exception($"JobPosting with ID {request.Id} not found.");
+            ?? throw new Exception($"Không tìm thấy tin tuyển dụng với ID {request.Id}.");
 
         // Validate current status is Draft
         if (!JobPostingStatus.CanPublish(jobPosting.Status))
         {
-            throw new Exception($"Cannot publish. Current status '{jobPosting.Status}' must be 'Draft'.");
+            throw new Exception($"Không thể đăng tin. Trạng thái hiện tại '{jobPosting.Status}' phải là 'Draft'.");
         }
 
         jobPosting.Status = JobPostingStatus.Published;

@@ -13,23 +13,23 @@ public sealed class AssignInterviewerValidator : AbstractValidator<AssignIntervi
     {
         RuleFor(x => x.ApplicationId)
             .NotEmpty()
-            .WithMessage("ApplicationId is required.");
+            .WithMessage("ApplicationId là bắt buộc.");
 
         RuleFor(x => x.InterviewType)
             .NotEmpty()
-            .WithMessage("InterviewType is required.")
+            .WithMessage("Loại phỏng vấn là bắt buộc.")
             .MaximumLength(50)
-            .WithMessage("InterviewType must not exceed 50 characters.");
+            .WithMessage("Loại phỏng vấn không được vượt quá 50 ký tự.");
 
         RuleFor(x => x.InterviewerIds)
             .NotEmpty()
-            .WithMessage("At least one interviewer is required.")
+            .WithMessage("Cần ít nhất một người phỏng vấn.")
             .Must(ids => ids.All(id => id != Guid.Empty))
-            .WithMessage("InterviewerIds cannot contain empty GUIDs.");
+            .WithMessage("InterviewerIds không được chứa GUID rỗng.");
 
         RuleFor(x => x.Note)
             .MaximumLength(MaxNoteLength)
             .When(x => !string.IsNullOrEmpty(x.Note))
-            .WithMessage($"Note must not exceed {MaxNoteLength} characters.");
+            .WithMessage($"Ghi chú không được vượt quá {MaxNoteLength} ký tự.");
     }
 }
