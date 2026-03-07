@@ -91,9 +91,13 @@ public sealed class ApprovePlanHandler : IRequestHandler<ApprovePlanCommand, boo
 
                 if (plan.TotalBudget.Value > remainingBudget)
                 {
-                    throw new Exception(
-                        $"Ngân sách kế hoạch ({plan.TotalBudget.Value:N0} VNĐ) vượt quá ngân sách còn lại ({remainingBudget:N0} VNĐ). " +
-                        $"Tổng ngân sách chiến dịch: {plan.Campaign.TotalBudgetCeiling.Value:N0} VNĐ, Đã sử dụng: {usedBudget:N0} VNĐ");
+                    _logger.LogWarning(
+                        "Director {DirectorId} approved OVER-BUDGET plan {PlanId} ({PlanName}). " +
+                        "Plan budget: {PlanBudget:N0} VNĐ, Remaining: {Remaining:N0} VNĐ, " +
+                        "Campaign ceiling: {Ceiling:N0} VNĐ, Used: {Used:N0} VNĐ",
+                        userId.Value, plan.Id, plan.PlanName,
+                        plan.TotalBudget.Value, remainingBudget,
+                        plan.Campaign.TotalBudgetCeiling.Value, usedBudget);
                 }
             }
 
