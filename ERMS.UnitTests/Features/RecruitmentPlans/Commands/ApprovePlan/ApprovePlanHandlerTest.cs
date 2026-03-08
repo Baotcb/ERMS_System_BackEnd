@@ -179,7 +179,7 @@ namespace ERMS.UnitTests.Features.RecruitmentPlans.Commands.ApprovePlan
         }
 
         [Fact]
-        public async Task Handle_ShouldThrowException_WhenBudgetExceeded()
+        public async Task Handle_ShouldApproveSuccessfully_WhenBudgetExceeded()
         {
             // Arrange
             var options = CreateInMemoryOptions();
@@ -189,6 +189,7 @@ namespace ERMS.UnitTests.Features.RecruitmentPlans.Commands.ApprovePlan
             var enterpriseId = Guid.NewGuid();
             var campaignId = Guid.NewGuid();
             var planId = Guid.NewGuid();
+            var detailId = Guid.NewGuid();
 
             _currentUserServiceMock.Setup(x => x.UserId).Returns(userId);
             _currentUserServiceMock.Setup(x => x.Roles).Returns(new List<string> { AppRoles.Director });
@@ -219,15 +220,32 @@ namespace ERMS.UnitTests.Features.RecruitmentPlans.Commands.ApprovePlan
                 CreatedById = userId,
                 IsDeleted = false
             });
+
+            context.PlanDetails.Add(new PlanDetail
+            {
+                Id = detailId,
+                RecruitmentPlanId = planId,
+                Status = PlanDetailStatus.Pending,
+                PositionTitle = "Title",
+                RequestedById = userId,
+                IsDeleted = false
+            });
             await context.SaveChangesAsync();
 
             var handler = new ApprovePlanHandler(context, _currentUserServiceMock.Object, _loggerMock.Object);
             var command = new ApprovePlanCommand { PlanId = planId };
 
-            // Act & Assert
-            await handler.Invoking(h => h.Handle(command, CancellationToken.None))
-                .Should().ThrowAsync<Exception>()
-                .WithMessage("*vượt quá ngân sách còn lại*");
+            // Act — Director vẫn duyệt được khi vượt budget
+            var result = await handler.Handle(command, CancellationToken.None);
+
+            // Assert
+            result.Should().BeTrue();
+
+            var updatedPlan = await context.RecruitmentPlans
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Id == planId);
+            updatedPlan.Should().NotBeNull();
+            updatedPlan!.Status.Should().Be(PlanStatus.Approved);
         }
 
         [Fact]
@@ -406,7 +424,7 @@ namespace ERMS.UnitTests.Features.RecruitmentPlans.Commands.ApprovePlan
         }
 
         [Fact]
-        public async Task Handle_ShouldConsiderExistingApprovedPlans_WhenCheckingBudget()
+        public async Task Handle_ShouldApproveOverBudget_WhenExistingApprovedPlansConsumedBudget()
         {
             // Arrange
             var options = CreateInMemoryOptions();
@@ -447,8 +465,9 @@ namespace ERMS.UnitTests.Features.RecruitmentPlans.Commands.ApprovePlan
                 IsDeleted = false
             });
 
-            // New plan to approve (needs 5000, but only 4000 remaining)
+            // New plan to approve (needs 5000, but only 4000 remaining — still approved)
             var newPlanId = Guid.NewGuid();
+            var detailId = Guid.NewGuid();
             context.RecruitmentPlans.Add(new RecruitmentPlan
             {
                 Id = newPlanId,
@@ -461,15 +480,32 @@ namespace ERMS.UnitTests.Features.RecruitmentPlans.Commands.ApprovePlan
                 CreatedById = userId,
                 IsDeleted = false
             });
+
+            context.PlanDetails.Add(new PlanDetail
+            {
+                Id = detailId,
+                RecruitmentPlanId = newPlanId,
+                Status = PlanDetailStatus.Pending,
+                PositionTitle = "Position",
+                RequestedById = userId,
+                IsDeleted = false
+            });
             await context.SaveChangesAsync();
 
             var handler = new ApprovePlanHandler(context, _currentUserServiceMock.Object, _loggerMock.Object);
             var command = new ApprovePlanCommand { PlanId = newPlanId };
 
-            // Act & Assert
-            await handler.Invoking(h => h.Handle(command, CancellationToken.None))
-                .Should().ThrowAsync<Exception>()
-                .WithMessage("*vượt quá ngân sách còn lại*");
+            // Act — Director vẫn duyệt được dù vượt budget (chỉ log warning)
+            var result = await handler.Handle(command, CancellationToken.None);
+
+            // Assert
+            result.Should().BeTrue();
+
+            var updatedPlan = await context.RecruitmentPlans
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Id == newPlanId);
+            updatedPlan.Should().NotBeNull();
+            updatedPlan!.Status.Should().Be(PlanStatus.Approved);
         }
 
         [Fact]
