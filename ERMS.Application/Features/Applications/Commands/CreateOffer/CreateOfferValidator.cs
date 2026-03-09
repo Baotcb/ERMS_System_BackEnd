@@ -1,5 +1,4 @@
-﻿using ERMS.Domain.Constants.Application;
-using FluentValidation;
+﻿using FluentValidation;
 using System;
 
 namespace ERMS.Application.Features.Applications.Commands.CreateOffer
@@ -19,9 +18,7 @@ namespace ERMS.Application.Features.Applications.Commands.CreateOffer
                 .GreaterThan(0).WithMessage("Lương phải lớn hơn 0.");
 
             RuleFor(x => x.SalaryFrequency)
-                .NotEmpty().WithMessage("Tần suất trả lương là bắt buộc.")
-                .Must(OfferSalaryFrequency.IsValid)
-                .WithMessage($"Tần suất trả lương không hợp lệ. Chỉ hỗ trợ: {string.Join(", ", OfferSalaryFrequency.ValidFrequencies)}.");
+                .NotEmpty().WithMessage("Tần suất trả lương là bắt buộc.");
 
             RuleFor(x => x.StartDate)
                 .NotEmpty().WithMessage("Ngày bắt đầu là bắt buộc.");
@@ -32,4 +29,3 @@ namespace ERMS.Application.Features.Applications.Commands.CreateOffer
         }
     }
 }
-

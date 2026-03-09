@@ -40,5 +40,4 @@ public sealed class RecruitmentCampaignDto
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public int TotalPlansCount { get; set; }
-    public decimal ActualCost { get; set; }
 }

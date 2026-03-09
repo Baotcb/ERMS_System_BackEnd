@@ -1,5 +1,4 @@
-﻿using ERMS.Application.Interface;
-using ERMS.Domain.Constants.Application;
+using ERMS.Application.Interface;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -57,16 +56,7 @@ public sealed class GetRecruitmentCampaignByIdHandler : IRequestHandler<GetRecru
                     .Sum(p => p.TotalBudget ?? 0),
                 RemainingBudget = (c.TotalBudgetCeiling ?? 0) - c.RecruitmentPlans
                     .Where(p => !p.IsDeleted && p.Status == "Approved")
-                    .Sum(p => p.TotalBudget ?? 0),
-                ActualCost = c.RecruitmentPlans
-                    .Where(p => !p.IsDeleted)
-                    .SelectMany(p => p.PlanDetails.Where(pd => !pd.IsDeleted))
-                    .SelectMany(pd => pd.JobPostings.Where(jp => !jp.IsDeleted))
-                    .SelectMany(jp => jp.Applications.Where(a => !a.IsDeleted))
-                    .Where(a => a.Offer != null && !a.Offer.IsDeleted && a.Offer.Status == OfferStatus.Accepted)
-                    .Sum(a => a.Offer!.SalaryFrequency == OfferSalaryFrequency.Yearly
-                        ? a.Offer.Salary / 12m
-                        : a.Offer.Salary)
+                    .Sum(p => p.TotalBudget ?? 0)
             })
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -78,4 +68,3 @@ public sealed class GetRecruitmentCampaignByIdHandler : IRequestHandler<GetRecru
         return campaign;
     }
 }
-

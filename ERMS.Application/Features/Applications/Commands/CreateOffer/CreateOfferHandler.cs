@@ -109,7 +109,7 @@ namespace ERMS.Application.Features.Applications.Commands.CreateOffer
                 Position = request.Position,
                 DepartmentId = application.JobPosting.DepartmentId,
                 Salary = request.Salary,
-                SalaryFrequency = OfferSalaryFrequency.Normalize(request.SalaryFrequency),
+                SalaryFrequency = request.SalaryFrequency,
                 Bonus = request.Bonus,
                 Benefits = request.Benefits,
                 StartDate = request.StartDate,
