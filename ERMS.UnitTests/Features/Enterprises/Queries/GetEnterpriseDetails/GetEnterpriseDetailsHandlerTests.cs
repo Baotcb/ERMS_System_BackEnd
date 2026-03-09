@@ -1,4 +1,4 @@
-using ERMS.Application.Features.Enterprises.Queries.GetEnterpriseDetails;
+﻿using ERMS.Application.Features.Enterprises.Queries.GetEnterpriseDetails;
 using ERMS.Application.Interface;
 using ERMS.Domain.Entities.Enterprise;
 using ERMS.UnitTests.Helpers;
@@ -87,7 +87,7 @@ public class GetEnterpriseDetailsHandlerTests
 
         // Assert
         await act.Should().ThrowAsync<Exception>()
-            .WithMessage($"Enterprise with ID {query.Id} not found or is currently unavailable.");
+            .WithMessage($"Không tìm thấy doanh nghiệp với ID {query.Id} hoặc hiện không khả dụng.");
     }
 
     [Fact]
@@ -113,7 +113,7 @@ public class GetEnterpriseDetailsHandlerTests
 
         // Assert
         await act.Should().ThrowAsync<Exception>()
-            .WithMessage($"Enterprise with ID {query.Id} not found or is currently unavailable.");
+            .WithMessage($"Không tìm thấy doanh nghiệp với ID {query.Id} hoặc hiện không khả dụng.");
     }
 
     [Fact]
@@ -139,6 +139,6 @@ public class GetEnterpriseDetailsHandlerTests
 
         // Assert
         await act.Should().ThrowAsync<Exception>()
-            .WithMessage($"Enterprise with ID {query.Id} not found or is currently unavailable.");
+            .WithMessage($"Không tìm thấy doanh nghiệp với ID {query.Id} hoặc hiện không khả dụng.");
     }
 }

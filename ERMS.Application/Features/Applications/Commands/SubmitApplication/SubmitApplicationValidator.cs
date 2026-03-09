@@ -13,32 +13,32 @@ public sealed class SubmitApplicationValidator : AbstractValidator<SubmitApplica
     {
         RuleFor(x => x.JobPostingId)
             .NotEmpty()
-            .WithMessage("JobPostingId is required.");
+            .WithMessage("JobPostingId là bắt buộc.");
 
         RuleFor(x => x.CvFile)
             .NotNull()
-            .WithMessage("CV file is required.")
+            .WithMessage("File CV là bắt buộc.")
             .Must(file => file != null && file.Length > 0)
-            .WithMessage("CV file cannot be empty.")
+            .WithMessage("File CV không được trống.")
             .Must(file => file != null && file.Length <= MaxFileSizeBytes)
-            .WithMessage("CV file size must not exceed 5MB.")
+            .WithMessage("Dung lượng file CV không được vượt quá 5MB.")
             .Must(file => file != null && IsPdfFile(file.FileName, file.ContentType))
-            .WithMessage("CV file must be a PDF document.");
+            .WithMessage("File CV phải là định dạng PDF.");
 
         RuleFor(x => x.ExpectedSalary)
             .GreaterThan(0)
             .When(x => x.ExpectedSalary.HasValue)
-            .WithMessage("Expected salary must be a positive value.");
+            .WithMessage("Mức lương mong muốn phải là giá trị dương.");
 
         RuleFor(x => x.AvailableStartDate)
             .GreaterThanOrEqualTo(DateTime.UtcNow.Date)
             .When(x => x.AvailableStartDate.HasValue)
-            .WithMessage("Available start date cannot be in the past.");
+            .WithMessage("Ngày có thể bắt đầu không được trong quá khứ.");
 
         RuleFor(x => x.CoverLetter)
             .MaximumLength(5000)
             .When(x => !string.IsNullOrEmpty(x.CoverLetter))
-            .WithMessage("Cover letter must not exceed 5000 characters.");
+            .WithMessage("Thư xin việc không được vượt quá 5000 ký tự.");
     }
 
     private static bool IsPdfFile(string fileName, string contentType)

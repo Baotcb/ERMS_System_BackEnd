@@ -23,7 +23,7 @@ namespace ERMS.Application.Features.Employees.Queries.GetAllEmployees
             var enterpriseId = await _currentUserService.GetEnterpriseIdAsync();
             if (enterpriseId == null)
             {
-                throw new System.UnauthorizedAccessException("User does not belong to any enterprise");
+                throw new System.UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
             }
 
             var query = _context.Employees

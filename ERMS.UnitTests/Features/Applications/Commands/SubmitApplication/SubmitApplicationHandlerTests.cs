@@ -1,4 +1,4 @@
-using ERMS.Application.Features.Applications.Commands.SubmitApplication;
+﻿using ERMS.Application.Features.Applications.Commands.SubmitApplication;
 using ERMS.Application.Interface;
 using FluentAssertions;
 using ERMS.Domain.Constants.Application;
@@ -189,7 +189,7 @@ public class SubmitApplicationHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("User not authenticated.");
+            .WithMessage("Người dùng chưa được xác thực.");
     }
 
     [Fact]
@@ -204,7 +204,7 @@ public class SubmitApplicationHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("Only candidates can submit job applications.");
+            .WithMessage("Chỉ ứng viên mới có quyền nộp hồ sơ ứng tuyển.");
     }
 
     [Fact]
@@ -219,7 +219,7 @@ public class SubmitApplicationHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("Only candidates can submit job applications.");
+            .WithMessage("Chỉ ứng viên mới có quyền nộp hồ sơ ứng tuyển.");
     }
 
     #endregion
@@ -241,7 +241,7 @@ public class SubmitApplicationHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("*Candidate profile not found*");
+            .WithMessage("*Không tìm thấy hồ sơ ứng viên*");
     }
 
     [Fact]
@@ -262,7 +262,7 @@ public class SubmitApplicationHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("*Candidate profile not found*");
+            .WithMessage("*Không tìm thấy hồ sơ ứng viên*");
     }
 
     #endregion
@@ -289,7 +289,7 @@ public class SubmitApplicationHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("*Job posting with ID*not found*");
+            .WithMessage("*Tin tuyển dụng với ID**");
     }
 
     [Fact]
@@ -315,7 +315,7 @@ public class SubmitApplicationHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("*not open for applications*");
+            .WithMessage("*không mở nhận hồ sơ*");
     }
 
     [Fact]
@@ -341,7 +341,7 @@ public class SubmitApplicationHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("*not open for applications*");
+            .WithMessage("*không mở nhận hồ sơ*");
     }
 
     [Fact]
@@ -367,7 +367,7 @@ public class SubmitApplicationHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("*deadline has passed*");
+            .WithMessage("*Hạn nộp*đã qua*");
     }
 
     #endregion
@@ -407,7 +407,7 @@ public class SubmitApplicationHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("*already applied*");
+            .WithMessage("*đã ứng tuyển*");
     }
 
     [Fact]

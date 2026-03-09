@@ -1,4 +1,4 @@
-using ERMS.Application.Features.Applications.Queries.GetApplicationsByJob;
+﻿using ERMS.Application.Features.Applications.Queries.GetApplicationsByJob;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Application;
 using ERMS.Domain.Constants.Roles;
@@ -189,7 +189,7 @@ public class GetApplicationsByJobHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(query, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("User not authenticated.");
+            .WithMessage("Người dùng chưa được xác thực.");
     }
 
     [Fact]
@@ -204,7 +204,7 @@ public class GetApplicationsByJobHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(query, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("Only HR Manager or Director can view applications.");
+            .WithMessage("Chỉ HR Manager hoặc Giám đốc mới có quyền xem hồ sơ ứng tuyển.");
     }
 
     [Fact]
@@ -219,7 +219,7 @@ public class GetApplicationsByJobHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(query, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("Only HR Manager or Director can view applications.");
+            .WithMessage("Chỉ HR Manager hoặc Giám đốc mới có quyền xem hồ sơ ứng tuyển.");
     }
 
     [Fact]
@@ -234,7 +234,7 @@ public class GetApplicationsByJobHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(query, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("Only HR Manager or Director can view applications.");
+            .WithMessage("Chỉ HR Manager hoặc Giám đốc mới có quyền xem hồ sơ ứng tuyển.");
     }
 
     [Fact]
@@ -250,7 +250,7 @@ public class GetApplicationsByJobHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(query, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("User is not associated with any enterprise.");
+            .WithMessage("Người dùng không thuộc doanh nghiệp nào.");
     }
 
     [Fact]
@@ -267,7 +267,7 @@ public class GetApplicationsByJobHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(query, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage($"*Job posting with ID {_jobPostingId} not found*");
+            .WithMessage($"*Tin tuyển dụng với ID {_jobPostingId}*");
     }
 
     #endregion
@@ -286,7 +286,7 @@ public class GetApplicationsByJobHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(query, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage($"*Job posting with ID {_jobPostingId} not found*");
+            .WithMessage($"*Tin tuyển dụng với ID {_jobPostingId}*");
     }
 
     [Fact]
@@ -304,7 +304,7 @@ public class GetApplicationsByJobHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(query, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage($"*Job posting with ID {_jobPostingId} not found*");
+            .WithMessage($"*Tin tuyển dụng với ID {_jobPostingId}*");
     }
 
     #endregion

@@ -24,7 +24,7 @@ namespace ERMS.Application.Features.Departments.Commands.UpdateDepartment
         public async Task<bool> Handle(UpdateDepartmentCommand request, CancellationToken cancellationToken)
         {
             var enterpriseId = await _currentUserService.GetEnterpriseIdAsync();
-            if (enterpriseId == null) throw new UnauthorizedAccessException("User not belong to enterprise");
+            if (enterpriseId == null) throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
 
             var department = await _context.Departments
                 .FirstOrDefaultAsync(d => d.Id == request.Id 

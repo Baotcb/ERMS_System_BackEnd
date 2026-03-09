@@ -31,16 +31,16 @@ namespace ERMS.Application.Features.Training.Commands.CreateTrainingPlan
     CancellationToken cancellationToken)
         {
             var userId = _currentUserService.UserId
-                ?? throw new UnauthorizedAccessException("User not authenticated");
+                ?? throw new UnauthorizedAccessException("Người dùng chưa được xác thực");
 
             var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
-                ?? throw new Exception("User does not belong to any enterprise");
+                ?? throw new Exception("Người dùng không thuộc doanh nghiệp nào");
 
             if (request.EndDate < request.StartDate)
-                throw new Exception("EndDate must be greater than StartDate");
+                throw new Exception("Ngày kết thúc phải sau ngày bắt đầu");
 
             if (!request.TrainingRequestIds.Any())
-                throw new Exception("Training requests are required");
+                throw new Exception("Cần có ít nhất một yêu cầu đào tạo");
 
             // ✅ Check duplicate PlanCode
             var existedCode = await _context.TrainingPlans
@@ -51,7 +51,7 @@ namespace ERMS.Application.Features.Training.Commands.CreateTrainingPlan
                     cancellationToken);
 
             if (existedCode)
-                throw new Exception("PlanCode already exists");
+                throw new Exception("Mã kế hoạch đã tồn tại");
 
             // ✅ Get Requests
             var requests = await _context.TrainingRequests
@@ -63,7 +63,7 @@ namespace ERMS.Application.Features.Training.Commands.CreateTrainingPlan
                 .ToListAsync(cancellationToken);
 
             if (requests.Count != request.TrainingRequestIds.Count)
-                throw new Exception("Some training requests are invalid");
+                throw new Exception("Một số yêu cầu đào tạo không hợp lệ");
 
             // ✅ Transaction
             using var transaction =

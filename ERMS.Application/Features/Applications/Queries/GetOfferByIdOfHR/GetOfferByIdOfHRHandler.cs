@@ -25,11 +25,11 @@ namespace ERMS.Application.Features.Applications.Queries.GetOfferByIdOfHR
             var userId = _currentUserService.UserId;
             if (userId == null)
             {
-                throw new UnauthorizedAccessException("User is not authenticated");
+                throw new UnauthorizedAccessException("Người dùng chưa được xác thực.");
             }
             if (!_currentUserService.Roles.Contains(AppRoles.HRManager))
             {
-                throw new UnauthorizedAccessException("User does not have permission to view offers");
+                throw new UnauthorizedAccessException("Người dùng không có quyền xem đề nghị.");
             }
 
             var offer = await _context.Offers
@@ -61,7 +61,7 @@ namespace ERMS.Application.Features.Applications.Queries.GetOfferByIdOfHR
 
             if (offer == null || (offer.CreatedById != userId))
             {
-                throw new Exception($"Offer with ID {request.Id} not found or you don't have permission to access it."); 
+                throw new Exception($"Không tìm thấy đề nghị với ID {request.Id} hoặc bạn không có quyền truy cập."); 
             }
 
             return offer;

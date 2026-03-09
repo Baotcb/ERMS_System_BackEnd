@@ -13,11 +13,11 @@ public sealed class ForwardApplicationValidator : AbstractValidator<ForwardAppli
     {
         RuleFor(x => x.ApplicationId)
             .NotEmpty()
-            .WithMessage("ApplicationId is required.");
+            .WithMessage("ApplicationId là bắt buộc.");
 
         RuleFor(x => x.HRNote)
             .MaximumLength(MaxHRNoteLength)
             .When(x => !string.IsNullOrEmpty(x.HRNote))
-            .WithMessage($"HR Note must not exceed {MaxHRNoteLength} characters.");
+            .WithMessage($"Ghi chú HR không được vượt quá {MaxHRNoteLength} ký tự.");
     }
 }

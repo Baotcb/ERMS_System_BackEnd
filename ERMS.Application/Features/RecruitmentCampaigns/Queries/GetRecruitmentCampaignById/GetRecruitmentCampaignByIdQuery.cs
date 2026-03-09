@@ -31,4 +31,5 @@ public sealed class RecruitmentCampaignDetailDto
     public decimal UsedBudget { get; set; }
     public decimal PendingBudget { get; set; }
     public decimal RemainingBudget { get; set; }
+    public decimal ActualCost { get; set; }
 }

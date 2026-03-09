@@ -1,4 +1,4 @@
-using ERMS.Application.Features.JobPostings.Commands.DeleteJobPosting;
+﻿using ERMS.Application.Features.JobPostings.Commands.DeleteJobPosting;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Recruitment;
 using ERMS.Domain.Constants.Roles;
@@ -47,7 +47,7 @@ namespace ERMS.UnitTests.Features.JobPostings.Commands.DeleteJobPosting
             // Act & Assert
             await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
                 .Should().ThrowAsync<UnauthorizedAccessException>()
-                .WithMessage("Only HR Manager can delete job postings.");
+                .WithMessage("Chỉ HR Manager mới có quyền xóa tin tuyển dụng.");
         }
 
         [Fact]
@@ -65,7 +65,7 @@ namespace ERMS.UnitTests.Features.JobPostings.Commands.DeleteJobPosting
             // Act & Assert
             await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
                 .Should().ThrowAsync<Exception>()
-                .WithMessage($"JobPosting with ID {command.Id} not found.");
+                .WithMessage($"Không tìm thấy tin tuyển dụng với ID {command.Id}.");
         }
 
         [Fact]
@@ -102,7 +102,7 @@ namespace ERMS.UnitTests.Features.JobPostings.Commands.DeleteJobPosting
             // Act & Assert
             await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
                 .Should().ThrowAsync<InvalidOperationException>()
-                .WithMessage("Cannot delete a published job posting that has candidate applications. Please close the job posting instead.");
+                .WithMessage("Không thể xóa tin tuyển dụng đã đăng có ứng viên nộp hồ sơ. Vui lòng đóng tin tuyển dụng thay vì xóa.");
         }
 
         [Fact]

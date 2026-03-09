@@ -37,18 +37,18 @@ public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInt
     {
         // 1. Validate current user
         var userId = _currentUserService.UserId
-            ?? throw new UnauthorizedAccessException("User not authenticated.");
+            ?? throw new UnauthorizedAccessException("Người dùng chưa được xác thực.");
 
         // 2. Role check: HRManager ONLY
         var userRoles = _currentUserService.Roles;
         if (userRoles == null || !userRoles.Contains(AppRoles.HRManager))
         {
-            throw new UnauthorizedAccessException("Only HR Manager can confirm interview schedules.");
+            throw new UnauthorizedAccessException("Chỉ HR Manager mới có quyền xác nhận lịch phỏng vấn.");
         }
 
         // 3. Get enterprise ID
         var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
-            ?? throw new UnauthorizedAccessException("User is not associated with any enterprise.");
+            ?? throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
 
         // 4. Find the PENDING interview for this application
         var interview = await _context.Interviews
@@ -66,12 +66,12 @@ public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInt
                 i.Status == InterviewStatus.PendingSchedule && 
                 !i.IsDeleted, 
                 cancellationToken)
-            ?? throw new Exception($"No pending interview found for Application {request.ApplicationId}.");
+            ?? throw new Exception($"Không tìm thấy buổi phỏng vấn đang chờ cho hồ sơ {request.ApplicationId}.");
 
         // 5. Validate enterprise ownership
         if (interview.Application.JobPosting.EnterpriseId != enterpriseId)
         {
-            throw new UnauthorizedAccessException("You do not have permission to access this application.");
+            throw new UnauthorizedAccessException("Bạn không có quyền truy cập hồ sơ ứng tuyển này.");
         }
 
         // 6. Auto-create Zoom meeting if needed
@@ -97,7 +97,7 @@ public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInt
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to auto-create Zoom meeting for Interview {InterviewId}", interview.Id);
-                throw new Exception("Failed to create Zoom meeting. Please try again or provide a meeting link manually.", ex);
+                throw new Exception("Không thể tạo cuộc họp Zoom. Vui lòng thử lại hoặc cung cấp link họp thủ công.", ex);
             }
         }
 
