@@ -96,6 +96,8 @@ namespace ERMS.UnitTests.Features.Users.Commands.GetProfile
                 UserName = "testuser",
                 Email = "test@example.com",
                 FullName = "Test User",
+                PhoneNumber = "0987654321",
+                AvatarUrl = "https://res.cloudinary.com/demo/image/upload/avatar.png",
                 DateJoined = DateTime.UtcNow,
                 Department = new Department { DepartmentName = "HR" }
             };
@@ -119,6 +121,8 @@ namespace ERMS.UnitTests.Features.Users.Commands.GetProfile
             result.Should().NotBeNull();
             result.UserName.Should().Be(user.UserName);
             result.FullName.Should().Be(user.FullName);
+            result.Phones.Should().Be(user.PhoneNumber);
+            result.AvatarUrl.Should().Be(user.AvatarUrl);
             result.DepartmentName.Should().Be("HR");
         }
     }

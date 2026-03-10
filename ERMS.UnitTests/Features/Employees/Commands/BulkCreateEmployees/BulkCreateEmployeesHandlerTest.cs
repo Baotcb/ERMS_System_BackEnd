@@ -1,4 +1,4 @@
-using ERMS.Application.Features.Employees.Commands.BulkCreateEmployees;
+﻿using ERMS.Application.Features.Employees.Commands.BulkCreateEmployees;
 using ERMS.Application.Interface;
 using ERMS.Domain.Entities.Enterprise;
 using ERMS.Domain.Entities.Identity;
@@ -51,7 +51,7 @@ public class BulkCreateEmployeesHandlerTest
         var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
             _handler.Handle(command, CancellationToken.None));
 
-        exception.Message.Should().Be("User not belong to enterprise");
+        exception.Message.Should().Be("Người dùng không thuộc doanh nghiệp nào.");
     }
 
     [Fact]

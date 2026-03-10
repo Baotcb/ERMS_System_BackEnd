@@ -45,13 +45,13 @@ namespace ERMS.Application.Features.Training.Commands.ConfirmTrainingRequest
                     cancellationToken);
 
             if (trainingRequest == null)
-                throw new Exception("Training request not found");
+                throw new Exception("Không tìm thấy yêu cầu đào tạo");
 
             if (trainingRequest.Status == "AddedToPlan")
-                throw new Exception("Request already confirmed");
+                throw new Exception("Yêu cầu đã được phê duyệt");
 
             if (trainingRequest.Status != "Pending")
-                throw new Exception("Request already rejected");
+                throw new Exception("Yêu cầu đã bị từ chối");
 
             // ✅ Confirm request
             trainingRequest.Status = request.Status;

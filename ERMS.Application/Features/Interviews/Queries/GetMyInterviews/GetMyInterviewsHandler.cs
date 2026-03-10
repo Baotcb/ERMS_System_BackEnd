@@ -22,18 +22,18 @@ public sealed class GetMyInterviewsHandler : IRequestHandler<GetMyInterviewsQuer
     {
         // 1. Validate current user is authenticated
         var userId = _currentUserService.UserId
-            ?? throw new UnauthorizedAccessException("User not authenticated.");
+            ?? throw new UnauthorizedAccessException("Người dùng chưa được xác thực.");
 
         // 2. Enterprise scoping
         var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
-            ?? throw new UnauthorizedAccessException("User is not associated with any enterprise.");
+            ?? throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
 
         // 3. Resolve Employee record for the current user
         var employee = await _context.Employees
             .Where(e => e.UserId == userId && !e.IsDeleted)
             .Select(e => new { e.Id })
             .FirstOrDefaultAsync(cancellationToken)
-            ?? throw new UnauthorizedAccessException("User is not an employee.");
+            ?? throw new UnauthorizedAccessException("Người dùng không phải là nhân viên.");
 
         // 4. Build query: InterviewParticipants where EmployeeId matches
         var query = _context.InterviewParticipants

@@ -16,7 +16,6 @@ namespace ERMS.Application.Features.Users.Commands.ChangeProfile
         public string? Hometown { get; set; }
         public string? Phones { get; set; }
         public string? Address { get; set; }
-
-
-        }
-        }
+        public string? AvatarUrl { get; set; }
+    }
+}

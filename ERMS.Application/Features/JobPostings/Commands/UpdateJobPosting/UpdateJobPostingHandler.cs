@@ -25,16 +25,16 @@ public sealed class UpdateJobPostingHandler : IRequestHandler<UpdateJobPostingCo
     public async Task<Unit> Handle(UpdateJobPostingCommand request, CancellationToken cancellationToken)
     {
         var userId = _currentUserService.UserId
-            ?? throw new UnauthorizedAccessException("User not authenticated.");
+            ?? throw new UnauthorizedAccessException("Người dùng chưa được xác thực.");
 
         var userRoles = _currentUserService.Roles;
         if (userRoles == null || !userRoles.Contains(AppRoles.HRManager))
         {
-            throw new UnauthorizedAccessException("Only HR Manager can update job postings.");
+            throw new UnauthorizedAccessException("Chỉ HR Manager mới có quyền cập nhật tin tuyển dụng.");
         }
 
         var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
-            ?? throw new UnauthorizedAccessException("User is not associated with any enterprise.");
+            ?? throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
 
         var jobPosting = await _context.JobPostings
             .FirstOrDefaultAsync(jp =>
@@ -42,7 +42,7 @@ public sealed class UpdateJobPostingHandler : IRequestHandler<UpdateJobPostingCo
                 && jp.EnterpriseId == enterpriseId
                 && !jp.IsDeleted,
                 cancellationToken)
-            ?? throw new Exception($"JobPosting with ID {request.Id} not found.");
+            ?? throw new Exception($"Không tìm thấy tin tuyển dụng với ID {request.Id}.");
 
         // Update only allowed fields
         if (request.Description != null)
@@ -54,7 +54,7 @@ public sealed class UpdateJobPostingHandler : IRequestHandler<UpdateJobPostingCo
         if (request.ApplicationDeadline.HasValue)
         {
             if (request.ApplicationDeadline.Value <= DateTime.UtcNow)
-                throw new Exception("Application deadline must be in the future.");
+                throw new Exception("Hạn nộp hồ sơ phải trong tương lai.");
             jobPosting.ApplicationDeadline = request.ApplicationDeadline.Value;
         }
 

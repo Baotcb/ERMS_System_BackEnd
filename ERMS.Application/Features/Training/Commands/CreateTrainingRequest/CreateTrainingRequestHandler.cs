@@ -34,7 +34,7 @@ namespace ERMS.Application.Features.Training.Commands.CreateTrainingRequest
 
             var userId = _currentUserService.UserId;
             if (userId == null)
-                throw new UnauthorizedAccessException("User not authenticated");
+                throw new UnauthorizedAccessException("Người dùng chưa được xác thực");
 
             var enterpriseId = await _currentUserService.GetEnterpriseIdAsync();
             var departmentId = await _currentUserService.GetDepartmentIdAsync();

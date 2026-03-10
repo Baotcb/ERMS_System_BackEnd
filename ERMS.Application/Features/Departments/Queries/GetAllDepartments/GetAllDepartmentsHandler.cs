@@ -24,7 +24,7 @@ namespace ERMS.Application.Features.Departments.Queries.GetAllDepartments
             if (enterpriseId == null)
             {
                 // Return empty or throw? Throwing Unauthorized is better to signal issue
-                throw new System.UnauthorizedAccessException("User does not belong to any enterprise");
+                throw new System.UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
             }
 
             var query = _context.Departments

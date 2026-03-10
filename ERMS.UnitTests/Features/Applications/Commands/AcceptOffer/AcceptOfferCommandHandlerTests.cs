@@ -1,4 +1,4 @@
-using ERMS.Application.Features.Applications.Commands.AcceptOffer;
+﻿using ERMS.Application.Features.Applications.Commands.AcceptOffer;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Application;
 using ERMS.Domain.Constants.Roles;
@@ -148,7 +148,7 @@ public class AcceptOfferCommandHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("User not authenticated.");
+            .WithMessage("Người dùng chưa được xác thực.");
     }
 
     [Fact]
@@ -162,7 +162,7 @@ public class AcceptOfferCommandHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("Only candidates can accept offers.");
+            .WithMessage("Chỉ ứng viên mới có quyền chấp nhận đề nghị.");
     }
 
     [Fact]
@@ -176,7 +176,7 @@ public class AcceptOfferCommandHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("Only candidates can accept offers.");
+            .WithMessage("Chỉ ứng viên mới có quyền chấp nhận đề nghị.");
     }
 
     [Fact]
@@ -194,7 +194,7 @@ public class AcceptOfferCommandHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("You do not have permission to access this offer.");
+            .WithMessage("Bạn không có quyền truy cập đề nghị này.");
     }
 
     #endregion
@@ -212,7 +212,7 @@ public class AcceptOfferCommandHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("Candidate profile not found.");
+            .WithMessage("Không tìm thấy hồ sơ ứng viên.");
     }
 
     [Fact]
@@ -227,7 +227,7 @@ public class AcceptOfferCommandHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage($"*Offer with ID {_offerId} not found*");
+            .WithMessage($"*Không tìm thấy đề nghị với ID {_offerId}*");
     }
 
     #endregion
@@ -249,7 +249,7 @@ public class AcceptOfferCommandHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("*Cannot accept offer*Only offers with status 'Sent' can be accepted*");
+            .WithMessage("*Không thể chấp nhận đề nghị*Chỉ đề nghị có trạng thái 'Sent' mới có thể chấp nhận*");
     }
 
     [Fact]
@@ -267,7 +267,7 @@ public class AcceptOfferCommandHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("*Cannot accept offer*expired*");
+            .WithMessage("*Không thể chấp nhận đề nghị*hết hạn*");
     }
 
     #endregion

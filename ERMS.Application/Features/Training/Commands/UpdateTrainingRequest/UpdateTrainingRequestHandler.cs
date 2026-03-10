@@ -37,11 +37,11 @@ namespace ERMS.Application.Features.Training.Commands.UpdateTrainingRequest
                     cancellationToken);
 
             if (trainingRequest == null)
-                throw new Exception("Training request not found");
+                throw new Exception("Không tìm thấy yêu cầu đào tạo");
 
             // ✅ chỉ owner được sửa
             if (trainingRequest.RequestedById != userId)
-                throw new Exception("You are not allowed to update this request");
+                throw new Exception("Bạn không có quyền cập nhật yêu cầu này");
 
             // ✅ CHỈ cho sửa khi NeedRevision
             if (trainingRequest.Status != "NeedRevision")

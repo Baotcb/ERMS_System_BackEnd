@@ -4,6 +4,7 @@ using ERMS.Domain.Entities;
 using ERMS.Domain.Entities.Identity;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
+using System.Linq;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -34,6 +35,8 @@ namespace ERMS.Application.Features.Users.Commands.ChangeProfile
             user.FullName = request.FullName;
             user.DateOfBirth = request.DateOfBirth;
             user.Hometown = request.Hometown;
+            user.PhoneNumber = request.Phones;
+            user.AvatarUrl = NormalizeAvatarUrl(request.AvatarUrl);
             var result = await _userManager.UpdateAsync(user);
             if (!result.Succeeded)
             {
@@ -47,11 +50,28 @@ namespace ERMS.Application.Features.Users.Commands.ChangeProfile
                 FullName = user.FullName,
                 DateOfBirth = user.DateOfBirth,
                 Hometown = user.Hometown,
+                Phones = user.PhoneNumber,
                 DepartmentId = user.DepartmentId,
                 DepartmentName = user.Department?.DepartmentName,
+                AvatarUrl = user.AvatarUrl,
                 DateJoined = user.DateJoined
             };
         }
 
+        private static string? NormalizeAvatarUrl(string? avatarUrl)
+        {
+            if (string.IsNullOrWhiteSpace(avatarUrl))
+            {
+                return null;
+            }
+
+            if (!Uri.TryCreate(avatarUrl, UriKind.Absolute, out var uri) ||
+                (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+            {
+                throw new Exception("Avatar URL không hợp lệ.");
+            }
+
+            return uri.ToString();
+        }
     }
 }

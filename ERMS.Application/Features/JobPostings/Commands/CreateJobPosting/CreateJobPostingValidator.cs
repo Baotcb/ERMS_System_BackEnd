@@ -8,11 +8,11 @@ public sealed class CreateJobPostingValidator : AbstractValidator<CreateJobPosti
     {
         RuleFor(x => x.PlanDetailId)
             .NotEmpty()
-            .WithMessage("PlanDetailId is required.");
+            .WithMessage("PlanDetailId là bắt buộc.");
 
         RuleFor(x => x.ApplicationDeadline)
             .GreaterThan(DateTime.UtcNow)
-            .WithMessage("Application deadline must be in the future.");
+            .WithMessage("Hạn nộp hồ sơ phải trong tương lai.");
 
         RuleFor(x => x.TitleOverride)
             .MaximumLength(200)

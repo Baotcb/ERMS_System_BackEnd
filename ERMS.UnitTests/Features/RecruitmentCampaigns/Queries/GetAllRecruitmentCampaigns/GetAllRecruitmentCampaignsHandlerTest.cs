@@ -1,4 +1,4 @@
-using ERMS.Application.Features.RecruitmentCampaigns.Queries.GetAllRecruitmentCampaigns;
+﻿using ERMS.Application.Features.RecruitmentCampaigns.Queries.GetAllRecruitmentCampaigns;
 using ERMS.Application.Interface;
 using ERMS.Domain.Entities.Recruitment;
 using ERMS.Domain.Entities.Identity;

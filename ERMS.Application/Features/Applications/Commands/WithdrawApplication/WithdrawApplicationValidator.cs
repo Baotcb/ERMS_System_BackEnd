@@ -11,6 +11,6 @@ public sealed class WithdrawApplicationValidator : AbstractValidator<WithdrawApp
     {
         RuleFor(x => x.ApplicationId)
             .NotEmpty()
-            .WithMessage("ApplicationId is required.");
+            .WithMessage("ApplicationId là bắt buộc.");
     }
 }

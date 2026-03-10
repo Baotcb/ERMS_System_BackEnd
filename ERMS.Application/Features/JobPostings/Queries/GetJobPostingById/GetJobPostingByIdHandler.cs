@@ -20,16 +20,16 @@ public sealed class GetJobPostingByIdHandler : IRequestHandler<GetJobPostingById
     public async Task<JobPostingDetailDto?> Handle(GetJobPostingByIdQuery request, CancellationToken cancellationToken)
     {
         var userId = _currentUserService.UserId
-            ?? throw new UnauthorizedAccessException("User not authenticated.");
+            ?? throw new UnauthorizedAccessException("Người dùng chưa được xác thực.");
 
         var userRoles = _currentUserService.Roles;
         if (userRoles == null || (!userRoles.Contains(AppRoles.HRManager) && !userRoles.Contains(AppRoles.Director)))
         {
-            throw new UnauthorizedAccessException("Only HR Manager or Director can view job posting details.");
+            throw new UnauthorizedAccessException("Chỉ HR Manager hoặc Giám đốc mới có quyền xem chi tiết tin tuyển dụng.");
         }
 
         var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
-            ?? throw new UnauthorizedAccessException("User is not associated with any enterprise.");
+            ?? throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
 
         var jobPosting = await _context.JobPostings
             .Include(jp => jp.Department)

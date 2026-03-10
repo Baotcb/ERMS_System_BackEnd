@@ -55,7 +55,7 @@ public class PdfTextExtractor : IPdfTextExtractor
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to extract text from PDF");
-            throw new Exception("Failed to extract text from PDF. Please ensure the file is a valid PDF document.", ex);
+            throw new Exception("Không thể trích xuất văn bản từ PDF. Vui lòng đảm bảo file là tài liệu PDF hợp lệ.", ex);
         }
     }
 }

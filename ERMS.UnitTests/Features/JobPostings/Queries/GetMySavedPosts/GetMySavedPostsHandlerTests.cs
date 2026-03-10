@@ -1,4 +1,4 @@
-using ERMS.Application.Features.JobPostings.Queries.GetMySavedPosts;
+﻿using ERMS.Application.Features.JobPostings.Queries.GetMySavedPosts;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Roles;
 using ERMS.Domain.Entities.Candidate;
@@ -106,7 +106,7 @@ public class GetMySavedPostsHandlerTests
         _currentUserServiceMock.Setup(x => x.UserId).Returns((Guid?)null);
         await _handler.Invoking(h => h.Handle(new GetMySavedPostsQuery(), CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("User not authenticated.");
+            .WithMessage("Người dùng chưa được xác thực.");
     }
 
     [Fact]
@@ -116,7 +116,7 @@ public class GetMySavedPostsHandlerTests
         _currentUserServiceMock.Setup(x => x.Roles).Returns([AppRoles.HRManager]);
         await _handler.Invoking(h => h.Handle(new GetMySavedPostsQuery(), CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("Only candidates can view their saved posts.");
+            .WithMessage("Chỉ ứng viên mới có quyền xem bài viết đã lưu.");
     }
 
     [Fact]
@@ -126,7 +126,7 @@ public class GetMySavedPostsHandlerTests
         SetupCandidatesDbSet(null);
         await _handler.Invoking(h => h.Handle(new GetMySavedPostsQuery(), CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("Candidate profile not found.");
+            .WithMessage("Không tìm thấy hồ sơ ứng viên.");
     }
 
     #endregion
