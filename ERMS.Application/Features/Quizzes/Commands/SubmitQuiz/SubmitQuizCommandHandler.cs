@@ -25,7 +25,7 @@ public sealed class SubmitQuizCommandHandler
             .FirstOrDefaultAsync(x => x.Id == request.AttemptId, cancellationToken);
 
         if (attempt == null)
-            throw new Exception("Attempt not found");
+            throw new Exception("Không tìm thấy lượt làm bài");
 
         int correct = 0;
 

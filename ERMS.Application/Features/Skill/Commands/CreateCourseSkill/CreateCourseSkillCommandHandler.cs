@@ -23,19 +23,19 @@ namespace ERMS.Application.Features.CourseSkills.Commands.CreateCourseSkill
                 .FirstOrDefaultAsync(c => c.Id == request.CourseId && !c.IsDeleted, cancellationToken);
 
             if (course == null)
-                throw new KeyNotFoundException("Course not found");
+                throw new KeyNotFoundException("Không tìm thấy khóa học");
 
             var skill = await _context.Skills
                 .FirstOrDefaultAsync(s => s.Id == request.SkillId && !s.IsDeleted, cancellationToken);
 
             if (skill == null)
-                throw new KeyNotFoundException("Skill not found");
+                throw new KeyNotFoundException("Không tìm thấy kỹ năng");
 
             var exists = await _context.CourseSkills
                 .AnyAsync(cs => cs.CourseId == request.CourseId && cs.SkillId == request.SkillId, cancellationToken);
 
             if (exists)
-                throw new Exception("Skill already assigned to this course");
+                throw new Exception("Kỹ năng này đã được gán cho khóa học");
 
             var courseSkill = new CourseSkill
             {

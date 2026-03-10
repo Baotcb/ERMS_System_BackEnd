@@ -23,7 +23,7 @@ public sealed class CreateQuizCommandHandler
             .FirstOrDefaultAsync(x => x.Id == request.CourseId && !x.IsDeleted, cancellationToken);
 
         if (course == null)
-            throw new Exception("Course not found");
+            throw new Exception("Không tìm thấy khóa học");
 
         var quiz = new Quiz
         {

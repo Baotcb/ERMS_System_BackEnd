@@ -30,7 +30,7 @@ namespace ERMS.Application.Features.Enrollments.Commands.AssignEmployeesToCourse
             var enterpriseId = await _currentUserService.GetEnterpriseIdAsync();
 
             if (enterpriseId == null)
-                throw new UnauthorizedAccessException("User does not belong to any enterprise");
+                throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào");
 
             var course = await _context.Courses
                 .FirstOrDefaultAsync(c =>
@@ -40,7 +40,7 @@ namespace ERMS.Application.Features.Enrollments.Commands.AssignEmployeesToCourse
                     cancellationToken);
 
             if (course == null)
-                throw new KeyNotFoundException("Course not found");
+                throw new KeyNotFoundException("Không tìm thấy khóa học");
 
             var existingEnrollments = await _context.Enrollments
                 .Where(e => e.CourseId == request.CourseId && !e.IsDeleted)

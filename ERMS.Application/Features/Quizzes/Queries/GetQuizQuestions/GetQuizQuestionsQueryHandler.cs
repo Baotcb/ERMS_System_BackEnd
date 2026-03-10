@@ -24,7 +24,7 @@ public sealed class GetQuizQuestionsQueryHandler
             .FirstOrDefaultAsync(x => x.Id == request.AttemptId, cancellationToken);
 
         if (attempt == null)
-            throw new Exception("Attempt not found");
+            throw new Exception("Không tìm thấy lượt làm bài");
 
         return attempt.Quiz.Questions
             .Where(x => x.IsActive)

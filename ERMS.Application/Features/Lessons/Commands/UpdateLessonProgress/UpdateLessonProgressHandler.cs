@@ -26,7 +26,7 @@ namespace ERMS.Application.Features.Lessons.Commands.UpdateLessonProgress
                 .FirstOrDefaultAsync(e => e.Id == request.EnrollmentId && !e.IsDeleted, cancellationToken);
 
             if (enrollment == null)
-                throw new KeyNotFoundException("Enrollment not found");
+                throw new KeyNotFoundException("Không tìm thấy đăng ký khóa học");
 
             var progress = await _context.LessonProgresses
                 .FirstOrDefaultAsync(p =>
