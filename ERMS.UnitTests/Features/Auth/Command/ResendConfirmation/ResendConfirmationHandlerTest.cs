@@ -87,5 +87,46 @@ namespace ERMS.UnitTests.Features.Auth.Command.ResendConfirmation
             result.Should().BeTrue();
             _emailServiceMock.Verify(x => x.SendEmailAsync(user.Email, "Xác thực email tài khoản ERMS", It.IsAny<string>()), Times.Once);
         }
+
+        [Fact]
+        public async Task Handle_ShouldReturnFalse_WhenClientUrlIsInvalid()
+        {
+            // Arrange
+            var user = new User { Id = Guid.NewGuid(), Email = "test@example.com", EmailConfirmed = false, FullName = "Test User" };
+            var command = new ResendConfirmationCommand { Email = user.Email };
+
+            _userManagerMock.Setup(x => x.FindByEmailAsync(command.Email)).ReturnsAsync(user);
+            _configMock.Setup(x => x["ClientSettings:Url"]).Returns("not-a-valid-url");
+
+            // Act
+            var result = await _handler.Handle(command, CancellationToken.None);
+
+            // Assert
+            result.Should().BeFalse();
+            _userManagerMock.Verify(x => x.GenerateEmailConfirmationTokenAsync(It.IsAny<User>()), Times.Once);
+            _emailServiceMock.Verify(x => x.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task Handle_ShouldReturnFalse_WhenEmailServiceThrows()
+        {
+            // Arrange
+            var user = new User { Id = Guid.NewGuid(), Email = "test@example.com", EmailConfirmed = false, FullName = "Test User" };
+            var command = new ResendConfirmationCommand { Email = user.Email };
+            var token = "confirmation-token";
+            var clientUrl = "http://localhost:3000";
+
+            _userManagerMock.Setup(x => x.FindByEmailAsync(command.Email)).ReturnsAsync(user);
+            _userManagerMock.Setup(x => x.GenerateEmailConfirmationTokenAsync(user)).ReturnsAsync(token);
+            _configMock.Setup(x => x["ClientSettings:Url"]).Returns(clientUrl);
+            _emailServiceMock.Setup(x => x.SendEmailAsync(user.Email, It.IsAny<string>(), It.IsAny<string>()))
+                .ThrowsAsync(new InvalidOperationException("SMTP unavailable"));
+
+            // Act
+            var result = await _handler.Handle(command, CancellationToken.None);
+
+            // Assert
+            result.Should().BeFalse();
+        }
     }
 }

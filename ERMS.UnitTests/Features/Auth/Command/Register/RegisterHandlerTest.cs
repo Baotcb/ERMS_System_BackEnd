@@ -1,11 +1,9 @@
 ﻿using ERMS.Application.Features.Auth.Commands.Register;
-using ERMS.Application.Features.Auth.Commands.ResendConfirmation;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Roles;
 using ERMS.Domain.Entities.Candidate;
 using ERMS.Domain.Entities.Identity;
 using FluentAssertions;
-using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Moq;
@@ -23,7 +21,6 @@ namespace ERMS.UnitTests.Features.Auth.Command.Register
         private readonly Mock<UserManager<User>> _userManagerMock;
         private readonly Mock<RoleManager<IdentityRole<Guid>>> _roleManagerMock;
         private readonly Mock<IERMSDbContext> _contextMock;
-        private readonly Mock<IMediator> _mediatorMock;
         private readonly Mock<DbSet<Candidate>> _candidatesDbSetMock;
         private readonly RegisterHandler _handler;
 
@@ -38,7 +35,6 @@ namespace ERMS.UnitTests.Features.Auth.Command.Register
                 roleStoreMock.Object, null, null, null, null);
 
             _contextMock = new Mock<IERMSDbContext>();
-            _mediatorMock = new Mock<IMediator>();
 
             _candidatesDbSetMock = new Mock<DbSet<Candidate>>();
             _contextMock.Setup(x => x.Candidates).Returns(_candidatesDbSetMock.Object);
@@ -46,8 +42,7 @@ namespace ERMS.UnitTests.Features.Auth.Command.Register
             _handler = new RegisterHandler(
                 _userManagerMock.Object,
                 _roleManagerMock.Object,
-                _contextMock.Object,
-                _mediatorMock.Object);
+                _contextMock.Object);
         }
 
         [Fact]
@@ -106,7 +101,6 @@ namespace ERMS.UnitTests.Features.Auth.Command.Register
             result.Should().NotBeEmpty();
             _candidatesDbSetMock.Verify(x => x.Add(It.IsAny<Candidate>()), Times.Once);
             _contextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-            _mediatorMock.Verify(x => x.Send(It.IsAny<ResendConfirmationCommand>(), It.IsAny<CancellationToken>()), Times.Once);
         }
     }
 }

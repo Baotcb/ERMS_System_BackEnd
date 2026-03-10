@@ -28,37 +28,45 @@ namespace ERMS.Application.Features.Auth.Commands.ResendConfirmation
 
         public async Task<bool> Handle(ResendConfirmationCommand request, CancellationToken cancellationToken)
         {
-          try
+            var user = await _userManager.FindByEmailAsync(request.Email);
+            if (user == null)
             {
-                var user = await _userManager.FindByEmailAsync(request.Email);
-                if (user == null)
-                {
-                    throw new InvalidOperationException("Email không tồn tại trong hệ thống.");
-                }
+                throw new InvalidOperationException("Email không tồn tại trong hệ thống.");
+            }
 
-                if (user.EmailConfirmed)
-                {
-                    throw new InvalidOperationException("Email đã được xác thực trước đó.");
-                }
+            if (user.EmailConfirmed)
+            {
+                throw new InvalidOperationException("Email đã được xác thực trước đó.");
+            }
 
+            try
+            {
                 var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
                 var clientUrl = _config["ClientSettings:Url"];
+                if (string.IsNullOrWhiteSpace(clientUrl) || !Uri.TryCreate(clientUrl, UriKind.Absolute, out var clientUri))
+                {
+                    _logger.LogError("Cannot send email confirmation because ClientSettings:Url is invalid: {ClientUrl}", clientUrl);
+                    return false;
+                }
+
                 var encodedToken = Uri.EscapeDataString(token);
-                
-                var confirmationUrl = $"{clientUrl}/confirm-email?userId={user.Id}&token={encodedToken}&email={Uri.EscapeDataString(user.Email!)}";
+                var confirmationUrl = new Uri(
+                    clientUri,
+                    $"confirm-email?userId={user.Id}&token={encodedToken}&email={Uri.EscapeDataString(user.Email!)}")
+                    .ToString();
 
                 var subject = "Xác thực email tài khoản ERMS";
                 var body = CreateEmailTemplate(user.FullName, confirmationUrl);
 
                 await _emailService.SendEmailAsync(user.Email!, subject, body);
 
-                _logger.LogInformation("✅ Email confirmation sent successfully to: {Email}", user.Email);
+                _logger.LogInformation("Email confirmation sent successfully to: {Email}", user.Email);
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ Error sending email confirmation to: {Email}", request.Email);
-                throw;
+                _logger.LogError(ex, "Error sending email confirmation to: {Email}", request.Email);
+                return false;
             }
         }
 
@@ -154,14 +162,17 @@ namespace ERMS.Application.Features.Auth.Commands.ResendConfirmation
 
         .button {{
             display: inline-block;
+            background-color: #4f46e5;
             background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
-            color: #ffffff;
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff;
             padding: 14px 34px;
             text-decoration: none;
             border-radius: 12px;
             font-weight: 600;
             font-size: 16px;
             box-shadow: 0 4px 15px rgba(79, 70, 229, 0.2);
+            border: 1px solid #4f46e5;
         }}
 
         .expiry-text {{
