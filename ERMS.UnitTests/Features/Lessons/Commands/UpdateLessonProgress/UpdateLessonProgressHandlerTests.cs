@@ -55,7 +55,7 @@ namespace ERMS.UnitTests.Features.Lessons.Commands.UpdateLessonProgress
             Func<Task> act = () => _handler.Handle(command, CancellationToken.None);
 
             await act.Should().ThrowAsync<KeyNotFoundException>()
-                .WithMessage("Enrollment not found");
+                .WithMessage("Không tìm thấy đăng ký khóa học");
         }
 
         [Fact]

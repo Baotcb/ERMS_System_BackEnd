@@ -45,7 +45,7 @@ namespace ERMS.UnitTests.Features.Quizzes.Commands.SubmitQuiz
 
             await act.Should()
                 .ThrowAsync<Exception>()
-                .WithMessage("Attempt not found");
+                .WithMessage("Không tìm thấy lượt làm bài");
         }
 
         [Fact]

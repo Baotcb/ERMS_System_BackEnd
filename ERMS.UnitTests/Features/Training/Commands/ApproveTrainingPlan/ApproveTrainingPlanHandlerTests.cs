@@ -36,24 +36,30 @@ namespace ERMS.UnitTests.Features.Training.Commands.ApproveTrainingPlan
         private void SetupPlans(List<TrainingPlan> plans)
         {
             var dbSetMock = plans.AsQueryable().BuildMockDbSet();
+
             _contextMock.Setup(x => x.TrainingPlans)
                 .Returns(dbSetMock.Object);
         }
 
         [Fact]
-        public async Task Handle_UserNotLoggedIn_ThrowsUnauthorizedAccessException()
+        public async Task Handle_UserNotLoggedIn_ShouldThrowUnauthorizedAccessException()
         {
             _currentUserServiceMock.Setup(x => x.UserId)
                 .Returns((Guid?)null);
 
-            var command = new ApproveTrainingPlanCommand();
+            var command = new ApproveTrainingPlanCommand
+            {
+                TrainingPlanId = Guid.NewGuid()
+            };
 
-            await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-                _handler.Handle(command, CancellationToken.None));
+            Func<Task> act = () => _handler.Handle(command, CancellationToken.None);
+
+            await act.Should()
+                .ThrowAsync<UnauthorizedAccessException>();
         }
 
         [Fact]
-        public async Task Handle_PlanNotFound_ThrowsException()
+        public async Task Handle_PlanNotFound_ShouldThrowException()
         {
             var enterpriseId = Guid.NewGuid();
 
@@ -72,12 +78,13 @@ namespace ERMS.UnitTests.Features.Training.Commands.ApproveTrainingPlan
 
             Func<Task> act = () => _handler.Handle(command, CancellationToken.None);
 
-            await act.Should().ThrowAsync<Exception>()
-                .WithMessage("Training plan not found");
+            await act.Should()
+                .ThrowAsync<Exception>()
+                .WithMessage("Không tìm thấy kế hoạch đào tạo");
         }
 
         [Fact]
-        public async Task Handle_AlreadyApproved_ThrowsException()
+        public async Task Handle_AlreadyApproved_ShouldThrowException()
         {
             var enterpriseId = Guid.NewGuid();
             var planId = Guid.NewGuid();
@@ -106,12 +113,13 @@ namespace ERMS.UnitTests.Features.Training.Commands.ApproveTrainingPlan
 
             Func<Task> act = () => _handler.Handle(command, CancellationToken.None);
 
-            await act.Should().ThrowAsync<Exception>()
-                .WithMessage("Plan already approved");
+            await act.Should()
+                .ThrowAsync<Exception>()
+                .WithMessage("Kế hoạch đã được phê duyệt");
         }
 
         [Fact]
-        public async Task Handle_ValidRequest_ApprovesPlan()
+        public async Task Handle_ValidRequest_ShouldApproveTrainingPlan()
         {
             var enterpriseId = Guid.NewGuid();
             var userId = Guid.NewGuid();
@@ -150,6 +158,7 @@ namespace ERMS.UnitTests.Features.Training.Commands.ApproveTrainingPlan
             plan.Status.Should().Be("Approved");
             plan.ApprovedById.Should().Be(userId);
             plan.ReviewNote.Should().Be("Approved by HR");
+            plan.ApprovedAt.Should().NotBeNull();
 
             _contextMock.Verify(x =>
                 x.SaveChangesAsync(It.IsAny<CancellationToken>()),

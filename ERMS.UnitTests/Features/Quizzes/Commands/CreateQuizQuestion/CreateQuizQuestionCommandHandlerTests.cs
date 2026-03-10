@@ -38,7 +38,7 @@ namespace ERMS.UnitTests.Features.Quizzes.Commands.CreateQuizQuestion
             Func<Task> act = () => _handler.Handle(command, CancellationToken.None);
 
             await act.Should().ThrowAsync<Exception>()
-                .WithMessage("Quiz not found");
+                .WithMessage("Không tìm thấy bài kiểm tra");
         }
 
         [Fact]

@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="AuldinBackOfficeTools.Excel" Version="3.2.1.25083" />
+    <PackageReference Include="EPPlus" Version="8.5.0" />
     <PackageReference Include="FluentValidation" Version="12.1.1" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
     <PackageReference Include="Google.Apis.Auth" Version="1.73.0" />

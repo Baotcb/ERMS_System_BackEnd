@@ -96,7 +96,7 @@ namespace ERMS.UnitTests.Features.Enrollments.Commands
             Func<Task> act = () => _handler.Handle(command, CancellationToken.None);
 
             await act.Should().ThrowAsync<KeyNotFoundException>()
-                .WithMessage("Course not found");
+                .WithMessage("Không tìm thấy khóa học");
         }
 
         [Fact]

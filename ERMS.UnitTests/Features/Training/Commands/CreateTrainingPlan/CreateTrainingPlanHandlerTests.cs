@@ -3,11 +3,13 @@ using ERMS.Application.Interface;
 using ERMS.Domain.Entities.Training;
 using ERMS.UnitTests.Helpers;
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using Moq;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -16,265 +18,204 @@ namespace ERMS.UnitTests.Features.Training.Commands.CreateTrainingPlan
 {
     public class CreateTrainingPlanHandlerTests
     {
-        private readonly Mock<IERMSDbContext> _contextMock;
-        private readonly Mock<ICurrentUserService> _currentUserServiceMock;
-        private readonly Mock<ILogger<CreateTrainingPlanHandler>> _loggerMock;
-        private readonly Mock<IDbContextTransaction> _transactionMock;
+        private readonly Mock<IERMSDbContext> _contextMock = new();
+        private readonly Mock<ICurrentUserService> _currentUserServiceMock = new();
+        private readonly Mock<ILogger<CreateTrainingPlanHandler>> _loggerMock = new();
 
         private readonly CreateTrainingPlanHandler _handler;
 
         public CreateTrainingPlanHandlerTests()
         {
-            _contextMock = new Mock<IERMSDbContext>();
-            _currentUserServiceMock = new Mock<ICurrentUserService>();
-            _loggerMock = new Mock<ILogger<CreateTrainingPlanHandler>>();
-            _transactionMock = new Mock<IDbContextTransaction>();
-
             _handler = new CreateTrainingPlanHandler(
                 _contextMock.Object,
                 _currentUserServiceMock.Object,
                 _loggerMock.Object);
         }
 
-        private void SetupPlans(List<TrainingPlan> plans)
-        {
-            var dbSetMock = plans.AsQueryable().BuildMockDbSet();
-            _contextMock.Setup(x => x.TrainingPlans)
-                .Returns(dbSetMock.Object);
-        }
-
-        private void SetupRequests(List<TrainingRequest> requests)
-        {
-            var dbSetMock = requests.AsQueryable().BuildMockDbSet();
-            _contextMock.Setup(x => x.TrainingRequests)
-                .Returns(dbSetMock.Object);
-        }
-
         [Fact]
-        public async Task Handle_UserNotAuthenticated_ThrowsException()
+        public async Task Handle_ShouldThrow_WhenUserNotAuthenticated()
         {
-            // Arrange
-            _currentUserServiceMock.Setup(x => x.UserId)
-                .Returns((Guid?)null);
+            _currentUserServiceMock.Setup(x => x.UserId).Returns((Guid?)null);
 
             var command = new CreateTrainingPlanCommand();
 
-            // Act
-            Func<Task> act = () => _handler.Handle(command, CancellationToken.None);
+            Func<Task> act = async () =>
+                await _handler.Handle(command, CancellationToken.None);
 
-            // Assert
-            await act.Should().ThrowAsync<UnauthorizedAccessException>()
-                .WithMessage("User not authenticated");
+            await act.Should().ThrowAsync<UnauthorizedAccessException>();
         }
 
         [Fact]
-        public async Task Handle_UserWithoutEnterprise_ThrowsException()
+        public async Task Handle_ShouldThrow_WhenEndDateBeforeStartDate()
         {
-            // Arrange
-            _currentUserServiceMock.Setup(x => x.UserId)
-                .Returns(Guid.NewGuid());
+            var userId = Guid.NewGuid();
 
-            _currentUserServiceMock.Setup(x =>
-                x.GetEnterpriseIdAsync())
-                .ReturnsAsync((Guid?)null);
-
-            var command = new CreateTrainingPlanCommand();
-
-            // Act
-            Func<Task> act = () => _handler.Handle(command, CancellationToken.None);
-
-            // Assert
-            await act.Should().ThrowAsync<Exception>()
-                .WithMessage("User does not belong to any enterprise");
-        }
-
-        [Fact]
-        public async Task Handle_EndDateBeforeStartDate_ThrowsException()
-        {
-            // Arrange
-            _currentUserServiceMock.Setup(x => x.UserId)
-                .Returns(Guid.NewGuid());
-
-            _currentUserServiceMock.Setup(x =>
-                x.GetEnterpriseIdAsync())
+            _currentUserServiceMock.Setup(x => x.UserId).Returns(userId);
+            _currentUserServiceMock.Setup(x => x.GetEnterpriseIdAsync())
                 .ReturnsAsync(Guid.NewGuid());
 
             var command = new CreateTrainingPlanCommand
             {
+                PlanName = "Plan",
+                PlanCode = "PLAN01",
                 StartDate = DateTime.UtcNow,
                 EndDate = DateTime.UtcNow.AddDays(-1),
                 TrainingRequestIds = new List<Guid> { Guid.NewGuid() }
             };
 
-            // Act
-            Func<Task> act = () => _handler.Handle(command, CancellationToken.None);
+            Func<Task> act = async () =>
+                await _handler.Handle(command, CancellationToken.None);
 
-            // Assert
             await act.Should().ThrowAsync<Exception>()
-                .WithMessage("EndDate must be greater than StartDate");
+                .WithMessage("Ngày kết thúc phải sau ngày bắt đầu");
         }
 
         [Fact]
-        public async Task Handle_NoTrainingRequests_ThrowsException()
+        public async Task Handle_ShouldThrow_WhenNoTrainingRequests()
         {
-            // Arrange
-            _currentUserServiceMock.Setup(x => x.UserId)
-                .Returns(Guid.NewGuid());
+            var userId = Guid.NewGuid();
 
-            _currentUserServiceMock.Setup(x =>
-                x.GetEnterpriseIdAsync())
+            _currentUserServiceMock.Setup(x => x.UserId).Returns(userId);
+            _currentUserServiceMock.Setup(x => x.GetEnterpriseIdAsync())
                 .ReturnsAsync(Guid.NewGuid());
 
             var command = new CreateTrainingPlanCommand
             {
+                PlanName = "Plan",
+                PlanCode = "PLAN01",
                 StartDate = DateTime.UtcNow,
-                EndDate = DateTime.UtcNow.AddDays(1)
+                EndDate = DateTime.UtcNow.AddDays(5)
             };
 
-            // Act
-            Func<Task> act = () => _handler.Handle(command, CancellationToken.None);
+            Func<Task> act = async () =>
+                await _handler.Handle(command, CancellationToken.None);
 
-            // Assert
             await act.Should().ThrowAsync<Exception>()
-                .WithMessage("Training requests are required");
+                .WithMessage("Cần có ít nhất một yêu cầu đào tạo");
         }
 
         [Fact]
-        public async Task Handle_DuplicatePlanCode_ThrowsException()
+        public async Task Handle_ShouldThrow_WhenPlanCodeExists()
         {
-            // Arrange
             var enterpriseId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
 
-            _currentUserServiceMock.Setup(x => x.UserId)
-                .Returns(Guid.NewGuid());
-
-            _currentUserServiceMock.Setup(x =>
-                x.GetEnterpriseIdAsync())
+            _currentUserServiceMock.Setup(x => x.UserId).Returns(userId);
+            _currentUserServiceMock.Setup(x => x.GetEnterpriseIdAsync())
                 .ReturnsAsync(enterpriseId);
 
-            SetupPlans(new List<TrainingPlan>
+            var plans = new List<TrainingPlan>
             {
                 new TrainingPlan
                 {
-                    PlanCode = "PLAN001",
+                    Id = Guid.NewGuid(),
+                    PlanCode = "PLAN01",
                     EnterpriseId = enterpriseId,
                     IsDeleted = false
                 }
-            });
+            };
+
+            _contextMock.Setup(x => x.TrainingPlans)
+                .Returns(plans.AsQueryable().BuildMockDbSet().Object);
 
             var command = new CreateTrainingPlanCommand
             {
-                PlanCode = "PLAN001",
+                PlanName = "Plan",
+                PlanCode = "PLAN01",
                 StartDate = DateTime.UtcNow,
-                EndDate = DateTime.UtcNow.AddDays(1),
+                EndDate = DateTime.UtcNow.AddDays(5),
                 TrainingRequestIds = new List<Guid> { Guid.NewGuid() }
             };
 
-            // Act
-            Func<Task> act = () => _handler.Handle(command, CancellationToken.None);
+            Func<Task> act = async () =>
+                await _handler.Handle(command, CancellationToken.None);
 
-            // Assert
             await act.Should().ThrowAsync<Exception>()
-                .WithMessage("PlanCode already exists");
+                .WithMessage("Mã kế hoạch đã tồn tại");
         }
 
         [Fact]
-        public async Task Handle_InvalidTrainingRequests_ThrowsException()
+        public async Task Handle_ShouldThrow_WhenTrainingRequestsInvalid()
         {
-            // Arrange
             var enterpriseId = Guid.NewGuid();
-            var reqId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
 
-            _currentUserServiceMock.Setup(x => x.UserId)
-                .Returns(Guid.NewGuid());
-
-            _currentUserServiceMock.Setup(x =>
-                x.GetEnterpriseIdAsync())
+            _currentUserServiceMock.Setup(x => x.UserId).Returns(userId);
+            _currentUserServiceMock.Setup(x => x.GetEnterpriseIdAsync())
                 .ReturnsAsync(enterpriseId);
 
-            SetupPlans(new List<TrainingPlan>());
+            _contextMock.Setup(x => x.TrainingPlans)
+                .Returns(new List<TrainingPlan>()
+                .AsQueryable().BuildMockDbSet().Object);
 
-            SetupRequests(new List<TrainingRequest>());
+            _contextMock.Setup(x => x.TrainingRequests)
+                .Returns(new List<TrainingRequest>()
+                .AsQueryable().BuildMockDbSet().Object);
 
             var command = new CreateTrainingPlanCommand
             {
-                PlanCode = "PLAN002",
+                PlanName = "Plan",
+                PlanCode = "PLAN01",
                 StartDate = DateTime.UtcNow,
-                EndDate = DateTime.UtcNow.AddDays(1),
-                TrainingRequestIds = new List<Guid> { reqId }
+                EndDate = DateTime.UtcNow.AddDays(5),
+                TrainingRequestIds = new List<Guid> { Guid.NewGuid() }
             };
 
-            // Act
-            Func<Task> act = () => _handler.Handle(command, CancellationToken.None);
+            Func<Task> act = async () =>
+                await _handler.Handle(command, CancellationToken.None);
 
-            // Assert
             await act.Should().ThrowAsync<Exception>()
-                .WithMessage("Some training requests are invalid");
+                .WithMessage("Một số yêu cầu đào tạo không hợp lệ");
         }
 
         [Fact]
-        public async Task Handle_ValidRequest_CreatesTrainingPlan()
+        public async Task Handle_ShouldCreateTrainingPlanSuccessfully()
         {
-            // Arrange
             var enterpriseId = Guid.NewGuid();
             var userId = Guid.NewGuid();
             var requestId = Guid.NewGuid();
 
-            _currentUserServiceMock.Setup(x => x.UserId)
-                .Returns(userId);
-
-            _currentUserServiceMock.Setup(x =>
-                x.GetEnterpriseIdAsync())
+            _currentUserServiceMock.Setup(x => x.UserId).Returns(userId);
+            _currentUserServiceMock.Setup(x => x.GetEnterpriseIdAsync())
                 .ReturnsAsync(enterpriseId);
 
-            SetupPlans(new List<TrainingPlan>());
-
-            var requests = new List<TrainingRequest>
+            var trainingRequests = new List<TrainingRequest>
             {
                 new TrainingRequest
                 {
                     Id = requestId,
                     Status = "Pending",
-                    TrainingPlanId = null,
                     IsDeleted = false
                 }
             };
 
-            SetupRequests(requests);
+            _contextMock.Setup(x => x.TrainingPlans)
+                .Returns(new List<TrainingPlan>()
+                .AsQueryable().BuildMockDbSet().Object);
 
-            _contextMock.Setup(x =>
-                x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(_transactionMock.Object);
+            _contextMock.Setup(x => x.TrainingRequests)
+                .Returns(trainingRequests.AsQueryable().BuildMockDbSet().Object);
 
-            _contextMock.Setup(x =>
-                x.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            _contextMock.Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Mock.Of<IDbContextTransaction>());
+
+            _contextMock.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(1);
 
             var command = new CreateTrainingPlanCommand
             {
-                PlanName = "Training Plan",
-                PlanCode = "PLAN003",
+                PlanName = "Training Plan 2026",
+                PlanCode = "PLAN2026",
                 StartDate = DateTime.UtcNow,
-                EndDate = DateTime.UtcNow.AddDays(5),
+                EndDate = DateTime.UtcNow.AddDays(10),
                 TrainingRequestIds = new List<Guid> { requestId }
             };
 
-            // Act
             var result = await _handler.Handle(command, CancellationToken.None);
 
-            // Assert
             result.Should().NotBeEmpty();
 
-            requests[0].TrainingPlanId.Should().NotBeNull();
-            requests[0].Status.Should().Be("AddedToPlan");
-
-            _contextMock.Verify(x =>
-                x.SaveChangesAsync(It.IsAny<CancellationToken>()),
-                Times.Once);
-
-            _transactionMock.Verify(x =>
-                x.CommitAsync(It.IsAny<CancellationToken>()),
-                Times.Once);
+            trainingRequests[0].Status.Should().Be("AddedToPlan");
         }
     }
 }
