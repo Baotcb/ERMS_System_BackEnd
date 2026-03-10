@@ -34,11 +34,44 @@ public sealed class StartQuizCommandHandler
             throw new Exception("User is not enrolled");
 
         var quiz = await _context.Quizzes
-            .Include(x => x.Questions)
-            .FirstOrDefaultAsync(x => x.Id == request.QuizId && x.IsActive && !x.IsDeleted, cancellationToken);
+    .Include(x => x.Questions)
+    .FirstOrDefaultAsync(x =>
+        x.Id == request.QuizId &&
+        x.IsActive &&
+        !x.IsDeleted,
+        cancellationToken);
 
         if (quiz == null)
             throw new Exception("Quiz not found");
+
+        // CHECK LESSON COMPLETION
+
+        var totalLessons = await _context.Lessons
+            .CountAsync(x =>
+                x.CourseId == quiz.CourseId &&
+                !x.IsDeleted,
+                cancellationToken);
+
+        var completedLessons = await _context.LessonProgresses
+            .Where(x =>
+                x.EnrollmentId == enrollment.Id &&
+                x.Status == "Completed")
+            .Join(
+                _context.Lessons,
+                p => p.LessonId,
+                l => l.Id,
+                (p, l) => l
+            )
+            .CountAsync(x =>
+                x.CourseId == quiz.CourseId &&
+                !x.IsDeleted,
+                cancellationToken);
+
+        if (completedLessons < totalLessons)
+        {
+            throw new Exception(
+                $"You must complete all lessons before starting the quiz ({completedLessons}/{totalLessons})");
+        }
 
         var attemptCount = await _context.QuizAttempts
             .CountAsync(x => x.QuizId == quiz.Id && x.EnrollmentId == enrollment.Id, cancellationToken);
