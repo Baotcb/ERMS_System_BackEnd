@@ -23,7 +23,7 @@ public sealed class StartQuizCommandHandler
     {
         var userId = _currentUserService.UserId;
         if (userId == null)
-            throw new UnauthorizedAccessException("User not authenticated");
+            throw new UnauthorizedAccessException("Người dùng chưa được xác thực");
         var employee = await _context.Employees
             .FirstOrDefaultAsync(x => x.UserId == userId, cancellationToken);
 
@@ -31,7 +31,7 @@ public sealed class StartQuizCommandHandler
             .FirstOrDefaultAsync(x => x.EmployeeId == employee.Id && !x.IsDeleted, cancellationToken);
 
         if (enrollment == null)
-            throw new Exception("User is not enrolled");
+            throw new Exception("Người dùng chưa đăng ký khóa học");
 
         var quiz = await _context.Quizzes
     .Include(x => x.Questions)
@@ -42,7 +42,7 @@ public sealed class StartQuizCommandHandler
         cancellationToken);
 
         if (quiz == null)
-            throw new Exception("Quiz not found");
+            throw new Exception("Không tìm thấy bài kiểm tra");
 
         // CHECK LESSON COMPLETION
 
@@ -77,7 +77,7 @@ public sealed class StartQuizCommandHandler
             .CountAsync(x => x.QuizId == quiz.Id && x.EnrollmentId == enrollment.Id, cancellationToken);
 
         if (quiz.MaxAttempts.HasValue && attemptCount >= quiz.MaxAttempts)
-            throw new Exception("Max attempts reached");
+            throw new Exception("Đã đạt tối đa số lần làm bài");
 
         var attempt = new QuizAttempt
         {
