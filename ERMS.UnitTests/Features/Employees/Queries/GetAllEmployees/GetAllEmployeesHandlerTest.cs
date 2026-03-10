@@ -1,4 +1,4 @@
-using ERMS.Application.Features.Employees.Queries.GetAllEmployees;
+﻿using ERMS.Application.Features.Employees.Queries.GetAllEmployees;
 using ERMS.Application.Interface;
 using ERMS.Domain.Entities.Identity;
 using ERMS.Domain.Entities.Organization;
@@ -39,7 +39,7 @@ public class GetAllEmployeesHandlerTest
         var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
             _handler.Handle(query, CancellationToken.None));
 
-        exception.Message.Should().Be("User does not belong to any enterprise");
+        exception.Message.Should().Be("Người dùng không thuộc doanh nghiệp nào.");
     }
 
     [Fact]

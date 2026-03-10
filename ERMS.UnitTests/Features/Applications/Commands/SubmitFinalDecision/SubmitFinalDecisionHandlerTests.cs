@@ -1,4 +1,4 @@
-using ERMS.Application.Features.Applications.Commands.SubmitFinalDecision;
+﻿using ERMS.Application.Features.Applications.Commands.SubmitFinalDecision;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Application;
 using ERMS.Domain.Constants.Roles;
@@ -253,7 +253,7 @@ public class SubmitFinalDecisionHandlerTests
 
         // Assert
         await act.Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("Only Department Head can submit the final interview decision.");
+            .WithMessage("Chỉ Trưởng phòng mới có quyền đưa ra quyết định phỏng vấn cuối cùng.");
     }
 
     [Fact]
@@ -277,7 +277,7 @@ public class SubmitFinalDecisionHandlerTests
 
         // Assert
         await act.Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("You can only make decisions for interviews in your department.");
+            .WithMessage("Bạn chỉ có thể đưa ra quyết định cho các buổi phỏng vấn trong phòng ban mình.");
     }
 
     [Fact]
@@ -301,6 +301,6 @@ public class SubmitFinalDecisionHandlerTests
 
         // Assert
         await act.Should().ThrowAsync<Exception>()
-            .WithMessage("Cannot submit decision*");
+            .WithMessage("*Không thể gửi quyết định*");
     }
 }

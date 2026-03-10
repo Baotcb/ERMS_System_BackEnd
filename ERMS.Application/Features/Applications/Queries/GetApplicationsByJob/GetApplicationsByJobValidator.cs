@@ -12,18 +12,18 @@ public sealed class GetApplicationsByJobValidator : AbstractValidator<GetApplica
     {
         RuleFor(x => x.JobPostingId)
             .NotEmpty()
-            .WithMessage("JobPostingId is required.");
+            .WithMessage("JobPostingId là bắt buộc.");
 
         RuleFor(x => x.PageNumber)
             .GreaterThanOrEqualTo(1)
-            .WithMessage("PageNumber must be at least 1.");
+            .WithMessage("Số trang phải ít nhất là 1.");
 
         RuleFor(x => x.PageSize)
             .InclusiveBetween(1, 100)
-            .WithMessage("PageSize must be between 1 and 100.");
+            .WithMessage("Kích thước trang phải từ 1 đến 100.");
 
         RuleFor(x => x.StageFilter)
             .Must(stage => string.IsNullOrEmpty(stage) || ApplicationStage.IsValid(stage))
-            .WithMessage("StageFilter must be a valid application stage.");
+            .WithMessage("Bộ lọc giai đoạn phải hợp lệ.");
     }
 }

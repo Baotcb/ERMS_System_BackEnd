@@ -72,7 +72,7 @@ public class GeminiAIService : IGeminiAIService
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
                 _logger.LogError("Gemini API error: {StatusCode} - {Error}", response.StatusCode, errorContent);
-                throw new Exception($"Gemini API request failed: {response.StatusCode}");
+                throw new Exception($"Yêu cầu API Gemini thất bại: {response.StatusCode}");
             }
 
             var responseContent = await response.Content.ReadAsStringAsync();
@@ -83,7 +83,7 @@ public class GeminiAIService : IGeminiAIService
 
             if (string.IsNullOrEmpty(jsonText))
             {
-                throw new Exception("Empty response from Gemini AI");
+                throw new Exception("Phản hồi từ Gemini AI trống");
             }
 
             // Strip markdown code fences if present (Gemini sometimes wraps JSON in ```json ... ```)
@@ -92,7 +92,7 @@ public class GeminiAIService : IGeminiAIService
             var result = JsonSerializer.Deserialize<CVScreeningResultDto>(jsonText, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
-            }) ?? throw new Exception("Failed to parse Gemini AI response");
+            }) ?? throw new Exception("Không thể phân tích phản hồi từ Gemini AI");
 
             result.RawResponse = responseContent;
 
@@ -103,12 +103,12 @@ public class GeminiAIService : IGeminiAIService
         catch (HttpRequestException ex)
         {
             _logger.LogError(ex, "Network error calling Gemini API");
-            throw new Exception("Failed to connect to Gemini AI service. Please try again later.", ex);
+            throw new Exception("Không thể kết nối đến dịch vụ Gemini AI. Vui lòng thử lại sau.", ex);
         }
         catch (JsonException ex)
         {
             _logger.LogError(ex, "Failed to parse Gemini AI response as JSON");
-            throw new Exception("Gemini AI returned invalid response format.", ex);
+            throw new Exception("Gemini AI trả về định dạng phản hồi không hợp lệ.", ex);
         }
     }
 
@@ -165,26 +165,28 @@ public class GeminiAIService : IGeminiAIService
                 "keywordMatchScore": <number 0-100>,
                 "matchedSkills": ["skill1", "skill2"],
                 "missingSkills": ["skill1", "skill2"],
-                "strengths": ["strength1", "strength2"],
-                "concerns": ["concern1", "concern2"],
-                "summary": "Brief 2-3 sentence summary of the candidate's fit for this role"
+                "strengths": ["điểm mạnh 1", "điểm mạnh 2"],
+                "concerns": ["điểm lo ngại 1", "điểm lo ngại 2"],
+                "summary": "Tóm tắt ngắn gọn 2-3 câu về mức độ phù hợp của ứng viên với vị trí này"
             }
             """;
 
         return $"""
             You are an expert HR recruiter and resume analyst. Analyze the following resume against the job requirements and provide a detailed scoring.
+            **CRITICAL: ALL text output in the JSON (matchedSkills, missingSkills, strengths, concerns, summary) MUST be written entirely in Vietnamese.**
 
             ## Job Requirements:
             **Description:** {jobDescription}
             **Required Skills:** {requiredSkills}
-            **Education Level:** {educationLevel ?? "Not specified"}
-            **Experience Level:** {experienceLevel ?? "Not specified"}
+            **Education Level:** {educationLevel ?? "Không xác định"}
+            **Experience Level:** {experienceLevel ?? "Không xác định"}
 
             ## Candidate Resume:
             {resumeText}
 
             ## Instructions:
             Analyze the resume and provide scores from 0 to 100 for each category. Be objective and fair.
+            **ALL text fields (matchedSkills, missingSkills, strengths, concerns, summary) MUST be in Vietnamese.**
 
             Return your analysis in the following JSON format ONLY (no additional text):
             {jsonTemplate}

@@ -30,14 +30,14 @@ namespace ERMS.Application.Features.Courses.Commands.CreateCourse
             var userId = _currentUserService.UserId;
 
             if (userId == null)
-                throw new UnauthorizedAccessException("User not authenticated");
+                throw new UnauthorizedAccessException("Người dùng chưa được xác thực");
 
             // ✅ Lấy EnterpriseId tự động
             var enterpriseId =
                 await _currentUserService.GetEnterpriseIdAsync();
 
             if (enterpriseId == null)
-                throw new Exception("User does not belong to any enterprise");
+                throw new Exception("Người dùng không thuộc doanh nghiệp nào");
 
             // ✅ Check duplicate CourseCode
             var existedCode = await _context.Courses
@@ -48,7 +48,7 @@ namespace ERMS.Application.Features.Courses.Commands.CreateCourse
                     cancellationToken);
 
             if (existedCode)
-                throw new Exception("CourseCode already exists");
+                throw new Exception("Mã khóa học đã tồn tại");
 
             // ✅ Validate Trainer tồn tại & là Trainer
             var trainer = await _context.Employees
@@ -59,10 +59,10 @@ namespace ERMS.Application.Features.Courses.Commands.CreateCourse
                     cancellationToken);
 
             if (trainer == null)
-                throw new Exception("Trainer not found");
+                throw new Exception("Không tìm thấy giảng viên");
 
             if (!trainer.IsTrainer)
-                throw new Exception("Employee is not a trainer");
+                throw new Exception("Nhân viên này không phải là giảng viên");
 
             // ✅ Create Course
             var course = new Course

@@ -1,4 +1,4 @@
-using ERMS.Application.Features.Departments.Queries.GetAllDepartments;
+﻿using ERMS.Application.Features.Departments.Queries.GetAllDepartments;
 using ERMS.Application.Interface;
 using ERMS.Domain.Entities.Organization;
 using ERMS.Infrastructure.Data;
@@ -44,7 +44,7 @@ namespace ERMS.UnitTests.Features.Departments.Queries.GetAllDepartments
             // Act & Assert
             await _handler.Invoking(h => h.Handle(query, CancellationToken.None))
                 .Should().ThrowAsync<UnauthorizedAccessException>()
-                .WithMessage("User does not belong to any enterprise");
+                .WithMessage("Người dùng không thuộc doanh nghiệp nào.");
         }
 
         [Fact]

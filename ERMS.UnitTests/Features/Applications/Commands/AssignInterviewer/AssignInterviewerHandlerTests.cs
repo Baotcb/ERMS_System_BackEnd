@@ -1,4 +1,4 @@
-using ERMS.Application.Features.Applications.Commands.AssignInterviewer;
+﻿using ERMS.Application.Features.Applications.Commands.AssignInterviewer;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Application;
 using ERMS.Domain.Constants.Roles;
@@ -101,6 +101,6 @@ public class AssignInterviewerHandlerTests
 
         // Assert
         await act.Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("Only Department Head can assign interviewers.");
+            .WithMessage("Chỉ Trưởng phòng mới có quyền phân công người phỏng vấn.");
     }
 }

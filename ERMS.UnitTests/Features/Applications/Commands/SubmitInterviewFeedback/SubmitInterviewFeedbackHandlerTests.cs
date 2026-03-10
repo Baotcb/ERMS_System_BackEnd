@@ -1,4 +1,4 @@
-using ERMS.Application.Features.Applications.Commands.SubmitInterviewFeedback;
+﻿using ERMS.Application.Features.Applications.Commands.SubmitInterviewFeedback;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Application;
 using ERMS.Domain.Entities.Application;
@@ -140,7 +140,7 @@ public class SubmitInterviewFeedbackHandlerTests
 
         // Assert
         await act.Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("User not authenticated.");
+            .WithMessage("Người dùng chưa được xác thực.");
     }
 
     [Fact]
@@ -158,7 +158,7 @@ public class SubmitInterviewFeedbackHandlerTests
 
         // Assert
         await act.Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("User is not an employee.");
+            .WithMessage("Người dùng không phải là nhân viên.");
     }
 
     [Fact]
@@ -184,7 +184,7 @@ public class SubmitInterviewFeedbackHandlerTests
 
         // Assert
         await act.Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("You do not have permission to access this application.");
+            .WithMessage("Bạn không có quyền truy cập hồ sơ ứng tuyển này.");
     }
 
     [Fact]
@@ -206,7 +206,7 @@ public class SubmitInterviewFeedbackHandlerTests
 
         // Assert
         await act.Should().ThrowAsync<Exception>()
-            .WithMessage($"Interview with ID {_interviewId} not found*");
+            .WithMessage($"Không tìm thấy buổi phỏng vấn với ID {_interviewId}*");
     }
 
     [Fact]
@@ -232,7 +232,7 @@ public class SubmitInterviewFeedbackHandlerTests
 
         // Assert
         await act.Should().ThrowAsync<Exception>()
-            .WithMessage("Cannot submit feedback*");
+            .WithMessage("*Không thể gửi đánh giá*");
     }
 
     [Fact]
@@ -263,7 +263,7 @@ public class SubmitInterviewFeedbackHandlerTests
 
         // Assert
         await act.Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("You are not a participant of this interview.");
+            .WithMessage("Bạn không phải là người tham gia buổi phỏng vấn này.");
     }
 
     [Fact]
@@ -288,6 +288,6 @@ public class SubmitInterviewFeedbackHandlerTests
 
         // Assert
         await act.Should().ThrowAsync<Exception>()
-            .WithMessage("You have already submitted feedback for this interview.");
+            .WithMessage("Bạn đã gửi đánh giá cho buổi phỏng vấn này rồi.");
     }
 }

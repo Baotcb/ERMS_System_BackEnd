@@ -26,7 +26,7 @@ namespace ERMS.Application.Features.Enterprises.Commands.GetUrlAvataEnterprise
 
             if (enterpriseId == null)
             {
-                throw new UnauthorizedAccessException("User is not associated with any enterprise.");
+                throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
             }
 
             var enterprise = await _context.Enterprises
@@ -34,7 +34,7 @@ namespace ERMS.Application.Features.Enterprises.Commands.GetUrlAvataEnterprise
 
             if (enterprise == null)
             {
-                throw new KeyNotFoundException($"Enterprise with ID {enterpriseId} not found.");
+                throw new KeyNotFoundException($"Không tìm thấy doanh nghiệp với ID {enterpriseId}.");
             }
 
             return new GetUrlAvataEnterpriseResponse

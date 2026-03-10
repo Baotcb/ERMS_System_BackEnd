@@ -7,6 +7,6 @@ public sealed class UnsaveJobPostingValidator : AbstractValidator<UnsaveJobPosti
     public UnsaveJobPostingValidator()
     {
         RuleFor(x => x.JobPostingId)
-            .NotEmpty().WithMessage("JobPostingId is required.");
+            .NotEmpty().WithMessage("ID tin tuyển dụng là bắt buộc.");
     }
 }

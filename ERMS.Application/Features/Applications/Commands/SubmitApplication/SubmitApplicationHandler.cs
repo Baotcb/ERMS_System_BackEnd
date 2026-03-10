@@ -41,34 +41,34 @@ public sealed class SubmitApplicationHandler : IRequestHandler<SubmitApplication
     {
         // 1. Validate current user is authenticated
         var userId = _currentUserService.UserId
-            ?? throw new UnauthorizedAccessException("User not authenticated.");
+            ?? throw new UnauthorizedAccessException("Người dùng chưa được xác thực.");
 
         var userRoles = _currentUserService.Roles;
         if (userRoles == null || !userRoles.Contains(AppRoles.Candidate))
         {
-            throw new UnauthorizedAccessException("Only candidates can submit job applications.");
+            throw new UnauthorizedAccessException("Chỉ ứng viên mới có quyền nộp hồ sơ ứng tuyển.");
         }
 
         // 2. Get candidate profile
         var candidate = await _context.Candidates
             .FirstOrDefaultAsync(c => c.UserId == userId && !c.IsDeleted, cancellationToken)
-            ?? throw new Exception("Candidate profile not found. Please complete your profile first.");
+            ?? throw new Exception("Không tìm thấy hồ sơ ứng viên. Vui lòng hoàn thành hồ sơ của bạn trước.");
 
         // 3. Load and validate JobPosting
         var jobPosting = await _context.JobPostings
             .Include(jp => jp.PlanDetail)
             .FirstOrDefaultAsync(jp => jp.Id == request.JobPostingId && !jp.IsDeleted, cancellationToken)
-            ?? throw new Exception($"Job posting with ID {request.JobPostingId} not found.");
+            ?? throw new Exception($"Không tìm thấy tin tuyển dụng với ID {request.JobPostingId}.");
 
         // 4. Validate job posting is published and accepting applications
         if (!JobPostingStatus.IsPublished(jobPosting.Status))
         {
-            throw new Exception($"Job posting is not open for applications. Current status: {jobPosting.Status}");
+            throw new Exception($"Tin tuyển dụng không mở nhận hồ sơ. Trạng thái hiện tại: {jobPosting.Status}");
         }
 
         if (jobPosting.ApplicationDeadline.HasValue && jobPosting.ApplicationDeadline.Value < DateTime.UtcNow)
         {
-            throw new Exception("Application deadline has passed for this job posting.");
+            throw new Exception("Hạn nộp hồ sơ cho tin tuyển dụng này đã qua.");
         }
 
         // 5. Check for duplicate application
@@ -79,7 +79,7 @@ public sealed class SubmitApplicationHandler : IRequestHandler<SubmitApplication
 
         if (existingApplication)
         {
-            throw new Exception("You have already applied for this job posting.");
+            throw new Exception("Bạn đã ứng tuyển cho tin tuyển dụng này rồi.");
         }
 
         // 6. Upload CV to Cloudinary
@@ -128,7 +128,7 @@ public sealed class SubmitApplicationHandler : IRequestHandler<SubmitApplication
             CandidateId = candidate.Id,
             ResumeId = resume.Id,
             CoverLetter = request.CoverLetter?.Trim(),
-            ExpectedSalary = request.ExpectedSalary,
+            ExpectedSalary = request.ExpectedSalary ?? 0,
             AvailableStartDate = request.AvailableStartDate,
             Stage = ApplicationStage.Applied,
             StageUpdatedAt = DateTime.UtcNow,

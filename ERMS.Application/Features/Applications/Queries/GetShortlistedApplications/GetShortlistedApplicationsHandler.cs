@@ -24,22 +24,22 @@ public sealed class GetShortlistedApplicationsHandler : IRequestHandler<GetShort
     {
         // 1. Validate current user is authenticated
         var userId = _currentUserService.UserId
-            ?? throw new UnauthorizedAccessException("User not authenticated.");
+            ?? throw new UnauthorizedAccessException("Người dùng chưa được xác thực.");
 
         // 2. Role check: DepartmentHead ONLY
         var userRoles = _currentUserService.Roles;
         if (userRoles == null || !userRoles.Contains(AppRoles.DepartmentHead))
         {
-            throw new UnauthorizedAccessException("Only Department Head can view shortlisted candidates.");
+            throw new UnauthorizedAccessException("Chỉ Trưởng phòng mới có quyền xem danh sách ứng viên lọt vòng.");
         }
 
         // 3. Get user's department
         var userDepartmentId = await _currentUserService.GetDepartmentIdAsync()
-            ?? throw new UnauthorizedAccessException("User is not associated with any department.");
+            ?? throw new UnauthorizedAccessException("Người dùng không thuộc phòng ban nào.");
 
         // 4. Get enterprise ID for scoping
         var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
-            ?? throw new UnauthorizedAccessException("User is not associated with any enterprise.");
+            ?? throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
 
         // 5. Validate plan detail exists and get department
         var planDetail = await _context.PlanDetails
@@ -47,12 +47,12 @@ public sealed class GetShortlistedApplicationsHandler : IRequestHandler<GetShort
             .Where(pd => pd.Id == request.PlanDetailId && pd.RecruitmentPlan.EnterpriseId == enterpriseId && !pd.IsDeleted)
             .Select(pd => new { pd.Id, pd.PositionTitle, DepartmentId = pd.RecruitmentPlan.DepartmentId })
             .FirstOrDefaultAsync(cancellationToken)
-            ?? throw new Exception($"Plan detail with ID {request.PlanDetailId} not found.");
+            ?? throw new Exception($"Không tìm thấy chi tiết kế hoạch với ID {request.PlanDetailId}.");
 
         // 6. Department security check: User must belong to same department as plan detail
         if (planDetail.DepartmentId != userDepartmentId)
         {
-            throw new UnauthorizedAccessException("You can only view candidates for plan details in your department.");
+            throw new UnauthorizedAccessException("Bạn chỉ có quyền xem ứng viên thuộc kế hoạch của phòng ban mình.");
         }
 
         // 7. Build query for shortlisted applications only

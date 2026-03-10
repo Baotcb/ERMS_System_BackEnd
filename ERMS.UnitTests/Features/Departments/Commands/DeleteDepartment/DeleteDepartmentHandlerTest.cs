@@ -1,4 +1,4 @@
-using ERMS.Application.Features.Departments.Commands.DeleteDepartment;
+﻿using ERMS.Application.Features.Departments.Commands.DeleteDepartment;
 using ERMS.Application.Interface;
 using ERMS.Domain.Entities.Organization;
 using ERMS.UnitTests.Helpers;
@@ -40,7 +40,7 @@ namespace ERMS.UnitTests.Features.Departments.Commands.DeleteDepartment
             // Act & Assert
             await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
                 .Should().ThrowAsync<UnauthorizedAccessException>()
-                .WithMessage("User not belong to enterprise");
+                .WithMessage("Người dùng không thuộc doanh nghiệp nào.");
         }
 
         [Fact]

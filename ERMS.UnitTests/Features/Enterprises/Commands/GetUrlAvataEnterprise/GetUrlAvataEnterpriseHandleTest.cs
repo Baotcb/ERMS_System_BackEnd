@@ -1,4 +1,4 @@
-using ERMS.Application.Features.Enterprises.Commands.GetUrlAvataEnterprise;
+﻿using ERMS.Application.Features.Enterprises.Commands.GetUrlAvataEnterprise;
 using ERMS.Application.Interface;
 using ERMS.Domain.Entities.Enterprise;
 using ERMS.UnitTests.Helpers;
@@ -64,7 +64,7 @@ namespace ERMS.UnitTests.Features.EnterpriseStatusConstants.Commands.GetUrlAvata
             // Act & Assert
             await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
                 .Should().ThrowAsync<UnauthorizedAccessException>()
-                .WithMessage("User is not associated with any enterprise.");
+                .WithMessage("Người dùng không thuộc doanh nghiệp nào.");
         }
 
         [Fact]
@@ -84,7 +84,7 @@ namespace ERMS.UnitTests.Features.EnterpriseStatusConstants.Commands.GetUrlAvata
             // Act & Assert
             await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
                 .Should().ThrowAsync<KeyNotFoundException>()
-                .WithMessage($"Enterprise with ID {enterpriseId} not found.");
+                .WithMessage($"Không tìm thấy doanh nghiệp với ID {enterpriseId}.");
         }
 
         [Fact]

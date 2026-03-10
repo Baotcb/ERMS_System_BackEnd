@@ -1,4 +1,4 @@
-using ERMS.Application.Features.JobPostings.Commands.CloseJobPosting;
+﻿using ERMS.Application.Features.JobPostings.Commands.CloseJobPosting;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Recruitment;
 using ERMS.Domain.Constants.Roles;
@@ -47,7 +47,7 @@ namespace ERMS.UnitTests.Features.JobPostings.Commands.CloseJobPosting
             // Act & Assert
             await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
                 .Should().ThrowAsync<UnauthorizedAccessException>()
-                .WithMessage("User not authenticated.");
+                .WithMessage("Người dùng chưa được xác thực.");
         }
 
         [Fact]
@@ -61,7 +61,7 @@ namespace ERMS.UnitTests.Features.JobPostings.Commands.CloseJobPosting
             // Act & Assert
             await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
                 .Should().ThrowAsync<UnauthorizedAccessException>()
-                .WithMessage("Only HR Manager can close job postings.");
+                .WithMessage("Chỉ HR Manager mới có quyền đóng tin tuyển dụng.");
         }
 
         [Fact]
@@ -79,7 +79,7 @@ namespace ERMS.UnitTests.Features.JobPostings.Commands.CloseJobPosting
             // Act & Assert
             await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
                 .Should().ThrowAsync<Exception>()
-                .WithMessage($"JobPosting with ID {command.Id} not found.");
+                .WithMessage($"Không tìm thấy tin tuyển dụng với ID {command.Id}.");
         }
 
         [Fact]
@@ -110,7 +110,7 @@ namespace ERMS.UnitTests.Features.JobPostings.Commands.CloseJobPosting
             // Act & Assert
             await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
                 .Should().ThrowAsync<Exception>()
-                .WithMessage($"Cannot close. Current status '{JobPostingStatus.Draft}' must be 'Published'.");
+                .WithMessage($"Không thể đóng tin. Trạng thái hiện tại '{JobPostingStatus.Draft}' phải là 'Published'.");
         }
 
         [Fact]

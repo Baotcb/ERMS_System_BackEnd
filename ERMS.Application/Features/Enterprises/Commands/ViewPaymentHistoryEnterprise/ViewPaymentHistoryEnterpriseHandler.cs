@@ -30,7 +30,7 @@ namespace ERMS.Application.Features.Enterprises.Commands.ViewPaymentHistoryEnter
 
                 if (employee == null || employee.EnterpriseId != request.EnterpriseId)
                 {
-                    throw new UnauthorizedAccessException("You do not have permission to view payment history for this enterprise.");
+                    throw new UnauthorizedAccessException("Bạn không có quyền xem lịch sử thanh toán của doanh nghiệp này.");
                 }
             }
 
@@ -57,7 +57,7 @@ namespace ERMS.Application.Features.Enterprises.Commands.ViewPaymentHistoryEnter
             
             if (!histories.Any())
             {
-                throw new InvalidOperationException("No payment history found for the specified enterprise.");
+                throw new InvalidOperationException("Không tìm thấy lịch sử thanh toán cho doanh nghiệp được chỉ định.");
             }
             
             return new ViewPaymentHistoryEnterpriseResponse
