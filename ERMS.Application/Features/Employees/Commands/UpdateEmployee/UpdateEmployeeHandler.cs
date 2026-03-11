@@ -84,6 +84,7 @@ namespace ERMS.Application.Features.Employees.Commands.UpdateEmployee
         public async Task<bool> Handle(UpdateEmployeeCommand request, CancellationToken cancellationToken)
         {
             var enterpriseId = await _currentUserService.GetEnterpriseIdAsync();
+            var departmentId = await _currentUserService.GetDepartmentIdAsync();
             if (enterpriseId == null) throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
 
             var normalizedEmploymentType = NormalizeEmploymentType(request.EmploymentType);
@@ -111,7 +112,7 @@ namespace ERMS.Application.Features.Employees.Commands.UpdateEmployee
             }
 
             var departmentExists = await _context.Departments
-                .AnyAsync(d => d.Id == request.DepartmentId
+                .AnyAsync(d => d.Id == departmentId
                             && d.EnterpriseId == enterpriseId
                             && !d.IsDeleted, cancellationToken);
 
@@ -147,7 +148,7 @@ namespace ERMS.Application.Features.Employees.Commands.UpdateEmployee
             await using var transaction = await _context.BeginTransactionAsync(cancellationToken);
             try
             {
-                employee.DepartmentId = request.DepartmentId;
+                employee.DepartmentId = departmentId;
                 employee.Position = request.Position;
                 employee.EmploymentType = normalizedEmploymentType;
                 employee.ManagerId = request.ManagerId;
@@ -200,31 +201,20 @@ namespace ERMS.Application.Features.Employees.Commands.UpdateEmployee
                         }
                     }
 
-                    // Xóa các role nhân sự hiện tại trước khi gán role mới
-                    var rolesToRemove = currentRoles
-                        .Where(r => ManagedEmployeeRoles.Contains(r))
-                        .ToList();
-
-                    if (rolesToRemove.Any())
+                    if (!currentRoles.Contains(normalizedRequestedRole, StringComparer.OrdinalIgnoreCase))
                     {
-                        var removeResult = await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
-                        if (!removeResult.Succeeded)
+                        var addResult = await _userManager.AddToRoleAsync(user, normalizedRequestedRole);
+
+                        if (!addResult.Succeeded)
                         {
-                            var errors = string.Join(", ", removeResult.Errors.Select(e => e.Description));
-                            throw new Exception($"Không thể xóa vai trò cũ: {errors}");
+                            var errors = string.Join(", ", addResult.Errors.Select(e => e.Description));
+                            throw new Exception($"Không thể gán vai trò mới: {errors}");
                         }
                     }
 
-                    // Gán role mới
-                    var addResult = await _userManager.AddToRoleAsync(user, normalizedRequestedRole);
-                    if (!addResult.Succeeded)
-                    {
-                        var errors = string.Join(", ", addResult.Errors.Select(e => e.Description));
-                        throw new Exception($"Không thể gán vai trò mới: {errors}");
-                    }
+                    var updatedRoles = await _userManager.GetRolesAsync(user);
 
-                    // Cập nhật IsTrainer flag
-                    employee.IsTrainer = string.Equals(normalizedRequestedRole, AppRoles.Trainer, StringComparison.OrdinalIgnoreCase);
+                    employee.IsTrainer = updatedRoles.Contains(AppRoles.Trainer, StringComparer.OrdinalIgnoreCase);
 
                     _logger.LogInformation("Updated role for employee {EmployeeId} to {Role}", employee.Id, normalizedRequestedRole);
                 }
