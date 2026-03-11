@@ -71,7 +71,8 @@ namespace ERMS.Application.Features.Employees.Queries.GetAllEmployees
                     EmploymentType = e.EmploymentType,
                     HireDate = e.HireDate,
                     Status = e.Status,
-                    CreatedAt = e.CreatedAt
+                    CreatedAt = e.CreatedAt,
+                    IsTrainer = e.IsTrainer
                 })
                 .ToListAsync(cancellationToken);
 

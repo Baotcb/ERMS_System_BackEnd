@@ -69,8 +69,17 @@ namespace ERMS.Application.Features.Courses.Commands.UpdateCourse
             if (trainer == null)
                 throw new Exception("Không tìm thấy giảng viên.");
 
+            // Auto-promote employee to trainer when assigned to a course.
             if (!trainer.IsTrainer)
-                throw new Exception("Nhân viên này không phải là giảng viên.");
+            {
+                trainer.IsTrainer = true;
+                trainer.UpdatedAt = DateTime.UtcNow;
+
+                _logger.LogInformation(
+                    "Employee {EmployeeId} auto-promoted to trainer while updating course {CourseId}",
+                    trainer.Id,
+                    request.Id);
+            }
 
             // Cập nhật thông tin khóa học
             course.TrainingPlanId = request.TrainingPlanId;
