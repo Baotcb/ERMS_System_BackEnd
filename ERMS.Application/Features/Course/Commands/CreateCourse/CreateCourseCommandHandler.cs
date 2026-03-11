@@ -53,7 +53,7 @@ namespace ERMS.Application.Features.Courses.Commands.CreateCourse
             // ✅ Validate Trainer tồn tại & là Trainer
             var trainer = await _context.Employees
                 .FirstOrDefaultAsync(e =>
-                    e.UserId == request.TrainerId &&
+                    e.Id == request.TrainerId &&
                     e.EnterpriseId == enterpriseId &&
                     !e.IsDeleted,
                     cancellationToken);

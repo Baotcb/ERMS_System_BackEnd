@@ -23,7 +23,7 @@ namespace ERMS.Application.Features.Lessons.Commands.CreateLesson
                 .FirstOrDefaultAsync(c => c.Id == request.CourseId && !c.IsDeleted, cancellationToken);
 
             if (course == null)
-                throw new KeyNotFoundException("Course not found");
+                throw new KeyNotFoundException("Không tìm thấy khóa học");
 
             var lesson = new Lesson
             {
