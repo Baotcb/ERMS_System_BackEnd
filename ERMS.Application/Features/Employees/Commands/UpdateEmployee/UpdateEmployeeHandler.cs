@@ -84,6 +84,7 @@ namespace ERMS.Application.Features.Employees.Commands.UpdateEmployee
         public async Task<bool> Handle(UpdateEmployeeCommand request, CancellationToken cancellationToken)
         {
             var enterpriseId = await _currentUserService.GetEnterpriseIdAsync();
+            var departmentId = await _currentUserService.GetDepartmentIdAsync();
             if (enterpriseId == null) throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
 
             var normalizedEmploymentType = NormalizeEmploymentType(request.EmploymentType);
@@ -111,7 +112,7 @@ namespace ERMS.Application.Features.Employees.Commands.UpdateEmployee
             }
 
             var departmentExists = await _context.Departments
-                .AnyAsync(d => d.Id == request.DepartmentId
+                .AnyAsync(d => d.Id == departmentId
                             && d.EnterpriseId == enterpriseId
                             && !d.IsDeleted, cancellationToken);
 
@@ -147,7 +148,7 @@ namespace ERMS.Application.Features.Employees.Commands.UpdateEmployee
             await using var transaction = await _context.BeginTransactionAsync(cancellationToken);
             try
             {
-                employee.DepartmentId = request.DepartmentId;
+                employee.DepartmentId = departmentId;
                 employee.Position = request.Position;
                 employee.EmploymentType = normalizedEmploymentType;
                 employee.ManagerId = request.ManagerId;
