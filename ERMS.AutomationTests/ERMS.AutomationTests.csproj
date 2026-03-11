@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Bogus" Version="35.6.5" />
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.3" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.0" />
@@ -27,7 +28,6 @@
     <Folder Include="PageObjects\%28auth%29\confirm-email\" />
     <Folder Include="PageObjects\%28auth%29\register\HR\" />
     <Folder Include="PageObjects\%28candidate%29\" />
-    <Folder Include="Utilities\" />
     <Folder Include="TestData\" />
   </ItemGroup>
 
