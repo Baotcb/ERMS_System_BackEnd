@@ -39,7 +39,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapHealthChecks("/health").AllowAnonymous();
-app.MapGet("/db-health", async (IServiceProvider sp) =>
+app.MapMethods("/db-health", new[] { "GET", "HEAD" }, async (IServiceProvider sp) =>
 {
     var context = sp.GetRequiredService<ERMS.Application.Interface.IERMSDbContext>();
     try
@@ -48,13 +48,19 @@ app.MapGet("/db-health", async (IServiceProvider sp) =>
         if (canConnect)
         {
             await context.Database.ExecuteSqlRawAsync("SELECT 1");
-            return Results.Ok(new { status = "healthy", message = "Database is active" });
+            return Results.Ok(new { status = "healthy", message = "Database is active", timestamp = DateTime.UtcNow });
         }
-        return Results.StatusCode(503);
+        return Results.Json(
+            new { status = "unhealthy", message = "Cannot connect to database", timestamp = DateTime.UtcNow },
+            statusCode: 503
+        );
     }
-    catch
+    catch (Exception ex)
     {
-        return Results.StatusCode(503);
+        return Results.Json(
+            new { status = "unhealthy", message = ex.Message, timestamp = DateTime.UtcNow },
+            statusCode: 503
+        );
     }
 }).AllowAnonymous();
 
