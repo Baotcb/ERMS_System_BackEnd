@@ -4,6 +4,7 @@ using ERMS.Infrastructure;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Scalar.AspNetCore;
 using DotNetEnv;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,17 +18,17 @@ builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+
 app.MapOpenApi();
 app.MapScalarApiReference(options => {
     options.Title = "ERMS System API";
-    options.Theme = ScalarTheme.Mars;
+    options.Theme = ScalarTheme.DeepSpace;
     options.ShowSidebar = true;
 });
 
 app.UseCors("AllowFrontend");
 
-// Only redirect to HTTPS in production (prevents CORS preflight issues in dev)
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
@@ -38,6 +39,25 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapHealthChecks("/health").AllowAnonymous();
+app.MapGet("/db-health", async (IServiceProvider sp) =>
+{
+    var context = sp.GetRequiredService<ERMS.Application.Interface.IERMSDbContext>();
+    try
+    {
+        var canConnect = await context.Database.CanConnectAsync();
+        if (canConnect)
+        {
+            await context.Database.ExecuteSqlRawAsync("SELECT 1");
+            return Results.Ok(new { status = "healthy", message = "Database is active" });
+        }
+        return Results.StatusCode(503);
+    }
+    catch
+    {
+        return Results.StatusCode(503);
+    }
+}).AllowAnonymous();
+
 app.MapControllers();
 
 app.Run();
