@@ -63,4 +63,45 @@ public class CloudinaryService : ICloudinaryService
 
         return (uploadResult.SecureUrl.ToString(), uploadResult.PublicId);
     }
+
+    public async Task<(string Url, string PublicId, int DurationMinutes)> UploadVideoAsync(Stream fileStream, string fileName)
+    {
+        var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+        var sanitizedFileName = Path.GetFileNameWithoutExtension(fileName)
+            .Replace(" ", "_")
+            .Replace("-", "_");
+
+        var publicId = $"erms/lessons/{timestamp}_{sanitizedFileName}";
+
+        var uploadParams = new VideoUploadParams
+        {
+            File = new FileDescription(fileName, fileStream),
+            PublicId = publicId,
+            Overwrite = false,
+
+            // tối ưu video
+            Transformation = new Transformation()
+                .Quality("auto")
+                .FetchFormat("auto")
+        };
+
+        _logger.LogInformation("Uploading video to Cloudinary: {PublicId}", publicId);
+
+        var result = await _cloudinary.UploadAsync(uploadParams);
+
+        if (result.Error != null)
+        {
+            _logger.LogError("Upload video failed: {Error}", result.Error.Message);
+            throw new Exception(result.Error.Message);
+        }
+
+        var durationMinutes = (int)Math.Ceiling(result.Duration / 60);
+
+        return (
+            result.SecureUrl.ToString(),
+            result.PublicId,
+            durationMinutes
+        );
+    }
 }

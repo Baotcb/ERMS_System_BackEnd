@@ -2,6 +2,7 @@
 using ERMS.Application.Features.Lessons.Commands.UpdateLessonProgress;
 using ERMS.Application.Features.Lessons.Queries.GetLessonProgress;
 using ERMS.Application.Features.Lessons.Queries.GetLessonsByCourse;
+using ERMS.Application.Interface;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -16,10 +17,13 @@ namespace ERMS.API.Controllers
     public class LessonsController : ControllerBase
     {
         private readonly IMediator _mediator;
+        private readonly ICloudinaryService _cloudinaryService;
 
-        public LessonsController(IMediator mediator)
+        public LessonsController(IMediator mediator,
+            ICloudinaryService cloudinaryService)
         {
             _mediator = mediator;
+            _cloudinaryService = cloudinaryService;
         }
 
         [HttpPost]
@@ -56,6 +60,24 @@ namespace ERMS.API.Controllers
             });
 
             return Ok(result);
+        }
+
+        [HttpPost("upload-video")]
+        [RequestSizeLimit(500_000_000)]
+        public async Task<IActionResult> UploadVideo(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("File is required");
+
+            using var stream = file.OpenReadStream();
+
+            var result = await _cloudinaryService.UploadVideoAsync(stream, file.FileName);
+
+            return Ok(new
+            {
+                VideoUrl = result.Url,
+                DurationMinutes = result.DurationMinutes
+            });
         }
     }
 }

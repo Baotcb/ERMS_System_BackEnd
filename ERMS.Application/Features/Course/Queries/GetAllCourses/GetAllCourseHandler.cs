@@ -24,14 +24,14 @@ namespace ERMS.Application.Features.Courses.Queries.GetAllCourses
 
             if (enterpriseId == null)
             {
-                throw new System.UnauthorizedAccessException("User does not belong to any enterprise");
+                throw new System.UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
             }
 
             var query = _context.Courses
                 .Where(c => c.EnterpriseId == enterpriseId.Value && !c.IsDeleted)
                 .AsQueryable();
 
-            // Search
+            // Tìm kiếm
             if (!string.IsNullOrEmpty(request.Search))
             {
                 var search = request.Search.ToLower();
@@ -41,13 +41,13 @@ namespace ERMS.Application.Features.Courses.Queries.GetAllCourses
                     c.CourseCode.ToLower().Contains(search));
             }
 
-            // Status filter
+            // Lọc theo trạng thái
             if (!string.IsNullOrEmpty(request.Status))
             {
                 query = query.Where(c => c.Status == request.Status);
             }
 
-            // Mandatory filter
+            // Lọc theo khóa học bắt buộc
             if (request.IsMandatory.HasValue)
             {
                 query = query.Where(c => c.IsMandatory == request.IsMandatory.Value);

@@ -3,6 +3,7 @@ using ERMS.Application.Features.Courses.Commands.PublishCourse;
 using ERMS.Application.Features.Courses.Commands.UpdateCourse;
 using ERMS.Application.Features.Courses.Queries.GetAllCourses;
 using ERMS.Application.Features.Courses.Queries.GetCourseDetails;
+using ERMS.Application.Features.Courses.Queries.GetCourseProgress;
 using ERMS.Application.Features.CourseSkills.Commands.CreateCourseSkill;
 using ERMS.Application.Features.Enrollments.Commands.AssignEmployeesToCourse;
 using ERMS.Application.Features.Quizzes.Commands.CreateQuiz;
@@ -113,6 +114,17 @@ namespace ERMS.API.Controllers
         public async Task<IActionResult> CreateCourseSkill(CreateCourseSkillCommand command)
         {
             var result = await _mediator.Send(command);
+            return Ok(result);
+        }
+
+        [HttpGet("{courseId}/progress")]
+        public async Task<IActionResult> GetProgress(Guid courseId)
+        {
+            var result = await _mediator.Send(new GetCourseProgressQuery
+            {
+                CourseId = courseId
+            });
+
             return Ok(result);
         }
     }
