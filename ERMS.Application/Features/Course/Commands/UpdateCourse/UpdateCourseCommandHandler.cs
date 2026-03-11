@@ -29,12 +29,12 @@ namespace ERMS.Application.Features.Courses.Commands.UpdateCourse
             var userId = _currentUserService.UserId;
 
             if (userId == null)
-                throw new UnauthorizedAccessException("User not authenticated");
+                throw new UnauthorizedAccessException("Người dùng chưa đăng nhập.");
 
             var enterpriseId = await _currentUserService.GetEnterpriseIdAsync();
 
             if (enterpriseId == null)
-                throw new Exception("User does not belong to any enterprise");
+                throw new Exception("Người dùng không thuộc doanh nghiệp nào.");
 
             var course = await _context.Courses
                 .FirstOrDefaultAsync(c =>
@@ -44,7 +44,7 @@ namespace ERMS.Application.Features.Courses.Commands.UpdateCourse
                     cancellationToken);
 
             if (course == null)
-                throw new Exception("Course not found");
+                throw new Exception("Không tìm thấy khóa học.");
 
             // Check duplicate CourseCode
             var existedCode = await _context.Courses
@@ -56,7 +56,7 @@ namespace ERMS.Application.Features.Courses.Commands.UpdateCourse
                     cancellationToken);
 
             if (existedCode)
-                throw new Exception("CourseCode already exists");
+                throw new Exception("Mã khóa học đã tồn tại.");
 
             // Validate Trainer
             var trainer = await _context.Employees
@@ -67,10 +67,10 @@ namespace ERMS.Application.Features.Courses.Commands.UpdateCourse
                     cancellationToken);
 
             if (trainer == null)
-                throw new Exception("Trainer not found");
+                throw new Exception("Không tìm thấy giảng viên.");
 
             if (!trainer.IsTrainer)
-                throw new Exception("Employee is not a trainer");
+                throw new Exception("Nhân viên này không phải là giảng viên.");
 
             // Update fields
             course.TrainingPlanId = request.TrainingPlanId;
@@ -91,7 +91,7 @@ namespace ERMS.Application.Features.Courses.Commands.UpdateCourse
             await _context.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation(
-                "Course {CourseId} updated by User {UserId}",
+                "Khóa học {CourseId} đã được cập nhật bởi người dùng {UserId}",
                 course.Id,
                 userId);
 
