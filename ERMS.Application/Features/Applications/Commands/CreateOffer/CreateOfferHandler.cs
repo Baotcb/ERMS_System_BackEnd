@@ -168,18 +168,6 @@ namespace ERMS.Application.Features.Applications.Commands.CreateOffer
             var candidateUser = candidate.User;
             var jobTitle = application.JobPosting.Description;
 
-            var token = await _userManager.GenerateUserTokenAsync(
-                candidateUser,
-                TokenOptions.DefaultProvider,
-                $"OfferAccess-{offer.Id}");
-
-            var encodedToken = Uri.EscapeDataString(token);
-            var encodedOfferId = Uri.EscapeDataString(offer.Id.ToString());
-
-       
-            var clientUrl = _configuration["ClientSettings:Url"] ?? "http://localhost:3000";
-            var offerDetailUrl = $"{clientUrl}/my-offers?offerId={encodedOfferId}&token={encodedToken}";
-
             var emailSubject = $"🎉 Thư mời nhận việc - {offer.Position}";
 
             var bonusText = !string.IsNullOrWhiteSpace(offer.Bonus)
@@ -188,10 +176,6 @@ namespace ERMS.Application.Features.Applications.Commands.CreateOffer
 
             var benefitsText = !string.IsNullOrWhiteSpace(offer.Benefits)
                 ? $"<p><strong>Phúc lợi:</strong> {offer.Benefits}</p>"
-                : "";
-
-            var offerLetterLink = !string.IsNullOrWhiteSpace(offer.OfferLetterUrl)
-                ? $@"<p><strong>Thư mời chính thức:</strong> <a href='{offer.OfferLetterUrl}' style='color: #4CAF50;'>Tải xuống PDF</a></p>"
                 : "";
 
             var emailBody = $@"
@@ -204,12 +188,7 @@ namespace ERMS.Application.Features.Applications.Commands.CreateOffer
         .header {{ background-color: #4CAF50; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }}
         .content {{ background-color: #f9f9f9; padding: 30px; border-radius: 0 0 5px 5px; }}
         .offer-details {{ background-color: white; padding: 20px; margin: 20px 0; border-left: 4px solid #4CAF50; }}
-        .button {{ background-color: #4CAF50; color: white; padding: 12px 30px; text-decoration: none; 
-                   border-radius: 5px; display: inline-block; margin: 10px 5px; font-weight: bold; }}
-        .button:hover {{ background-color: #45a049; }}
         .footer {{ text-align: center; margin-top: 20px; font-size: 12px; color: #666; }}
-        .urgent {{ background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }}
-        .security-note {{ background-color: #e3f2fd; border-left: 4px solid #2196F3; padding: 15px; margin: 20px 0; font-size: 13px; }}
     </style>
 </head>
 <body>
@@ -233,23 +212,10 @@ namespace ERMS.Application.Features.Applications.Commands.CreateOffer
                 {benefitsText}
                 <p><strong>Ngày bắt đầu:</strong> {offer.StartDate:dd/MM/yyyy}</p>
                 <p><strong>Hạn phản hồi:</strong> <span style='color: #f44336; font-weight: bold;'>{offer.ExpirationDate:dd/MM/yyyy HH:mm}</span></p>
-                {offerLetterLink}
             </div>
 
             <div class='urgent'>
                 ⚠️ <strong>Quan trọng:</strong> Vui lòng phản hồi đề nghị này trước ngày <strong>{offer.ExpirationDate:dd/MM/yyyy HH:mm}</strong>.
-            </div>
-            
-            <div class='security-note'>
-                🔒 <strong>Bảo mật:</strong> Link dưới đây được tạo riêng cho bạn và có thời hạn sử dụng. 
-                Vui lòng không chia sẻ link này với người khác.
-            </div>
-            
-            <div style='text-align: center; margin: 30px 0;'>
-                <p style='font-size: 16px; margin-bottom: 20px;'><strong>Bạn có thể xem chi tiết và phản hồi offer ngay tại đây:</strong></p>
-                <a href='{offerDetailUrl}' class='button'>📄 Xem chi tiết & Phản hồi Offer</a>
-                <p style='font-size: 12px; color: #666; margin-top: 15px;'>Hoặc copy link sau vào trình duyệt:</p>
-                <p style='font-size: 12px; color: #4CAF50; word-break: break-all;'>{offerDetailUrl}</p>
             </div>
 
             <p>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với bộ phận HR của chúng tôi qua email này hoặc số điện thoại: <strong>1900-xxxx</strong>.</p>
@@ -274,7 +240,6 @@ namespace ERMS.Application.Features.Applications.Commands.CreateOffer
             }
             catch (Exception ex)
             {
-               
                 Console.WriteLine($"Failed to send email: {ex.Message}");
             }
         }
