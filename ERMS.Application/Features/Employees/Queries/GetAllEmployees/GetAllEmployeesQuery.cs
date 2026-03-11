@@ -37,5 +37,6 @@ namespace ERMS.Application.Features.Employees.Queries.GetAllEmployees
         public DateTime? HireDate { get; set; }
         public string Status { get; set; } = null!;
         public DateTime CreatedAt { get; set; }
+        public bool IsTrainer { get; set; }
     }
 }
