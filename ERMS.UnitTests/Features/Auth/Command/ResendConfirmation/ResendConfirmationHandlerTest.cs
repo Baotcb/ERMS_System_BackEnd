@@ -89,6 +89,32 @@ namespace ERMS.UnitTests.Features.Auth.Command.ResendConfirmation
         }
 
         [Fact]
+        public async Task Handle_ShouldPreserveClientBasePath_WhenClientUrlHasNoTrailingSlash()
+        {
+            // Arrange
+            var user = new User { Id = Guid.NewGuid(), Email = "test@example.com", EmailConfirmed = false, FullName = "Test User" };
+            var command = new ResendConfirmationCommand { Email = user.Email };
+            var token = "confirmation-token";
+            var clientUrl = "http://localhost:3000/erms";
+            string? emailBody = null;
+
+            _userManagerMock.Setup(x => x.FindByEmailAsync(command.Email)).ReturnsAsync(user);
+            _userManagerMock.Setup(x => x.GenerateEmailConfirmationTokenAsync(user)).ReturnsAsync(token);
+            _configMock.Setup(x => x["ClientSettings:Url"]).Returns(clientUrl);
+            _emailServiceMock
+                .Setup(x => x.SendEmailAsync(user.Email, It.IsAny<string>(), It.IsAny<string>()))
+                .Callback<string, string, string>((_, _, body) => emailBody = body)
+                .Returns(Task.CompletedTask);
+
+            // Act
+            var result = await _handler.Handle(command, CancellationToken.None);
+
+            // Assert
+            result.Should().BeTrue();
+            emailBody.Should().Contain("http://localhost:3000/erms/confirm-email?");
+        }
+
+        [Fact]
         public async Task Handle_ShouldReturnFalse_WhenClientUrlIsInvalid()
         {
             // Arrange

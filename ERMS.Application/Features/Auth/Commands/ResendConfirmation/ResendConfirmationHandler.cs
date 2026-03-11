@@ -50,10 +50,8 @@ namespace ERMS.Application.Features.Auth.Commands.ResendConfirmation
                 }
 
                 var encodedToken = Uri.EscapeDataString(token);
-                var confirmationUrl = new Uri(
-                    clientUri,
-                    $"confirm-email?userId={user.Id}&token={encodedToken}&email={Uri.EscapeDataString(user.Email!)}")
-                    .ToString();
+                var confirmationUrl =
+                    $"{clientUrl.TrimEnd('/')}/confirm-email?userId={user.Id}&token={encodedToken}&email={Uri.EscapeDataString(user.Email!)}";
 
                 var subject = "Xác thực email tài khoản ERMS";
                 var body = CreateEmailTemplate(user.FullName, confirmationUrl);
