@@ -50,7 +50,7 @@ namespace ERMS.UnitTests.Features.Courses.Queries.GetAllCourses
 
             await act.Should()
                 .ThrowAsync<UnauthorizedAccessException>()
-                .WithMessage("User does not belong to any enterprise");
+                .WithMessage("Người dùng không thuộc doanh nghiệp nào.");
         }
 
         [Fact]
@@ -71,15 +71,14 @@ namespace ERMS.UnitTests.Features.Courses.Queries.GetAllCourses
                     CourseName = "C# Basics",
                     CourseCode = "CSHARP01",
                     Status = "Published",
-                     Trainer = new Employee
-            {
-                User = new User
-                {
-                    FullName = "Trainer Test"
-                }
-            },
-
                     CreatedAt = DateTime.UtcNow,
+                    Trainer = new Employee
+                    {
+                        User = new User
+                        {
+                            FullName = "Trainer Test"
+                        }
+                    },
                     Lessons = new List<Lesson>(),
                     Enrollments = new List<Enrollment>()
                 }
@@ -96,6 +95,237 @@ namespace ERMS.UnitTests.Features.Courses.Queries.GetAllCourses
             result.Should().NotBeNull();
             result.Items.Should().HaveCount(1);
             result.TotalCount.Should().Be(1);
+        }
+
+        [Fact]
+        public async Task Handle_SearchCourse_ShouldReturnFilteredResult()
+        {
+            var enterpriseId = Guid.NewGuid();
+
+            _currentUserServiceMock
+                .Setup(x => x.GetEnterpriseIdAsync())
+                .ReturnsAsync(enterpriseId);
+
+            SetupCourses(new List<Course>
+            {
+                new Course
+                {
+                    Id = Guid.NewGuid(),
+                    EnterpriseId = enterpriseId,
+                    CourseName = "ASP.NET Core",
+                    CourseCode = "ASP01",
+                    CreatedAt = DateTime.UtcNow,
+                    Trainer = new Employee { User = new User { FullName = "Trainer" } },
+                    Lessons = new List<Lesson>(),
+                    Enrollments = new List<Enrollment>()
+                },
+                new Course
+                {
+                    Id = Guid.NewGuid(),
+                    EnterpriseId = enterpriseId,
+                    CourseName = "Java Basics",
+                    CourseCode = "JAVA01",
+                    CreatedAt = DateTime.UtcNow,
+                    Trainer = new Employee { User = new User { FullName = "Trainer" } },
+                    Lessons = new List<Lesson>(),
+                    Enrollments = new List<Enrollment>()
+                }
+            });
+
+            var query = new GetAllCourseQuery
+            {
+                Search = "asp",
+                Page = 1,
+                PageSize = 10
+            };
+
+            var result = await _handler.Handle(query, CancellationToken.None);
+
+            result.Items.Should().HaveCount(1);
+            result.Items[0].CourseName.Should().Be("ASP.NET Core");
+        }
+
+        [Fact]
+        public async Task Handle_FilterByStatus_ShouldReturnCorrectCourses()
+        {
+            var enterpriseId = Guid.NewGuid();
+
+            _currentUserServiceMock
+                .Setup(x => x.GetEnterpriseIdAsync())
+                .ReturnsAsync(enterpriseId);
+
+            SetupCourses(new List<Course>
+            {
+                new Course
+                {
+                    Id = Guid.NewGuid(),
+                    EnterpriseId = enterpriseId,
+                    CourseName = "Draft Course",
+                    CourseCode = "DRAFT01",
+                    Status = "Draft",
+                    CreatedAt = DateTime.UtcNow,
+                    Trainer = new Employee { User = new User { FullName = "Trainer" } },
+                    Lessons = new List<Lesson>(),
+                    Enrollments = new List<Enrollment>()
+                },
+                new Course
+                {
+                    Id = Guid.NewGuid(),
+                    EnterpriseId = enterpriseId,
+                    CourseName = "Published Course",
+                    CourseCode = "PUB01",
+                    Status = "Published",
+                    CreatedAt = DateTime.UtcNow,
+                    Trainer = new Employee { User = new User { FullName = "Trainer" } },
+                    Lessons = new List<Lesson>(),
+                    Enrollments = new List<Enrollment>()
+                }
+            });
+
+            var query = new GetAllCourseQuery
+            {
+                Status = "Published",
+                Page = 1,
+                PageSize = 10
+            };
+
+            var result = await _handler.Handle(query, CancellationToken.None);
+
+            result.Items.Should().HaveCount(1);
+            result.Items[0].Status.Should().Be("Published");
+        }
+
+        [Fact]
+        public async Task Handle_FilterByMandatory_ShouldReturnCorrectCourses()
+        {
+            var enterpriseId = Guid.NewGuid();
+
+            _currentUserServiceMock
+                .Setup(x => x.GetEnterpriseIdAsync())
+                .ReturnsAsync(enterpriseId);
+
+            SetupCourses(new List<Course>
+            {
+                new Course
+                {
+                    Id = Guid.NewGuid(),
+                    EnterpriseId = enterpriseId,
+                    CourseName = "Mandatory Course",
+                    CourseCode = "MAN01",
+                    IsMandatory = true,
+                    CreatedAt = DateTime.UtcNow,
+                    Trainer = new Employee { User = new User { FullName = "Trainer" } },
+                    Lessons = new List<Lesson>(),
+                    Enrollments = new List<Enrollment>()
+                },
+                new Course
+                {
+                    Id = Guid.NewGuid(),
+                    EnterpriseId = enterpriseId,
+                    CourseName = "Optional Course",
+                    CourseCode = "OPT01",
+                    IsMandatory = false,
+                    CreatedAt = DateTime.UtcNow,
+                    Trainer = new Employee { User = new User { FullName = "Trainer" } },
+                    Lessons = new List<Lesson>(),
+                    Enrollments = new List<Enrollment>()
+                }
+            });
+
+            var query = new GetAllCourseQuery
+            {
+                IsMandatory = true,
+                Page = 1,
+                PageSize = 10
+            };
+
+            var result = await _handler.Handle(query, CancellationToken.None);
+
+            result.Items.Should().HaveCount(1);
+            result.Items[0].IsMandatory.Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task Handle_Pagination_ShouldReturnCorrectPage()
+        {
+            var enterpriseId = Guid.NewGuid();
+
+            _currentUserServiceMock
+                .Setup(x => x.GetEnterpriseIdAsync())
+                .ReturnsAsync(enterpriseId);
+
+            var courses = new List<Course>();
+
+            for (int i = 1; i <= 15; i++)
+            {
+                courses.Add(new Course
+                {
+                    Id = Guid.NewGuid(),
+                    EnterpriseId = enterpriseId,
+                    CourseName = $"Course {i}",
+                    CourseCode = $"C{i}",
+                    CreatedAt = DateTime.UtcNow.AddMinutes(-i),
+                    Trainer = new Employee { User = new User { FullName = "Trainer" } },
+                    Lessons = new List<Lesson>(),
+                    Enrollments = new List<Enrollment>()
+                });
+            }
+
+            SetupCourses(courses);
+
+            var query = new GetAllCourseQuery
+            {
+                Page = 2,
+                PageSize = 10
+            };
+
+            var result = await _handler.Handle(query, CancellationToken.None);
+
+            result.Items.Should().HaveCount(5);
+            result.TotalCount.Should().Be(15);
+        }
+
+        [Fact]
+        public async Task Handle_ShouldCalculateLessonAndEnrollmentCount()
+        {
+            var enterpriseId = Guid.NewGuid();
+
+            _currentUserServiceMock
+                .Setup(x => x.GetEnterpriseIdAsync())
+                .ReturnsAsync(enterpriseId);
+
+            SetupCourses(new List<Course>
+            {
+                new Course
+                {
+                    Id = Guid.NewGuid(),
+                    EnterpriseId = enterpriseId,
+                    CourseName = "Test Course",
+                    CourseCode = "TEST01",
+                    CreatedAt = DateTime.UtcNow,
+                    Trainer = new Employee { User = new User { FullName = "Trainer" } },
+                    Lessons = new List<Lesson>
+                    {
+                        new Lesson { IsDeleted = false },
+                        new Lesson { IsDeleted = false }
+                    },
+                    Enrollments = new List<Enrollment>
+                    {
+                        new Enrollment { IsDeleted = false }
+                    }
+                }
+            });
+
+            var query = new GetAllCourseQuery
+            {
+                Page = 1,
+                PageSize = 10
+            };
+
+            var result = await _handler.Handle(query, CancellationToken.None);
+
+            result.Items[0].LessonCount.Should().Be(2);
+            result.Items[0].EnrollmentCount.Should().Be(1);
         }
     }
 }

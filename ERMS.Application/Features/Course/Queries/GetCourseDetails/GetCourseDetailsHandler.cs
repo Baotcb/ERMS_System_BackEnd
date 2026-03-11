@@ -23,7 +23,7 @@ namespace ERMS.Application.Features.Courses.Queries.GetCourseDetails
             var enterpriseId = await _currentUserService.GetEnterpriseIdAsync();
 
             if (enterpriseId == null)
-                throw new UnauthorizedAccessException("User does not belong to any enterprise");
+                throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
 
             var course = await _context.Courses
                 .Where(c => c.Id == request.Id &&
@@ -59,7 +59,7 @@ namespace ERMS.Application.Features.Courses.Queries.GetCourseDetails
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (course == null)
-                throw new KeyNotFoundException("Course not found");
+                throw new KeyNotFoundException("Không tìm thấy khóa học.");
 
             return course;
         }

@@ -29,12 +29,12 @@ namespace ERMS.Application.Features.Courses.Commands.PublishCourse
             var userId = _currentUserService.UserId;
 
             if (userId == null)
-                throw new UnauthorizedAccessException("User not authenticated");
+                throw new UnauthorizedAccessException("Người dùng chưa đăng nhập.");
 
             var enterpriseId = await _currentUserService.GetEnterpriseIdAsync();
 
             if (enterpriseId == null)
-                throw new Exception("User does not belong to any enterprise");
+                throw new Exception("Người dùng không thuộc doanh nghiệp nào.");
 
             var course = await _context.Courses
                 .FirstOrDefaultAsync(c =>
@@ -44,12 +44,12 @@ namespace ERMS.Application.Features.Courses.Commands.PublishCourse
                     cancellationToken);
 
             if (course == null)
-                throw new Exception("Course not found");
+                throw new Exception("Không tìm thấy khóa học.");
 
             if (course.Status == "Published")
-                throw new Exception("Course already published");
+                throw new Exception("Khóa học đã được xuất bản.");
 
-            // Optional: kiểm tra có lesson
+            // Kiểm tra khóa học có bài học hay chưa
             var lessonCount = await _context.Lessons
                 .CountAsync(l =>
                     l.CourseId == course.Id &&
@@ -57,7 +57,7 @@ namespace ERMS.Application.Features.Courses.Commands.PublishCourse
                     cancellationToken);
 
             if (lessonCount == 0)
-                throw new Exception("Cannot publish course without lessons");
+                throw new Exception("Không thể xuất bản khóa học khi chưa có bài học.");
 
             course.Status = "Published";
             course.PublishedAt = DateTime.UtcNow;
@@ -65,7 +65,7 @@ namespace ERMS.Application.Features.Courses.Commands.PublishCourse
             await _context.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation(
-                "Course {CourseId} published by User {UserId}",
+                "Khóa học {CourseId} đã được xuất bản bởi người dùng {UserId}",
                 course.Id,
                 userId);
 

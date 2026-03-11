@@ -2,6 +2,7 @@
 using ERMS.Application.Interface;
 using ERMS.Domain.Entities.Identity;
 using ERMS.Domain.Entities.Organization;
+using ERMS.Domain.Entities.Skill;
 using ERMS.Domain.Entities.Training;
 using ERMS.UnitTests.Helpers;
 using FluentAssertions;
@@ -18,7 +19,6 @@ namespace ERMS.UnitTests.Features.Courses.Queries.GetCourseDetails
     {
         private readonly Mock<IERMSDbContext> _contextMock;
         private readonly Mock<ICurrentUserService> _currentUserServiceMock;
-
         private readonly GetCourseDetailsHandler _handler;
 
         public GetCourseDetailsHandlerTests()
@@ -53,7 +53,7 @@ namespace ERMS.UnitTests.Features.Courses.Queries.GetCourseDetails
 
             await act.Should()
                 .ThrowAsync<UnauthorizedAccessException>()
-                .WithMessage("User does not belong to any enterprise");
+                .WithMessage("Người dùng không thuộc doanh nghiệp nào.");
         }
 
         [Fact]
@@ -76,11 +76,11 @@ namespace ERMS.UnitTests.Features.Courses.Queries.GetCourseDetails
 
             await act.Should()
                 .ThrowAsync<KeyNotFoundException>()
-                .WithMessage("Course not found");
+                .WithMessage("Không tìm thấy khóa học.");
         }
 
         [Fact]
-        public async Task Handle_ReturnCourseDetails()
+        public async Task Handle_ReturnCourseDetailsSuccessfully()
         {
             var enterpriseId = Guid.NewGuid();
             var courseId = Guid.NewGuid();
@@ -99,17 +99,36 @@ namespace ERMS.UnitTests.Features.Courses.Queries.GetCourseDetails
                     CourseCode = "ASP01",
                     CompletionCriteria = "Finish all lessons",
                     CreatedAt = DateTime.UtcNow,
-                     Trainer = new Employee
-            {
-                User = new User
-                {
-                    FullName = "Trainer Test"
-                }
-            },
 
-                    Lessons = new List<Lesson>(),
-                    Enrollments = new List<Enrollment>(),
-                    CourseSkills = new List<CourseSkill>()
+                    Trainer = new Employee
+                    {
+                        User = new User
+                        {
+                            FullName = "Trainer Test"
+                        }
+                    },
+
+                    Lessons = new List<Lesson>
+                    {
+                        new Lesson { IsDeleted = false },
+                        new Lesson { IsDeleted = false }
+                    },
+
+                    Enrollments = new List<Enrollment>
+                    {
+                        new Enrollment { IsDeleted = false }
+                    },
+
+                    CourseSkills = new List<CourseSkill>
+                    {
+                        new CourseSkill
+                        {
+                            Skill = new Skill
+                            {
+                                SkillName = "C#"
+                            }
+                        }
+                    }
                 }
             });
 
@@ -123,6 +142,12 @@ namespace ERMS.UnitTests.Features.Courses.Queries.GetCourseDetails
             result.Should().NotBeNull();
             result.Id.Should().Be(courseId);
             result.CourseName.Should().Be("ASP.NET Core");
+            result.TrainerName.Should().Be("Trainer Test");
+
+            result.LessonCount.Should().Be(2);
+            result.EnrollmentCount.Should().Be(1);
+
+            result.Skills.Should().Contain("C#");
         }
     }
 }
