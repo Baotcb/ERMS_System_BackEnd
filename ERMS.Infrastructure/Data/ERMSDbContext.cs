@@ -120,6 +120,12 @@ namespace ERMS.Infrastructure.Data
                 .WithOne(u => u.Employee)
                 .HasForeignKey<Employee>(e => e.UserId);
 
+            builder.Entity<Employee>()
+                .HasOne(e => e.Department)
+                .WithMany()
+                .HasForeignKey(e => e.DepartmentId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired(false);
        
             builder.Entity<Candidate>()
                 .HasOne(c => c.User)

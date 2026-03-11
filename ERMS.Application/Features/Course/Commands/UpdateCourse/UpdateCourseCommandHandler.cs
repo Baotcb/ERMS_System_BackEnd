@@ -61,7 +61,7 @@ namespace ERMS.Application.Features.Courses.Commands.UpdateCourse
             // Kiểm tra Trainer
             var trainer = await _context.Employees
                 .FirstOrDefaultAsync(e =>
-                    e.UserId == request.TrainerId &&
+                    e.Id == request.TrainerId &&
                     e.EnterpriseId == enterpriseId &&
                     !e.IsDeleted,
                     cancellationToken);
