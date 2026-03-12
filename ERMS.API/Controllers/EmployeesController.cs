@@ -4,12 +4,9 @@ using ERMS.Application.Features.Employees.Commands.DeleteEmployee;
 using ERMS.Application.Features.Employees.Commands.ImportEmployeesFromFile;
 using ERMS.Application.Features.Employees.Commands.UpdateEmployee;
 using ERMS.Application.Features.Employees.Queries.GetAllEmployees;
-<<<<<<< feature/create-employee
 using ERMS.Application.Features.Employees.Queries.GetEmployeeDetail;
-=======
 using ERMS.Application.Features.Employees.Queries.GetEmployeeById;
 using ERMS.Domain.Constants.Roles;
->>>>>>> DEV
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -128,11 +125,7 @@ namespace ERMS.API.Controllers
         /// </summary>
         /// <remarks>ID must be provided in the request body.</remarks>
         [HttpPut]
-<<<<<<< feature/create-employee
-        [Authorize(Roles = "HRManager,Director")]
-=======
         [Authorize(Roles = AppRoles.HRManager + "," + AppRoles.Director)]
->>>>>>> DEV
         public async Task<IActionResult> Update([FromBody] UpdateEmployeeCommand command)
         {
             if (!ModelState.IsValid)
