@@ -72,7 +72,7 @@ namespace ERMS.Application.Features.Courses.Commands.UpdateCourse
             if (!trainer.IsTrainer)
                 throw new Exception("Nhân viên này không phải là giảng viên.");
 
-            // Cập nhật thông tin khóa học
+            // Cập nhật khóa học
             course.TrainingPlanId = request.TrainingPlanId;
             course.CourseName = request.CourseName;
             course.CourseCode = request.CourseCode;

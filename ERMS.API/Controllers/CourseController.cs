@@ -63,12 +63,14 @@ namespace ERMS.API.Controllers
         [HttpPost("{courseId}/assign-employees")]
         public async Task<IActionResult> AssignEmployees(
     Guid courseId,
-    [FromBody] List<Guid> employeeIds)
+    
+    [FromBody] AssignEmployeesRequest request)
         {
             var command = new AssignEmployeesToCourseCommand
             {
                 CourseId = courseId,
-                EmployeeIds = employeeIds
+                MeetUrl = request.MeetUrl,
+                EmployeeIds = request.EmployeeIds
             };
 
             var result = await _mediator.Send(command);
