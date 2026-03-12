@@ -4,6 +4,7 @@ using ERMS.Application.Features.Employees.Commands.DeleteEmployee;
 using ERMS.Application.Features.Employees.Commands.ImportEmployeesFromFile;
 using ERMS.Application.Features.Employees.Commands.UpdateEmployee;
 using ERMS.Application.Features.Employees.Queries.GetAllEmployees;
+using ERMS.Application.Features.Employees.Queries.GetEmployeeDetail;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -34,6 +35,28 @@ namespace ERMS.API.Controllers
             try
             {
                 var result = await _mediator.Send(query);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Lấy chi tiết nhân viên
+        /// </summary>
+        [HttpGet("detail")]
+        public async Task<IActionResult> GetDetail([FromQuery] Guid id)
+        {
+            try
+            {
+                var result = await _mediator.Send(new GetEmployeeDetailQuery { Id = id });
+                if (result == null)
+                {
+                    return NotFound(new { message = "Nhân viên không tồn tại" });
+                }
+
                 return Ok(result);
             }
             catch (Exception ex)

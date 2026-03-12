@@ -13,7 +13,8 @@ namespace ERMS.Application.Features.Employees.Commands.CreateEmployee
 
         // Employee info
         public Guid EnterpriseId { get; set; }
-        public int DepartmentId { get; set; }
+        public int? DepartmentId { get; set; }
+        public string Role { get; set; } = null!;
         public string? Position { get; set; }
         public string EmploymentType { get; set; } = "FullTime";
         public DateTime? HireDate { get; set; }

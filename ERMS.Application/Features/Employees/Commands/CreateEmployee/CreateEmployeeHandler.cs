@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,6 +16,14 @@ namespace ERMS.Application.Features.Employees.Commands.CreateEmployee
 {
     public sealed class CreateEmployeeHandler : IRequestHandler<CreateEmployeeCommand, Guid>
     {
+        private static readonly HashSet<string> AssignableRoles = new(StringComparer.OrdinalIgnoreCase)
+        {
+            AppRoles.Employee,
+            AppRoles.Trainer,
+            AppRoles.DepartmentHead,
+            AppRoles.Director
+        };
+
         private readonly IERMSDbContext _context;
         private readonly UserManager<User> _userManager;
         private readonly ILogger<CreateEmployeeHandler> _logger;
@@ -34,9 +44,11 @@ namespace ERMS.Application.Features.Employees.Commands.CreateEmployee
         public async Task<Guid> Handle(CreateEmployeeCommand request, CancellationToken cancellationToken)
         {
             var enterpriseId = await _currentUserService.GetEnterpriseIdAsync();
-            if (enterpriseId == null) throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
+            if (enterpriseId == null)
+            {
+                throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
+            }
 
-            // Validate enterprise exists
             var enterprise = await _context.Enterprises
                 .FirstOrDefaultAsync(e => e.Id == enterpriseId && !e.IsDeleted, cancellationToken);
 
@@ -45,25 +57,42 @@ namespace ERMS.Application.Features.Employees.Commands.CreateEmployee
                 throw new Exception("Doanh nghiệp không tồn tại");
             }
 
-            // Validate department exists
-            var departmentExists = await _context.Departments
-                .AnyAsync(d => d.Id == request.DepartmentId 
-                            && d.EnterpriseId == enterpriseId 
-                            && !d.IsDeleted, cancellationToken);
-
-            if (!departmentExists)
+            if (string.IsNullOrWhiteSpace(request.Role))
             {
-                throw new Exception("Phòng ban không tồn tại");
+                throw new Exception("Vai trò là bắt buộc");
             }
 
-            // Check email already exists
+            var role = NormalizeRole(request.Role);
+            if (role == null)
+            {
+                throw new Exception("Vai trò không hợp lệ");
+            }
+
+            var isDirectorRole = string.Equals(role, AppRoles.Director, StringComparison.OrdinalIgnoreCase);
+            if (!isDirectorRole && !request.DepartmentId.HasValue)
+            {
+                throw new Exception("Phòng ban là bắt buộc với vai trò này");
+            }
+
+            if (!isDirectorRole)
+            {
+                var departmentExists = await _context.Departments
+                    .AnyAsync(d => d.Id == request.DepartmentId
+                                && d.EnterpriseId == enterpriseId
+                                && !d.IsDeleted, cancellationToken);
+
+                if (!departmentExists)
+                {
+                    throw new Exception("Phòng ban không tồn tại");
+                }
+            }
+
             var existingUser = await _userManager.FindByEmailAsync(request.Email);
             if (existingUser != null)
             {
                 throw new Exception("Email đã được sử dụng");
             }
 
-            // Create User account
             var user = new User
             {
                 Id = Guid.CreateVersion7(),
@@ -71,7 +100,7 @@ namespace ERMS.Application.Features.Employees.Commands.CreateEmployee
                 Email = request.Email,
                 FullName = request.FullName,
                 PhoneNumber = request.Phone,
-                EmailConfirmed = true, // HR created, no need email confirmation
+                EmailConfirmed = true,
                 DateJoined = DateTime.UtcNow
             };
 
@@ -82,21 +111,23 @@ namespace ERMS.Application.Features.Employees.Commands.CreateEmployee
                 throw new Exception($"Tạo tài khoản thất bại: {errors}");
             }
 
-            // Assign Employee role
-            await _userManager.AddToRoleAsync(user, AppRoles.Employee);
+            var addRoleResult = await _userManager.AddToRoleAsync(user, role);
+            if (!addRoleResult.Succeeded)
+            {
+                var errors = string.Join(", ", addRoleResult.Errors.Select(e => e.Description));
+                throw new Exception($"Gán vai trò thất bại: {errors}");
+            }
 
-            // Generate employee code
             var employeeCount = await _context.Employees
                 .CountAsync(e => e.EnterpriseId == enterpriseId, cancellationToken);
             var employeeCode = $"{enterprise.EnterpriseCode}-{(employeeCount + 1):D4}";
 
-            // Create Employee record
             var employee = new Employee
             {
                 Id = Guid.CreateVersion7(),
                 UserId = user.Id,
                 EnterpriseId = enterpriseId.Value,
-                DepartmentId = request.DepartmentId,
+                DepartmentId = isDirectorRole ? null : request.DepartmentId,
                 EmployeeCode = employeeCode,
                 Position = request.Position,
                 EmploymentType = request.EmploymentType,
@@ -110,10 +141,22 @@ namespace ERMS.Application.Features.Employees.Commands.CreateEmployee
             _context.Employees.Add(employee);
             await _context.SaveChangesAsync(cancellationToken);
 
-            _logger.LogInformation("Created employee {EmployeeCode} for user {Email} in enterprise {EnterpriseId}",
+            _logger.LogInformation(
+                "Created employee {EmployeeCode} for user {Email} in enterprise {EnterpriseId}",
                 employee.EmployeeCode, user.Email, employee.EnterpriseId);
 
             return employee.Id;
+        }
+
+        private static string? NormalizeRole(string? role)
+        {
+            if (string.IsNullOrWhiteSpace(role))
+            {
+                return null;
+            }
+
+            return AssignableRoles.FirstOrDefault(r =>
+                string.Equals(r, role, StringComparison.OrdinalIgnoreCase));
         }
     }
 }

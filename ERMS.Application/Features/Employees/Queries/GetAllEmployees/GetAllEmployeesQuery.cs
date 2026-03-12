@@ -30,12 +30,13 @@ namespace ERMS.Application.Features.Employees.Queries.GetAllEmployees
         public string FullName { get; set; } = null!;
         public string Email { get; set; } = null!;
         public string? Phone { get; set; }
-        public int DepartmentId { get; set; }
-        public string DepartmentName { get; set; } = null!;
+        public int? DepartmentId { get; set; }
+        public string? DepartmentName { get; set; }
         public string? Position { get; set; }
         public string EmploymentType { get; set; } = null!;
         public DateTime? HireDate { get; set; }
         public string Status { get; set; } = null!;
         public DateTime CreatedAt { get; set; }
+        public List<string> Roles { get; set; } = new();
     }
 }
