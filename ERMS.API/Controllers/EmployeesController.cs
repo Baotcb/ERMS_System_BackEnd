@@ -69,6 +69,7 @@ namespace ERMS.API.Controllers
         /// Tạo nhân viên mới (+ tài khoản)
         /// </summary>
         [HttpPost]
+        [Authorize(Roles = "HRManager,Director")]
         public async Task<IActionResult> Create([FromBody] CreateEmployeeCommand command)
         {
             if (!ModelState.IsValid)
@@ -94,6 +95,7 @@ namespace ERMS.API.Controllers
         /// </summary>
         /// <remarks>ID must be provided in the request body.</remarks>
         [HttpPut]
+        [Authorize(Roles = "HRManager,Director")]
         public async Task<IActionResult> Update([FromBody] UpdateEmployeeCommand command)
         {
             if (!ModelState.IsValid)
@@ -115,6 +117,7 @@ namespace ERMS.API.Controllers
         /// </summary>
         /// <remarks>ID and EnterpriseId must be provided in the request body.</remarks>
         [HttpDelete]
+        [Authorize(Roles = "HRManager,Director")]
         public async Task<IActionResult> Delete([FromBody] DeleteEmployeeCommand command)
         {
             try
@@ -132,6 +135,7 @@ namespace ERMS.API.Controllers
         /// Import nhân viên hàng loạt (từ Excel - JSON input)
         /// </summary>
         [HttpPost("bulk")]
+        [Authorize(Roles = "HRManager,Director")]
         public async Task<IActionResult> BulkCreate([FromBody] BulkCreateEmployeesCommand command)
         {
             if (!ModelState.IsValid)
@@ -152,6 +156,7 @@ namespace ERMS.API.Controllers
         /// Import nhân viên từ file Excel/CSV
         /// </summary>
         [HttpPost("import")]
+        [Authorize(Roles = "HRManager,Director")]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> ImportFromFile([FromForm] IFormFile file)
         {

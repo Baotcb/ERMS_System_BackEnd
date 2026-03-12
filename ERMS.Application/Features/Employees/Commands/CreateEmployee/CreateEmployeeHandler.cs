@@ -93,59 +93,92 @@ namespace ERMS.Application.Features.Employees.Commands.CreateEmployee
                 throw new Exception("Email đã được sử dụng");
             }
 
-            var user = new User
-            {
-                Id = Guid.CreateVersion7(),
-                UserName = request.Email,
-                Email = request.Email,
-                FullName = request.FullName,
-                PhoneNumber = request.Phone,
-                EmailConfirmed = true,
-                DateJoined = DateTime.UtcNow
-            };
+            await using var transaction = await _context.BeginTransactionAsync(cancellationToken);
+            User? createdUser = null;
 
-            var createResult = await _userManager.CreateAsync(user, request.Password);
-            if (!createResult.Succeeded)
+            try
             {
-                var errors = string.Join(", ", createResult.Errors.Select(e => e.Description));
-                throw new Exception($"Tạo tài khoản thất bại: {errors}");
+                var user = new User
+                {
+                    Id = Guid.CreateVersion7(),
+                    UserName = request.Email,
+                    Email = request.Email,
+                    FullName = request.FullName,
+                    PhoneNumber = request.Phone,
+                    EmailConfirmed = true,
+                    DateJoined = DateTime.UtcNow
+                };
+
+                var createResult = await _userManager.CreateAsync(user, request.Password);
+                if (!createResult.Succeeded)
+                {
+                    var errors = string.Join(", ", createResult.Errors.Select(e => e.Description));
+                    throw new Exception($"Tạo tài khoản thất bại: {errors}");
+                }
+
+                createdUser = user;
+
+                var addRoleResult = await _userManager.AddToRoleAsync(user, role);
+                if (!addRoleResult.Succeeded)
+                {
+                    var errors = string.Join(", ", addRoleResult.Errors.Select(e => e.Description));
+                    throw new Exception($"Gán vai trò thất bại: {errors}");
+                }
+
+                var employeeCount = await _context.Employees
+                    .CountAsync(e => e.EnterpriseId == enterpriseId, cancellationToken);
+                var employeeCode = $"{enterprise.EnterpriseCode}-{(employeeCount + 1):D4}";
+
+                var employee = new Employee
+                {
+                    Id = Guid.CreateVersion7(),
+                    UserId = user.Id,
+                    EnterpriseId = enterpriseId.Value,
+                    DepartmentId = isDirectorRole ? null : request.DepartmentId,
+                    EmployeeCode = employeeCode,
+                    Position = request.Position,
+                    EmploymentType = request.EmploymentType,
+                    HireDate = request.HireDate ?? DateTime.UtcNow,
+                    ManagerId = request.ManagerId,
+                    Status = "Active",
+                    IsDeleted = false,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.Employees.Add(employee);
+                await _context.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+
+                _logger.LogInformation(
+                    "Created employee {EmployeeCode} for user {Email} in enterprise {EnterpriseId}",
+                    employee.EmployeeCode, user.Email, employee.EnterpriseId);
+
+                return employee.Id;
             }
-
-            var addRoleResult = await _userManager.AddToRoleAsync(user, role);
-            if (!addRoleResult.Succeeded)
+            catch
             {
-                var errors = string.Join(", ", addRoleResult.Errors.Select(e => e.Description));
-                throw new Exception($"Gán vai trò thất bại: {errors}");
+                await transaction.RollbackAsync(cancellationToken);
+
+                // Compensation: xóa user đã tạo nếu có
+                if (createdUser != null)
+                {
+                    try
+                    {
+                        await _userManager.DeleteAsync(createdUser);
+                        _logger.LogWarning(
+                            "Rolled back: deleted orphan user {Email} after failed employee creation",
+                            createdUser.Email);
+                    }
+                    catch (Exception cleanupEx)
+                    {
+                        _logger.LogError(cleanupEx,
+                            "Failed to cleanup orphan user {Email} after failed employee creation",
+                            createdUser.Email);
+                    }
+                }
+
+                throw;
             }
-
-            var employeeCount = await _context.Employees
-                .CountAsync(e => e.EnterpriseId == enterpriseId, cancellationToken);
-            var employeeCode = $"{enterprise.EnterpriseCode}-{(employeeCount + 1):D4}";
-
-            var employee = new Employee
-            {
-                Id = Guid.CreateVersion7(),
-                UserId = user.Id,
-                EnterpriseId = enterpriseId.Value,
-                DepartmentId = isDirectorRole ? null : request.DepartmentId,
-                EmployeeCode = employeeCode,
-                Position = request.Position,
-                EmploymentType = request.EmploymentType,
-                HireDate = request.HireDate ?? DateTime.UtcNow,
-                ManagerId = request.ManagerId,
-                Status = "Active",
-                IsDeleted = false,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            _context.Employees.Add(employee);
-            await _context.SaveChangesAsync(cancellationToken);
-
-            _logger.LogInformation(
-                "Created employee {EmployeeCode} for user {Email} in enterprise {EnterpriseId}",
-                employee.EmployeeCode, user.Email, employee.EnterpriseId);
-
-            return employee.Id;
         }
 
         private static string? NormalizeRole(string? role)
