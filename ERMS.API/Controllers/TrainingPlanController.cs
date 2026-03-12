@@ -44,7 +44,7 @@ namespace ERMS.API.Controllers
             }
         }
 
-        [Authorize(Roles = AppRoles.HRManager+","+AppRoles.Director)]
+        [Authorize(Roles = AppRoles.HRManager+","+AppRoles.Director+","+AppRoles.DepartmentHead)]
         [HttpGet]
         public async Task<IActionResult> GetAll([FromQuery] GetAllTrainingPlansQuery query)
         {

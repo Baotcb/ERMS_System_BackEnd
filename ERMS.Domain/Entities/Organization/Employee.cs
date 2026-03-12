@@ -12,7 +12,7 @@ namespace ERMS.Domain.Entities.Organization
         public string EmployeeCode { get; set; } = null!;
         public int? DepartmentId { get; set; }
         public string? Position { get; set; }
-        public Guid? JobPositionId { get; set; } // Added in schema update
+        public Guid? JobPositionId { get; set; } 
         public DateTime? HireDate { get; set; }
         public DateTime? TerminationDate { get; set; }
         public string EmploymentType { get; set; } = "FullTime";

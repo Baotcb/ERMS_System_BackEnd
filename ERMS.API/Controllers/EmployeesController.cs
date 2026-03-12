@@ -4,11 +4,17 @@ using ERMS.Application.Features.Employees.Commands.DeleteEmployee;
 using ERMS.Application.Features.Employees.Commands.ImportEmployeesFromFile;
 using ERMS.Application.Features.Employees.Commands.UpdateEmployee;
 using ERMS.Application.Features.Employees.Queries.GetAllEmployees;
+<<<<<<< feature/create-employee
 using ERMS.Application.Features.Employees.Queries.GetEmployeeDetail;
+=======
+using ERMS.Application.Features.Employees.Queries.GetEmployeeById;
+using ERMS.Domain.Constants.Roles;
+>>>>>>> DEV
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -91,11 +97,42 @@ namespace ERMS.API.Controllers
         }
 
         /// <summary>
+        /// Lấy thông tin chi tiết nhân viên theo ID
+        /// </summary>
+        [HttpGet("{id:guid}")]
+        [Authorize(Roles = AppRoles.HRManager + "," + AppRoles.Director)]
+        public async Task<IActionResult> GetById(Guid id)
+        {
+            try
+            {
+                var query = new GetEmployeeByIdQuery { Id = id };
+                var result = await _mediator.Send(query);
+                return Ok(result);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Cập nhật nhân viên
         /// </summary>
         /// <remarks>ID must be provided in the request body.</remarks>
         [HttpPut]
+<<<<<<< feature/create-employee
         [Authorize(Roles = "HRManager,Director")]
+=======
+        [Authorize(Roles = AppRoles.HRManager + "," + AppRoles.Director)]
+>>>>>>> DEV
         public async Task<IActionResult> Update([FromBody] UpdateEmployeeCommand command)
         {
             if (!ModelState.IsValid)

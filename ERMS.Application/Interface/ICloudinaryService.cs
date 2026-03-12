@@ -12,4 +12,5 @@ public interface ICloudinaryService
     /// <param name="fileName">Original file name</param>
     /// <returns>Tuple of (FileUrl, PublicId)</returns>
     Task<(string Url, string PublicId)> UploadPdfAsync(Stream fileStream, string fileName);
+    Task<(string Url, string PublicId, int DurationMinutes)> UploadVideoAsync(Stream fileStream, string fileName);
 }

@@ -42,10 +42,6 @@ namespace ERMS.Application.Features.Users.Commands.GetProfile
                 throw new Exception("Người dùng không tồn tại trong hệ thống.");
             }
 
-          
-            var roles = await _userManager.GetRolesAsync(user);
-
-         
             return new UserProfileDto
             {
                 UserName = user.UserName ?? string.Empty,
@@ -53,8 +49,10 @@ namespace ERMS.Application.Features.Users.Commands.GetProfile
                 FullName = user.FullName,
                 DateOfBirth = user.DateOfBirth,
                 Hometown = user.Hometown,
+                Phones = user.PhoneNumber,
                 DepartmentId = user.DepartmentId,
                 DepartmentName = user.Department?.DepartmentName,
+                AvatarUrl = user.AvatarUrl,
                 DateJoined = user.DateJoined
             };
         }
