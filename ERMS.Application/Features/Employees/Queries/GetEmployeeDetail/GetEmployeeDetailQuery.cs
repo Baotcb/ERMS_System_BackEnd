@@ -2,28 +2,14 @@ using MediatR;
 using System;
 using System.Collections.Generic;
 
-namespace ERMS.Application.Features.Employees.Queries.GetAllEmployees
+namespace ERMS.Application.Features.Employees.Queries.GetEmployeeDetail
 {
-    public sealed class GetAllEmployeesQuery : IRequest<GetAllEmployeesResult>
+    public sealed class GetEmployeeDetailQuery : IRequest<EmployeeDetailDto?>
     {
-
-        public int Page { get; set; } = 1;
-        public int PageSize { get; set; } = 20;
-        public string? Search { get; set; }
-        public int? DepartmentId { get; set; }
-        public string? Status { get; set; }
+        public Guid Id { get; set; }
     }
 
-    public sealed class GetAllEmployeesResult
-    {
-        public List<EmployeeDto> Items { get; set; } = new();
-        public int TotalCount { get; set; }
-        public int Page { get; set; }
-        public int PageSize { get; set; }
-        public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
-    }
-
-    public sealed class EmployeeDto
+    public sealed class EmployeeDetailDto
     {
         public Guid Id { get; set; }
         public string EmployeeCode { get; set; } = null!;
@@ -37,6 +23,7 @@ namespace ERMS.Application.Features.Employees.Queries.GetAllEmployees
         public DateTime? HireDate { get; set; }
         public string Status { get; set; } = null!;
         public DateTime CreatedAt { get; set; }
+        public Guid? ManagerId { get; set; }
         public List<string> Roles { get; set; } = new();
     }
 }

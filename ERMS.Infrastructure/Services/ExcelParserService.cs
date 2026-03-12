@@ -11,8 +11,7 @@ using System.Text.RegularExpressions;
 namespace ERMS.Infrastructure.Services
 {
     /// <summary>
-    /// Service để parse file Excel/CSV import nhân viên
-    /// Sử dụng ClosedXML để đọc file
+    /// Service để parse file Excel/CSV import nhân viên.
     /// </summary>
     public class ExcelParserService : IExcelParserService
     {
@@ -27,15 +26,12 @@ namespace ERMS.Infrastructure.Services
 
             try
             {
-                // Xác định định dạng file
                 var extension = Path.GetExtension(fileName).ToLowerInvariant();
                 IXLWorkbook workbook;
 
                 switch (extension)
                 {
                     case ".xlsx":
-                        workbook = new XLWorkbook(fileStream);
-                        break;
                     case ".xls":
                         workbook = new XLWorkbook(fileStream);
                         break;
@@ -52,7 +48,6 @@ namespace ERMS.Infrastructure.Services
                         return result;
                 }
 
-                // Lấy sheet đầu tiên
                 var worksheet = workbook.Worksheets.FirstOrDefault();
                 if (worksheet == null || worksheet.Rows().Count() == 0)
                 {
@@ -65,7 +60,6 @@ namespace ERMS.Infrastructure.Services
                     return result;
                 }
 
-                // Đọc header row (dòng 1)
                 var headerRow = worksheet.FirstRow();
                 if (headerRow == null)
                 {
@@ -78,16 +72,16 @@ namespace ERMS.Infrastructure.Services
                     return result;
                 }
 
-                // Map headers
                 var headerMappings = new Dictionary<string, ColumnMapping>(StringComparer.OrdinalIgnoreCase);
-                var requiredColumns = new HashSet<string>(ColumnAliases.RequiredColumns, StringComparer.OrdinalIgnoreCase);
                 var foundColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
                 foreach (var cell in headerRow.Cells())
                 {
                     var header = cell.GetString()?.Trim();
                     if (string.IsNullOrWhiteSpace(header))
+                    {
                         continue;
+                    }
 
                     var mappedKey = ColumnAliases.FindColumnKey(header);
 
@@ -118,24 +112,30 @@ namespace ERMS.Infrastructure.Services
                     }
                 }
 
-                // Check missing required columns
                 foreach (var required in ColumnAliases.RequiredColumns)
                 {
-                    if (!foundColumns.Contains(required))
+                    if (foundColumns.Contains(required))
                     {
-                        result.MissingRequiredColumns.Add(required);
-                        result.Errors.Add(new ParseError
-                        {
-                            RowNumber = 0,
-                            Column = required,
-                            Message = $"Thiếu cột bắt buộc: {required}"
-                        });
+                        continue;
                     }
+
+                    result.MissingRequiredColumns.Add(required);
+                    result.Errors.Add(new ParseError
+                    {
+                        RowNumber = 0,
+                        Column = required,
+                        Message = $"Thiếu cột bắt buộc: {required}"
+                    });
                 }
 
-                // Parse data rows
-                var dataRows = worksheet.RangeUsed().Rows().Skip(1); // Skip header row
-                var currentRowNumber = 2; // Bắt đầu từ dòng 2 (dòng 1 là header)
+                var usedRange = worksheet.RangeUsed();
+                if (usedRange == null)
+                {
+                    return result;
+                }
+
+                var dataRows = usedRange.Rows().Skip(1);
+                var currentRowNumber = 2;
 
                 foreach (var row in dataRows)
                 {
@@ -144,11 +144,11 @@ namespace ERMS.Infrastructure.Services
 
                     if (!parsedRow.IsValid)
                     {
-                        result.Errors.AddRange(parsedRow.ParseErrors);
+                        result.Errors.AddRange(parsedRow.ParseErrors ?? Enumerable.Empty<ParseError>());
                     }
                     else
                     {
-                        result.Warnings.AddRange(parsedRow.ParseWarnings);
+                        result.Warnings.AddRange(parsedRow.ParseWarnings ?? Enumerable.Empty<ParseWarning>());
                     }
 
                     currentRowNumber++;
@@ -170,7 +170,6 @@ namespace ERMS.Infrastructure.Services
 
         private IXLWorkbook LoadCsvAsWorkbook(Stream fileStream)
         {
-            // Đọc CSV và chuyển sang Excel workbook
             var workbook = new XLWorkbook();
             var worksheet = workbook.Worksheets.Add("Data");
 
@@ -181,10 +180,12 @@ namespace ERMS.Infrastructure.Services
             {
                 var line = reader.ReadLine();
                 if (string.IsNullOrWhiteSpace(line))
+                {
                     continue;
+                }
 
                 var values = SplitCsvLine(line);
-                for (int i = 0; i < values.Count; i++)
+                for (var i = 0; i < values.Count; i++)
                 {
                     worksheet.Cell(rowIndex, i + 1).Value = values[i];
                 }
@@ -201,7 +202,7 @@ namespace ERMS.Infrastructure.Services
             var currentValue = new System.Text.StringBuilder();
             var inQuotes = false;
 
-            foreach (char c in line)
+            foreach (var c in line)
             {
                 if (c == '"')
                 {
@@ -231,24 +232,25 @@ namespace ERMS.Infrastructure.Services
                 ParseWarnings = new List<ParseWarning>()
             };
 
-            // Helper để đọc cell value
             string GetCellValue(string key)
             {
                 if (!headerMappings.TryGetValue(key, out var mapping) || mapping.MappedKey == null)
+                {
                     return string.Empty;
+                }
 
-                // Tìm cell dựa trên column index của header
                 var headerCell = row.Worksheet.Row(1).Cells()
                     .FirstOrDefault(c => c.GetString()?.Trim().Equals(mapping.OriginalHeader, StringComparison.OrdinalIgnoreCase) ?? false);
 
                 if (headerCell == null)
+                {
                     return string.Empty;
+                }
 
                 var cell = row.Cell(headerCell.Address.ColumnNumber);
                 return cell.GetString()?.Trim() ?? string.Empty;
             }
 
-            // Parse các trường
             parsedRow.FullName = GetCellValue("FullName");
             parsedRow.Email = GetCellValue("Email");
             parsedRow.Phone = GetCellValue("Phone");
@@ -256,7 +258,6 @@ namespace ERMS.Infrastructure.Services
             parsedRow.Position = GetCellValue("Position");
             parsedRow.Password = GetCellValue("Password");
 
-            // Parse và validate Role
             var rawRole = GetCellValue("Role");
             if (!string.IsNullOrWhiteSpace(rawRole))
             {
@@ -264,7 +265,7 @@ namespace ERMS.Infrastructure.Services
                 if (normalizedRole == null)
                 {
                     parsedRow.IsValid = false;
-                    parsedRow.ParseErrors.Add(new ParseError
+                    parsedRow.ParseErrors!.Add(new ParseError
                     {
                         RowNumber = rowNumber,
                         Column = "Role",
@@ -275,12 +276,12 @@ namespace ERMS.Infrastructure.Services
                 else if (!RoleAliases.IsValidForBulkImport(normalizedRole))
                 {
                     parsedRow.IsValid = false;
-                    parsedRow.ParseErrors.Add(new ParseError
+                    parsedRow.ParseErrors!.Add(new ParseError
                     {
                         RowNumber = rowNumber,
                         Column = "Role",
                         Value = rawRole,
-                        Message = $"Role '{rawRole}' không được phép import qua file. Vui lòng tạo tài khoản với role này thủ công."
+                        Message = $"Role '{rawRole}' không được phép import qua file."
                     });
                 }
                 else
@@ -289,11 +290,13 @@ namespace ERMS.Infrastructure.Services
                 }
             }
 
-            // Validate FullName
+            var effectiveRole = parsedRow.Role ?? AppRoles.Employee;
+            var isDirectorRole = effectiveRole.Equals(AppRoles.Director, StringComparison.OrdinalIgnoreCase);
+
             if (string.IsNullOrWhiteSpace(parsedRow.FullName))
             {
                 parsedRow.IsValid = false;
-                parsedRow.ParseErrors.Add(new ParseError
+                parsedRow.ParseErrors!.Add(new ParseError
                 {
                     RowNumber = rowNumber,
                     Column = "FullName",
@@ -301,11 +304,10 @@ namespace ERMS.Infrastructure.Services
                 });
             }
 
-            // Validate Email
             if (string.IsNullOrWhiteSpace(parsedRow.Email))
             {
                 parsedRow.IsValid = false;
-                parsedRow.ParseErrors.Add(new ParseError
+                parsedRow.ParseErrors!.Add(new ParseError
                 {
                     RowNumber = rowNumber,
                     Column = "Email",
@@ -315,7 +317,7 @@ namespace ERMS.Infrastructure.Services
             else if (!EmailRegex.IsMatch(parsedRow.Email))
             {
                 parsedRow.IsValid = false;
-                parsedRow.ParseErrors.Add(new ParseError
+                parsedRow.ParseErrors!.Add(new ParseError
                 {
                     RowNumber = rowNumber,
                     Column = "Email",
@@ -324,31 +326,38 @@ namespace ERMS.Infrastructure.Services
                 });
             }
 
-            // Validate DepartmentCode
-            if (string.IsNullOrWhiteSpace(parsedRow.DepartmentCode))
+            if (!isDirectorRole && string.IsNullOrWhiteSpace(parsedRow.DepartmentCode))
             {
                 parsedRow.IsValid = false;
-                parsedRow.ParseErrors.Add(new ParseError
+                parsedRow.ParseErrors!.Add(new ParseError
                 {
                     RowNumber = rowNumber,
                     Column = "DepartmentCode",
-                    Message = "Mã phòng ban là bắt buộc"
+                    Message = "Mã phòng ban là bắt buộc (trừ Director)"
                 });
             }
 
-            // Nếu chưa có lỗi, mark là valid
-            if (!parsedRow.ParseErrors.Any())
+            if (!parsedRow.ParseErrors!.Any())
             {
                 parsedRow.IsValid = true;
 
-                // Cảnh báo nếu Password rỗng (sẽ tự generate)
                 if (string.IsNullOrWhiteSpace(parsedRow.Password))
                 {
-                    parsedRow.ParseWarnings.Add(new ParseWarning
+                    parsedRow.ParseWarnings!.Add(new ParseWarning
                     {
                         Type = "empty_value",
                         Column = "Password",
                         Message = $"Dòng {rowNumber}: Không có mật khẩu, sẽ tự động tạo"
+                    });
+                }
+
+                if (isDirectorRole && !string.IsNullOrWhiteSpace(parsedRow.DepartmentCode))
+                {
+                    parsedRow.ParseWarnings!.Add(new ParseWarning
+                    {
+                        Type = "ignored_value",
+                        Column = "DepartmentCode",
+                        Message = $"Dòng {rowNumber}: Role Director sẽ bỏ qua Department Code"
                     });
                 }
             }
