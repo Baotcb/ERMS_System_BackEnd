@@ -4,6 +4,7 @@ using OpenQA.Selenium.Support.UI;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using ERMS.AutomationTests.Utilities;
 
 namespace ERMS.AutomationTests.TestCases.auth.Register.CandidateRegister
 {
@@ -11,7 +12,7 @@ namespace ERMS.AutomationTests.TestCases.auth.Register.CandidateRegister
     {
         public RegisterPage(IWebDriver driver) : base(driver) { }
 
-        // --- LOCATORS ---
+    
         private By _fullNameInput = By.Id("fullName");
         private By _emailInput = By.Id("email");
         private By _passwordInput = By.Id("password");
@@ -88,5 +89,16 @@ namespace ERMS.AutomationTests.TestCases.auth.Register.CandidateRegister
                 return false;
             }
         }
+
+
+        private By _passwordMismatchError = By.XPath("//p[contains(text(), 'Mật khẩu xác nhận không khớp')]");
+        private By _errorAlert = By.CssSelector("p.text-red-500");
+
+        public bool IsPasswordMismatchErrorDisplayed()
+        {
+            return IsElementPresent(_passwordMismatchError);
+        }
+
+   
     }
 }
