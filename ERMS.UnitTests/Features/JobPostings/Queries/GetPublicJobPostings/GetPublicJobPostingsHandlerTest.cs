@@ -280,6 +280,60 @@ namespace ERMS.UnitTests.Features.JobPostings.Queries.GetPublicJobPostings
         }
 
         [Fact]
+        public async Task Handle_ShouldNotTreatThreeToFiveYearsAsFivePlus()
+        {
+            var enterpriseId = Guid.NewGuid();
+            const int departmentId = 1;
+
+            _context.Departments.Add(new Department { Id = departmentId, DepartmentName = "Engineering" });
+            _context.Enterprises.Add(new Enterprise
+            {
+                Id = enterpriseId,
+                EnterpriseName = "Experience Corp",
+                EnterpriseCode = "EC1",
+                Status = "Active",
+                SubscriptionPlanId = Guid.NewGuid()
+            });
+
+            _context.JobPostings.AddRange(
+                new JobPosting
+                {
+                    Id = Guid.NewGuid(),
+                    EnterpriseId = enterpriseId,
+                    JobTitle = "Senior Developer",
+                    Status = JobPostingStatus.Published,
+                    DepartmentId = departmentId,
+                    Description = "Senior role",
+                    ExperienceLevel = "3-5 years",
+                    CreatedById = Guid.NewGuid(),
+                    PublishedAt = DateTime.UtcNow
+                },
+                new JobPosting
+                {
+                    Id = Guid.NewGuid(),
+                    EnterpriseId = enterpriseId,
+                    JobTitle = "Principal Developer",
+                    Status = JobPostingStatus.Published,
+                    DepartmentId = departmentId,
+                    Description = "Principal role",
+                    ExperienceLevel = "5-7 years",
+                    CreatedById = Guid.NewGuid(),
+                    PublishedAt = DateTime.UtcNow.AddMinutes(-5)
+                });
+            await _context.SaveChangesAsync();
+
+            var result = await _handler.Handle(new GetPublicJobPostingsQuery
+            {
+                ExperienceBucket = "5+",
+                PageNumber = 1,
+                PageSize = 10
+            }, CancellationToken.None);
+
+            result.Items.Should().ContainSingle();
+            result.Items[0].JobTitle.Should().Be("Principal Developer");
+        }
+
+        [Fact]
         public async Task Handle_ShouldFallbackToNewest_WhenRelevanceRequestedWithoutSearch()
         {
             var enterpriseId = Guid.NewGuid();

@@ -20,40 +20,41 @@ public sealed class GetPublicJobFilterOptionsHandler
         GetPublicJobFilterOptionsQuery request,
         CancellationToken cancellationToken)
     {
-        var jobs = await _context.JobPostings
+        var utcNow = DateTime.UtcNow;
+        var jobs = _context.JobPostings
             .AsNoTracking()
             .Where(jp => jp.Status == JobPostingStatus.Published
                       && !jp.IsDeleted
                       && jp.Enterprise.Status == "Active"
                       && !jp.Enterprise.IsDeleted
-                      && (!jp.ApplicationDeadline.HasValue || jp.ApplicationDeadline.Value >= DateTime.UtcNow))
-            .Select(jp => new
+                      && (!jp.ApplicationDeadline.HasValue || jp.ApplicationDeadline.Value >= utcNow));
+
+        var departments = await jobs
+            .GroupBy(jp => new
             {
                 jp.DepartmentId,
-                DepartmentName = jp.Department.DepartmentName,
-                jp.Location
+                DepartmentName = jp.Department.DepartmentName
             })
+            .OrderBy(group => group.Key.DepartmentName)
+            .Select(group => new PublicDepartmentFilterDto
+            {
+                Id = group.Key.DepartmentId,
+                DepartmentName = group.Key.DepartmentName,
+                JobCount = group.Count()
+            })
+            .ToListAsync(cancellationToken);
+
+        var locations = await jobs
+            .Select(jp => jp.Location == null ? null : jp.Location.Trim())
+            .Where(location => location != null && location != string.Empty)
+            .Distinct()
+            .OrderBy(location => location)
             .ToListAsync(cancellationToken);
 
         return new GetPublicJobFilterOptionsResponse
         {
-            Departments = jobs
-                .GroupBy(job => new { job.DepartmentId, job.DepartmentName })
-                .OrderBy(group => group.Key.DepartmentName)
-                .Select(group => new PublicDepartmentFilterDto
-                {
-                    Id = group.Key.DepartmentId,
-                    DepartmentName = group.Key.DepartmentName,
-                    JobCount = group.Count()
-                })
-                .ToList(),
-            Locations = jobs
-                .Select(job => job.Location?.Trim())
-                .Where(location => !string.IsNullOrWhiteSpace(location))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .OrderBy(location => location)
-                .Cast<string>()
-                .ToList(),
+            Departments = departments,
+            Locations = locations.Where(location => location != null).Cast<string>().ToList(),
             EmploymentTypes = PublicJobFilterDefinitions.EmploymentTypes.ToList(),
             ExperienceBuckets = PublicJobFilterDefinitions.ExperienceBuckets.ToList(),
             SalaryBuckets = PublicJobFilterDefinitions.SalaryBuckets.ToList()

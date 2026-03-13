@@ -41,7 +41,7 @@ public static partial class PublicJobFilterHelper
 
         if (bucket == "5+")
         {
-            return maxYears >= 5;
+            return minYears >= 5 || maxYears > 5;
         }
 
         var parts = bucket.Split('-', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);

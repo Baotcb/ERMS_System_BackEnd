@@ -30,8 +30,8 @@ public static class PublicJobFilterDefinitions
     public static readonly IReadOnlyList<PublicJobFilterOption> EmploymentTypes =
     [
         new(string.Empty, "Tất cả hình thức"),
-        new("FullTime", "Toàn thời gian"),
-        new("PartTime", "Bán thời gian"),
+        new("Full-time", "Toàn thời gian"),
+        new("Part-time", "Bán thời gian"),
         new("Contract", "Hợp đồng"),
         new("Internship", "Thực tập"),
     ];

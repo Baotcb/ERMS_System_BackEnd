@@ -84,6 +84,7 @@ public sealed class GetPublicJobFilterOptionsHandlerTests
         result.Departments[0].DepartmentName.Should().Be("Engineering");
         result.Departments[0].JobCount.Should().Be(2);
         result.Locations.Should().BeEquivalentTo(["Hà Nội", "Hồ Chí Minh"]);
+        result.EmploymentTypes.Select(option => option.Value).Should().Contain(["Full-time", "Part-time"]);
         result.EmploymentTypes.Should().NotBeEmpty();
         result.ExperienceBuckets.Should().NotBeEmpty();
         result.SalaryBuckets.Should().NotBeEmpty();
