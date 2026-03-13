@@ -1,4 +1,5 @@
-﻿using ERMS.Application.Interface;
+using ERMS.Application.Interface;
+using ERMS.Domain.Entities.Organization;
 using ERMS.Domain.Entities.Training;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -60,19 +61,30 @@ namespace ERMS.Application.Features.Courses.Commands.CreateCourse
                     !e.IsDeleted,
                     cancellationToken);
 
-            if (trainer == null)
-                throw new Exception("Không tìm thấy giảng viên");
-
-            // Auto-promote employee to trainer when assigned to a course.
-            if (!trainer.IsTrainer)
+            // Validate trainer nếu được truyền vào
+            if (request.TrainerId.HasValue)
             {
-                trainer.IsTrainer = true;
-                trainer.UpdatedAt = DateTime.UtcNow;
+                trainer = await _context.Employees
+                    .FirstOrDefaultAsync(e =>
+                        e.Id == request.TrainerId &&
+                        e.EnterpriseId == enterpriseId &&
+                        !e.IsDeleted,
+                        cancellationToken);
 
-                _logger.LogInformation(
-                    "Employee {EmployeeId} auto-promoted to trainer while creating course {CourseCode}",
-                    trainer.Id,
-                    request.CourseCode);
+                if (trainer == null)
+                    throw new Exception("Không tìm thấy giảng viên");
+
+                // Auto promote trainer
+                if (!trainer.IsTrainer)
+                {
+                    trainer.IsTrainer = true;
+                    trainer.UpdatedAt = DateTime.UtcNow;
+
+                    _logger.LogInformation(
+                        "Employee {EmployeeId} auto-promoted to trainer while creating course {CourseCode}",
+                        trainer.Id,
+                        request.CourseCode);
+                }
             }
 
             // Create Course
@@ -80,12 +92,15 @@ namespace ERMS.Application.Features.Courses.Commands.CreateCourse
             {
                 Id = Guid.CreateVersion7(),
                 EnterpriseId = enterpriseId.Value,
+
                 TrainingPlanId = request.TrainingPlanId,
                 CourseName = request.CourseName,
                 CourseCode = request.CourseCode,
                 Description = request.Description,
                 ThumbnailUrl = request.ThumbnailUrl,
-                TrainerId = trainer.Id,
+
+                TrainerId = trainer?.Id,
+
                 DurationMinutes = request.DurationMinutes,
                 Level = request.Level,
                 IsMandatory = request.IsMandatory,

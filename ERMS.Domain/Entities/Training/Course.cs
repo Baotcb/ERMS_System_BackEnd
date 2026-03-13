@@ -13,7 +13,7 @@ namespace ERMS.Domain.Entities.Training
         public string CourseCode { get; set; } = null!;
         public string? Description { get; set; }
         public string? ThumbnailUrl { get; set; }
-        public Guid TrainerId { get; set; }
+        public Guid? TrainerId { get; set; } = null!;
         public int? DurationMinutes { get; set; }
         public string? Level { get; set; }
         public string Status { get; set; } = "Draft";

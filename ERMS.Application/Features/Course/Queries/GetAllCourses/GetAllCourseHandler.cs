@@ -66,7 +66,7 @@ namespace ERMS.Application.Features.Courses.Queries.GetAllCourses
                     CourseCode = c.CourseCode,
                     Description = c.Description,
                     ThumbnailUrl = c.ThumbnailUrl,
-                    TrainerId = c.TrainerId,
+                    TrainerId = c.TrainerId.Value,
                     TrainerName = c.Trainer.User.FullName,
                     DurationMinutes = c.DurationMinutes,
                     Level = c.Level,
