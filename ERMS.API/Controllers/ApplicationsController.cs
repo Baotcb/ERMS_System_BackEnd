@@ -15,7 +15,6 @@ using ERMS.Application.Features.Applications.Queries.GetApplicationsByJob;
 using ERMS.Application.Features.Applications.Queries.GetMyApplications;
 using ERMS.Application.Features.Applications.Queries.GetMyOffers;
 using ERMS.Application.Features.Applications.Queries.GetOfferByIdOfHR;
-using ERMS.Application.Features.Applications.Queries.VerifyOfferAccess;
 using ERMS.Application.Features.Interviews.Queries.GetAllInterviews;
 using ERMS.Application.Features.Interviews.Queries.GetInterviewFeedbackById;
 using ERMS.Application.Features.Interviews.Queries.GetInterviewsForFeedback;
@@ -775,36 +774,7 @@ public class ApplicationsController : ControllerBase
     }
 
 
-    [HttpGet("offers/verify-access")]
-    [AllowAnonymous]
-    public async Task<IActionResult> VerifyOfferAccess(
-    [FromQuery] Guid offerId,
-    [FromQuery] string token,
-    [FromQuery] string email)
-    {
-        try
-        {
-            var query = new VerifyOfferAccessQuery
-            {
-                OfferId = offerId,
-                Token = token,
-                Email = email
-            };
-
-            var result = await _mediator.Send(query);
-
-            if (!result.IsValid)
-            {
-                return BadRequest(new { message = result.Message });
-            }
-
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-    }
+    
 
     /// <summary>
     /// Confirm hiring a candidate after contract signing (HR Manager only)

@@ -1,4 +1,4 @@
-using ERMS.Application.Features.JobPostings.Commands.UpdateJobPosting;
+﻿using ERMS.Application.Features.JobPostings.Commands.UpdateJobPosting;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Roles;
 using ERMS.Domain.Entities.Recruitment;
@@ -66,7 +66,7 @@ namespace ERMS.UnitTests.Features.JobPostings.Commands.UpdateJobPosting
             // Act & Assert
             await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
                 .Should().ThrowAsync<Exception>()
-                .WithMessage("Application deadline must be in the future.");
+                .WithMessage("Hạn nộp hồ sơ phải trong tương lai.");
         }
 
         [Fact]

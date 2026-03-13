@@ -23,18 +23,18 @@ public sealed class GetAllInterviewsHandler : IRequestHandler<GetAllInterviewsQu
     {
         // 1. Validate current user is authenticated
         var userId = _currentUserService.UserId
-            ?? throw new UnauthorizedAccessException("User not authenticated.");
+            ?? throw new UnauthorizedAccessException("Người dùng chưa được xác thực.");
 
         // 2. Validate user has appropriate HR/Director roles
         var userRoles = _currentUserService.Roles;
         if (userRoles == null || (!userRoles.Contains(AppRoles.HRManager) && !userRoles.Contains(AppRoles.Director)))
         {
-            throw new UnauthorizedAccessException("Only HR Managers or Directors can view all interviews.");
+            throw new UnauthorizedAccessException("Chỉ HR Manager hoặc Giám đốc mới có quyền xem tất cả buổi phỏng vấn.");
         }
 
         // 3. Enterprise scoping
         var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
-            ?? throw new UnauthorizedAccessException("User is not associated with any enterprise.");
+            ?? throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
 
         // 4. Build query: All interviews linked to a JobPosting within the user's Enterprise
         var query = _context.Interviews

@@ -32,45 +32,45 @@ public sealed class AssignInterviewerHandler : IRequestHandler<AssignInterviewer
     {
         // 1. Validate current user is authenticated
         var userId = _currentUserService.UserId
-            ?? throw new UnauthorizedAccessException("User not authenticated.");
+            ?? throw new UnauthorizedAccessException("Người dùng chưa được xác thực.");
 
         // 2. Role check: DepartmentHead ONLY
         var userRoles = _currentUserService.Roles;
         if (userRoles == null || !userRoles.Contains(AppRoles.DepartmentHead))
         {
-            throw new UnauthorizedAccessException("Only Department Head can assign interviewers.");
+            throw new UnauthorizedAccessException("Chỉ Trưởng phòng mới có quyền phân công người phỏng vấn.");
         }
 
         // 3. Get user's department
         var userDepartmentId = await _currentUserService.GetDepartmentIdAsync()
-            ?? throw new UnauthorizedAccessException("User is not associated with any department.");
+            ?? throw new UnauthorizedAccessException("Người dùng không thuộc phòng ban nào.");
 
         // 4. Get enterprise ID
         var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
-            ?? throw new UnauthorizedAccessException("User is not associated with any enterprise.");
+            ?? throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
 
         // 5. Load the application with related JobPosting
         var application = await _context.Applications
             .Include(a => a.JobPosting)
             .FirstOrDefaultAsync(a => a.Id == request.ApplicationId && !a.IsDeleted, cancellationToken)
-            ?? throw new Exception($"Application with ID {request.ApplicationId} not found.");
+            ?? throw new Exception($"Không tìm thấy hồ sơ ứng tuyển với ID {request.ApplicationId}.");
 
         // 6. Validate enterprise ownership
         if (application.JobPosting.EnterpriseId != enterpriseId)
         {
-            throw new UnauthorizedAccessException("You do not have permission to access this application.");
+            throw new UnauthorizedAccessException("Bạn không có quyền truy cập hồ sơ ứng tuyển này.");
         }
 
         // 7. Department security check
         if (application.JobPosting.DepartmentId != userDepartmentId)
         {
-            throw new UnauthorizedAccessException("You can only assign interviewers for candidates in your department.");
+            throw new UnauthorizedAccessException("Bạn chỉ có thể phân công người phỏng vấn cho ứng viên trong phòng ban mình.");
         }
 
         // 8. Validate current stage is "Shortlisted"
         if (!application.Stage.Equals(ApplicationStage.Shortlisted, StringComparison.OrdinalIgnoreCase))
         {
-            throw new Exception($"Cannot assign interviewers. Application stage is '{application.Stage}', expected '{ApplicationStage.Shortlisted}'.");
+            throw new Exception($"Không thể phân công người phỏng vấn. Giai đoạn hồ sơ là '{application.Stage}', yêu cầu '{ApplicationStage.Shortlisted}'.");
         }
 
         // 9. Validate interviewers exist and belong to enterprise
@@ -83,7 +83,7 @@ public sealed class AssignInterviewerHandler : IRequestHandler<AssignInterviewer
         {
             var foundIds = interviewerEmployees.Select(e => e.Id).ToHashSet();
             var missingIds = request.InterviewerIds.Where(id => !foundIds.Contains(id)).ToList();
-            throw new Exception($"Some interviewers were not found: {string.Join(", ", missingIds)}");
+            throw new Exception($"Một số người phỏng vấn không được tìm thấy: {string.Join(", ", missingIds)}");
         }
 
         // BEGIN TRANSACTION

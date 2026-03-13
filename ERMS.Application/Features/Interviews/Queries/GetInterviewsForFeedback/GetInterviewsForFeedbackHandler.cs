@@ -25,22 +25,22 @@ public sealed class GetInterviewsForFeedbackHandler : IRequestHandler<GetIntervi
     {
         // 1. Validate current user is authenticated
         var userId = _currentUserService.UserId
-            ?? throw new UnauthorizedAccessException("User not authenticated.");
+            ?? throw new UnauthorizedAccessException("Người dùng chưa được xác thực.");
 
         // 2. Role check: DepartmentHead ONLY
         var userRoles = _currentUserService.Roles;
         if (userRoles == null || !userRoles.Contains(AppRoles.DepartmentHead))
         {
-            throw new UnauthorizedAccessException("Only Department Heads can view interview feedback overviews.");
+            throw new UnauthorizedAccessException("Chỉ Trưởng phòng mới có quyền xem tổng quan đánh giá phỏng vấn.");
         }
 
         // 3. Department scoping
         var departmentId = await _currentUserService.GetDepartmentIdAsync()
-            ?? throw new UnauthorizedAccessException("User is not associated with any department.");
+            ?? throw new UnauthorizedAccessException("Người dùng không thuộc phòng ban nào.");
 
         // 4. Enterprise scoping
         var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
-            ?? throw new UnauthorizedAccessException("User is not associated with any enterprise.");
+            ?? throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
 
         // 5. Build query
         var query = _context.Interviews

@@ -8,6 +8,6 @@ public sealed class AcceptOfferValidator : AbstractValidator<AcceptOfferCommand>
     {
         RuleFor(x => x.OfferId)
             .NotEmpty()
-            .WithMessage("OfferId is required.");
+            .WithMessage("OfferId là bắt buộc.");
     }
 }

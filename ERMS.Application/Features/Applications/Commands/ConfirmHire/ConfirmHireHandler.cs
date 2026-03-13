@@ -42,7 +42,7 @@ public sealed class ConfirmHireHandler : IRequestHandler<ConfirmHireCommand, Con
     {
         // 1. Validate current user is authenticated
         var userId = _currentUserService.UserId
-            ?? throw new UnauthorizedAccessException("User not authenticated.");
+            ?? throw new UnauthorizedAccessException("Người dùng chưa được xác thực.");
 
         // 2. Role check: HRManager ONLY
         var userRoles = _currentUserService.Roles;
@@ -53,7 +53,7 @@ public sealed class ConfirmHireHandler : IRequestHandler<ConfirmHireCommand, Con
 
         // 3. Enterprise scoping
         var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
-            ?? throw new UnauthorizedAccessException("User is not associated with any enterprise.");
+            ?? throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
 
         // 4. Load Application with related entities
         var application = await _context.Applications
@@ -62,7 +62,7 @@ public sealed class ConfirmHireHandler : IRequestHandler<ConfirmHireCommand, Con
             .Include(a => a.Candidate)
                 .ThenInclude(c => c.User)
             .FirstOrDefaultAsync(a => a.Id == request.ApplicationId && !a.IsDeleted, cancellationToken)
-            ?? throw new Exception($"Application with ID {request.ApplicationId} not found.");
+            ?? throw new Exception($"Không tìm thấy hồ sơ ứng tuyển với ID {request.ApplicationId}.");
 
         // 5. Validate enterprise ownership
         if (application.JobPosting.EnterpriseId != enterpriseId)
@@ -73,18 +73,18 @@ public sealed class ConfirmHireHandler : IRequestHandler<ConfirmHireCommand, Con
         // 6. Validate offer exists and is accepted
         if (application.Offer == null || application.Offer.IsDeleted)
         {
-            throw new Exception("Application does not have an active offer.");
+            throw new Exception("Hồ sơ ứng tuyển không có đề nghị đang hoạt động.");
         }
 
         if (application.Offer.Status != OfferStatus.Accepted)
         {
-            throw new Exception($"Cannot confirm hire. Offer status is '{application.Offer.Status}', expected '{OfferStatus.Accepted}'.");
+            throw new Exception($"Không thể xác nhận tuyển dụng. Trạng thái đề nghị là '{application.Offer.Status}', yêu cầu '{OfferStatus.Accepted}'.");
         }
 
         // 7. Validate not already hired
         if (ApplicationStage.IsHired(application.Stage))
         {
-            throw new Exception("This application has already been confirmed as hired.");
+            throw new Exception("Hồ sơ ứng tuyển này đã được xác nhận tuyển dụng.");
         }
 
         // 8. Check if the corporate email is already in use
@@ -102,7 +102,7 @@ public sealed class ConfirmHireHandler : IRequestHandler<ConfirmHireCommand, Con
             // 10. Load enterprise for EmployeeCode generation
             var enterprise = await _context.Enterprises
                 .FirstOrDefaultAsync(e => e.Id == enterpriseId && !e.IsDeleted, cancellationToken)
-                ?? throw new Exception("Enterprise not found.");
+                ?? throw new Exception("Không tìm thấy doanh nghiệp.");
 
             // 11. Generate a secure password
             var generatedPassword = GenerateSecurePassword();

@@ -1,4 +1,4 @@
-using ERMS.Application.Features.Applications.Commands.ConfirmInterviewSchedule;
+﻿using ERMS.Application.Features.Applications.Commands.ConfirmInterviewSchedule;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Application;
 using ERMS.Domain.Constants.Roles;
@@ -276,6 +276,6 @@ public class ConfirmInterviewScheduleHandlerTests
 
         // Assert
         await act.Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("*permission*");
+            .WithMessage("*quyền*");
     }
 }
