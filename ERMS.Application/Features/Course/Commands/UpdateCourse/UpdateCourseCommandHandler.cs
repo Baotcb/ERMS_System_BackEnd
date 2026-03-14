@@ -60,7 +60,7 @@ namespace ERMS.Application.Features.Courses.Commands.UpdateCourse
 
            
 
-            // Cập nhật thông tin khóa học
+            // Cập nhật khóa học
             course.TrainingPlanId = request.TrainingPlanId;
             course.CourseName = request.CourseName;
             course.CourseCode = request.CourseCode;
@@ -68,6 +68,9 @@ namespace ERMS.Application.Features.Courses.Commands.UpdateCourse
             course.ThumbnailUrl = request.ThumbnailUrl;
             course.TrainerEmail = request.TrainerEmail;
             course.DurationMinutes = request.DurationMinutes;
+            course.StartTime = request.StartTime;
+            course.IsOnline = request.IsOnline;
+            course.Location = request.Location;
             course.Level = request.Level;
             course.IsMandatory = request.IsMandatory;
             course.MaxEnrollments = request.MaxEnrollments;
