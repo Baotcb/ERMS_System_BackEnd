@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  erms-api:
+    image: baotcq/erms-api:latest 
+    container_name: erms_api_container
+    ports:
+      - "8081:8080" 
+    restart: always
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
