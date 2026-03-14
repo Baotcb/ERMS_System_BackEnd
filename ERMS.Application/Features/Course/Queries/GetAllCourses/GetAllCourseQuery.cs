@@ -39,9 +39,7 @@ namespace ERMS.Application.Features.Courses.Queries.GetAllCourses
 
         public string? ThumbnailUrl { get; set; }
 
-        public Guid TrainerId { get; set; }
-
-        public string? TrainerName { get; set; }
+        public string TrainerEmail { get; set; } 
 
         public int? DurationMinutes { get; set; }
 

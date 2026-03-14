@@ -58,19 +58,7 @@ namespace ERMS.Application.Features.Courses.Commands.UpdateCourse
             if (existedCode)
                 throw new Exception("Mã khóa học đã tồn tại.");
 
-            // Kiểm tra Trainer
-            var trainer = await _context.Employees
-                .FirstOrDefaultAsync(e =>
-                    e.Id == request.TrainerId &&
-                    e.EnterpriseId == enterpriseId &&
-                    !e.IsDeleted,
-                    cancellationToken);
-
-            if (trainer == null)
-                throw new Exception("Không tìm thấy giảng viên.");
-
-            if (!trainer.IsTrainer)
-                throw new Exception("Nhân viên này không phải là giảng viên.");
+           
 
             // Cập nhật thông tin khóa học
             course.TrainingPlanId = request.TrainingPlanId;
@@ -78,7 +66,7 @@ namespace ERMS.Application.Features.Courses.Commands.UpdateCourse
             course.CourseCode = request.CourseCode;
             course.Description = request.Description;
             course.ThumbnailUrl = request.ThumbnailUrl;
-            course.TrainerId = trainer.Id;
+            course.TrainerEmail = request.TrainerEmail;
             course.DurationMinutes = request.DurationMinutes;
             course.Level = request.Level;
             course.IsMandatory = request.IsMandatory;

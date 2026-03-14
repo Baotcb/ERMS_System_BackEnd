@@ -9,7 +9,7 @@ namespace ERMS.Application.Features.Courses.Commands.CreateCourse
         public string CourseCode { get; set; } = null!;
         public string? Description { get; set; }
         public string? ThumbnailUrl { get; set; }
-        public Guid TrainerId { get; set; }
+        public string TrainerEmail { get; set; }
         public int? DurationMinutes { get; set; }
         public string? Level { get; set; }
         public bool IsMandatory { get; set; }
