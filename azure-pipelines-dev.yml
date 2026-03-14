@@ -1,4 +1,4 @@
-Ttrigger:
+trigger:
   branches:
     include:
     - DEV
