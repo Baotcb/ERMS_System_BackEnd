@@ -109,11 +109,15 @@ namespace ERMS.API.Controllers
         }
 
         [HttpPost("{id}/publish")]
-        public async Task<IActionResult> Publish(Guid id)
+        public async Task<IActionResult> Publish(PublishCourseCommand request)
         {
             var result = await _mediator.Send(new PublishCourseCommand
             {
-                Id = id
+                Id = request.Id,
+                Location = request.Location,
+                StartTime = request.StartTime,
+                TrainingType = request.TrainingType
+
             });
 
             return Ok(result);

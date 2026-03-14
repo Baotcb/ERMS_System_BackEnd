@@ -10,6 +10,9 @@ namespace ERMS.Application.Features.Courses.Commands.CreateCourse
         public string? Description { get; set; }
         public string? ThumbnailUrl { get; set; }
         public string TrainerEmail { get; set; }
+        public string? Location { get; set; }
+        public DateTime StartTime { get; set; }
+        public bool IsOnline { get; set; }
         public int? DurationMinutes { get; set; }
         public string? Level { get; set; }
         public bool IsMandatory { get; set; }
