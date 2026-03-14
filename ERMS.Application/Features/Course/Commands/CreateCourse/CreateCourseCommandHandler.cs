@@ -50,28 +50,7 @@ namespace ERMS.Application.Features.Courses.Commands.CreateCourse
             if (existedCode)
                 throw new Exception("Mã khóa học đã tồn tại");
 
-            // ✅ Validate Trainer tồn tại & là Trainer
-            var trainer = await _context.Employees
-                .FirstOrDefaultAsync(e =>
-                    e.Id == request.TrainerId &&
-                    e.EnterpriseId == enterpriseId &&
-                    !e.IsDeleted,
-                    cancellationToken);
-
-            if (trainer == null)
-                throw new Exception("Không tìm thấy giảng viên");
-
-            // Auto-promote employee to trainer when assigned to a course.
-            if (!trainer.IsTrainer)
-            {
-                trainer.IsTrainer = true;
-                trainer.UpdatedAt = DateTime.UtcNow;
-
-                _logger.LogInformation(
-                    "Employee {EmployeeId} auto-promoted to trainer while creating course {CourseCode}",
-                    trainer.Id,
-                    request.CourseCode);
-            }
+            
 
             // ✅ Create Course
             var course = new Course
@@ -83,7 +62,7 @@ namespace ERMS.Application.Features.Courses.Commands.CreateCourse
                 CourseCode = request.CourseCode,
                 Description = request.Description,
                 ThumbnailUrl = request.ThumbnailUrl,
-                TrainerId = trainer.Id,
+                TrainerEmail= request.TrainerEmail,
                 DurationMinutes = request.DurationMinutes,
                 Level = request.Level,
                 IsMandatory = request.IsMandatory,
