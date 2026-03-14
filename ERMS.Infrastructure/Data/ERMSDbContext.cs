@@ -368,12 +368,7 @@ namespace ERMS.Infrastructure.Data
                 .HasForeignKey(c => c.EnterpriseId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            builder.Entity<Course>()
-                .HasOne(c => c.Trainer)
-                .WithMany()
-                .HasForeignKey(c => c.TrainerId)
-                .OnDelete(DeleteBehavior.Restrict);
-
+            
            
             builder.Entity<Enrollment>()
                 .HasOne(e => e.Employee)
@@ -387,6 +382,24 @@ namespace ERMS.Infrastructure.Data
                 .WithMany(c => c.Applications)
                 .HasForeignKey(a => a.CandidateId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Course>()
+                .Property(c => c.TrainerEmail)
+                .IsRequired()
+                .HasMaxLength(256);
+
+            builder.Entity<Course>()
+                .Property(c => c.Location)
+                .HasMaxLength(255)
+                .IsRequired(false);
+
+            builder.Entity<Course>()
+                .Property(c => c.StartTime)
+                .IsRequired();
+
+            builder.Entity<Course>()
+                .Property(c => c.IsOnline)
+                .HasDefaultValue(false);
         }
         public async Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
         {

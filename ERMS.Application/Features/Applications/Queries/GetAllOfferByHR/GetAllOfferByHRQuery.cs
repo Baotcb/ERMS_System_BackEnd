@@ -30,5 +30,6 @@ namespace ERMS.Application.Features.Applications.Queries.GetAllOfferByHR
         public Guid? SentById { get; set; }
         public DateTime? RespondedAt { get; set; }
         public string? CandidateNote { get; set; }
+        public string ApplicationStage { get; set; } = null!;
     }
 }
