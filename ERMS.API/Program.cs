@@ -19,6 +19,15 @@ builder.Services.AddHealthChecks();
 var app = builder.Build();
 
 
+var forwardedHeaderOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+};
+forwardedHeaderOptions.KnownNetworks.Clear();
+forwardedHeaderOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedHeaderOptions);
+
+
 app.MapOpenApi();
 app.MapScalarApiReference(options => {
     options.Title = "ERMS System API";
