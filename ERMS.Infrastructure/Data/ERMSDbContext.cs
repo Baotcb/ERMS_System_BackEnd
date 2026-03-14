@@ -387,6 +387,19 @@ namespace ERMS.Infrastructure.Data
                 .Property(c => c.TrainerEmail)
                 .IsRequired()
                 .HasMaxLength(256);
+
+            builder.Entity<Course>()
+                .Property(c => c.Location)
+                .HasMaxLength(255)
+                .IsRequired(false);
+
+            builder.Entity<Course>()
+                .Property(c => c.StartTime)
+                .IsRequired();
+
+            builder.Entity<Course>()
+                .Property(c => c.IsOnline)
+                .HasDefaultValue(false);
         }
         public async Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
         {
