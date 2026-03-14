@@ -60,9 +60,10 @@ namespace ERMS.Domain.Constants
         }
 
         /// <summary>
-        /// Danh sách các cột bắt buộc phải có trong file import
+        /// Danh sách các cột bắt buộc phải có trong file import.
+        /// DepartmentCode được validate theo từng dòng (bắt buộc với role khác Director).
         /// </summary>
-        public static readonly string[] RequiredColumns = { "FullName", "Email", "DepartmentCode" };
+        public static readonly string[] RequiredColumns = { "FullName", "Email" };
 
         /// <summary>
         /// Kiểm tra xem header có phải là cột bắt buộc không

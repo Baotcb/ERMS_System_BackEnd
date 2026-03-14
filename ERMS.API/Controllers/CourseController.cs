@@ -29,14 +29,25 @@ namespace ERMS.API.Controllers
         public async Task<IActionResult> CreateCourse(
             CreateCourseCommand command)
         {
-            var courseId =
-                await _mediator.Send(command);
-
-            return Ok(new
+            try
             {
-                Message = "Course created successfully",
-                CourseId = courseId
-            });
+                var courseId =
+                    await _mediator.Send(command);
+
+                return Ok(new
+                {
+                    Message = "Course created successfully",
+                    CourseId = courseId
+                });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpGet]
@@ -82,9 +93,19 @@ namespace ERMS.API.Controllers
             if (id != command.Id)
                 return BadRequest();
 
-            var result = await _mediator.Send(command);
-
-            return Ok(result);
+            try
+            {
+                var result = await _mediator.Send(command);
+                return Ok(result);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpPost("{id}/publish")]
