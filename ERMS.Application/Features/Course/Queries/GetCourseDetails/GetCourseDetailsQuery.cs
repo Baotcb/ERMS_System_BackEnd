@@ -22,6 +22,9 @@ namespace ERMS.Application.Features.Courses.Queries.GetCourseDetails
         public string? ThumbnailUrl { get; set; }
 
         public string TrainerEmail { get; set; }
+        public string? Location { get; set; }
+        public DateTime StartTime { get; set; }
+        public bool IsOnline { get; set; }
 
         public int? DurationMinutes { get; set; }
 
