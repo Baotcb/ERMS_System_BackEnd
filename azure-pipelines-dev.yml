@@ -3,7 +3,7 @@
     include:
     - dev
     
-
+pr: none
 variables:
   dockerRegistryConnection: 'DockerHubConnection'
   imageName: 'baotcq/erms-api'

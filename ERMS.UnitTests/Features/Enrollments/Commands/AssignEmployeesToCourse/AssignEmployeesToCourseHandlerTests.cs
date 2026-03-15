@@ -16,6 +16,8 @@ namespace ERMS.UnitTests.Features.Enrollments.Commands
     {
         private readonly Mock<IERMSDbContext> _contextMock = new();
         private readonly Mock<ICurrentUserService> _currentUserServiceMock = new();
+        private readonly Mock<IZoomService> _zoomServiceMock = new();
+        private readonly Mock<IEmailService> _emailServiceMock = new();
 
         private readonly AssignEmployeesToCourseHandler _handler;
 
@@ -23,7 +25,9 @@ namespace ERMS.UnitTests.Features.Enrollments.Commands
         {
             _handler = new AssignEmployeesToCourseHandler(
                 _contextMock.Object,
-                _currentUserServiceMock.Object);
+                _currentUserServiceMock.Object,
+                _zoomServiceMock.Object,
+                _emailServiceMock.Object);
         }
 
         [Fact]
