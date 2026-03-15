@@ -5,6 +5,7 @@ using ERMS.Application.Features.Training.Commands.RejectTrainingPlan;
 using ERMS.Application.Features.Training.Commands.UpdateTrainingPlan;
 using ERMS.Application.Features.Training.Queries.GetAllTrainingPlans;
 using ERMS.Application.Features.Training.Queries.GetAllTrainingRequests;
+using ERMS.Application.Features.Training.Queries.GetDepartmentTrainingSummary;
 using ERMS.Application.Features.Training.Queries.GetTrainingPlanDetail;
 using ERMS.Domain.Constants.Roles;
 using MediatR;
@@ -127,6 +128,14 @@ namespace ERMS.API.Controllers
                 message = "Training plan rejected successfully",
                 success = result
             });
+        }
+
+        [Authorize(Roles = AppRoles.DepartmentHead)]
+        [HttpGet("department-training-summary")]
+        public async Task<IActionResult> GetDepartmentTrainingSummary()
+        {
+            var result = await _mediator.Send(new GetDepartmentTrainingSummaryQuery());
+            return Ok(result);
         }
     }
 }
