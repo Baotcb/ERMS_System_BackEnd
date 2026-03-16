@@ -21,6 +21,8 @@ builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
+// Configure the HTTP request pipeline.
+app.UseForwardedHeaders();
 app.UseExceptionHandler(errorApp =>
 {
     errorApp.Run(async context =>
