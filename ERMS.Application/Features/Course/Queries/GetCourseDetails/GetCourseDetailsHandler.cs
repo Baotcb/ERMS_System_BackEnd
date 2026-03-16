@@ -51,6 +51,10 @@ namespace ERMS.Application.Features.Courses.Queries.GetCourseDetails
 
                     LessonCount = c.Lessons.Count(l => !l.IsDeleted),
                     EnrollmentCount = c.Enrollments.Count(e => !e.IsDeleted),
+                    HasFinalQuiz = c.Quiz != null && c.Quiz.IsActive && !c.Quiz.IsDeleted,
+                    FinalQuizId = c.Quiz != null && c.Quiz.IsActive && !c.Quiz.IsDeleted
+                        ? c.Quiz.Id
+                        : null,
 
                     Skills = c.CourseSkills
                         .Select(cs => cs.Skill.SkillName)

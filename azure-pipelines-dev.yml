@@ -1,110 +1,58 @@
-﻿trigger:
+trigger:
   branches:
     include:
     - DEV
-
-pr: none
+    
+pr: none 
+variables:
+  dockerRegistryConnection: 'DockerHubConnection'
+  imageName: 'baotcq/erms-api'
+  
+  tag: '$(Build.BuildId)'
 
 pool:
   vmImage: 'ubuntu-latest'
 
-variables:
-- name: solution
-  value: '**/*.sln'
-- name: buildConfiguration
-  value: 'Release'
-- name: dotNetVersion
-  value: '10.x'
-- name: azureSubscription
-  value: 'AzureConnection-Students'
-
 stages:
-- stage: Build
-  displayName: 'Build and Package'
+- stage: Build_And_Push
+  displayName: 'Đóng gói & Đẩy Docker Image'
   jobs:
   - job: Build
-    displayName: 'Build API'
+    displayName: 'Build Docker API'
     steps:
-    - task: UseDotNet@2
-      displayName: 'Install .NET 10 SDK'
+    - task: Docker@2
+      displayName: 'Build code C# và Push lên Docker Hub'
       inputs:
-        packageType: 'sdk'
-        version: '$(dotNetVersion)'
-        includePreviewVersions: true
+        containerRegistry: '$(dockerRegistryConnection)'
+        repository: '$(imageName)'
+        command: 'buildAndPush'
+        Dockerfile: '**/Dockerfile'
+        tags: |
+          $(tag)
+          $(Build.SourceBranchName)
 
-    - task: DotNetCoreCLI@2
-      displayName: 'Restore Dependencies'
-      inputs:
-        command: 'restore'
-        projects: '$(solution)'
-
-    - task: DotNetCoreCLI@2
-      displayName: 'Build Solution'
-      inputs:
-        command: 'build'
-        projects: '$(solution)'
-        arguments: '--configuration $(buildConfiguration) --no-restore'
-
-    - task: DotNetCoreCLI@2
-      displayName: 'Publish API'
-      inputs:
-        command: 'publish'
-        publishWebProjects: false
-        projects: '**/ERMS.API.csproj'
-        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/api --runtime linux-x64 --self-contained false'
-        zipAfterPublish: true
-  
-    - task: PublishBuildArtifacts@1
-      displayName: 'Publish Artifacts'
-      inputs:
-        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-        ArtifactName: 'drop'
-        publishLocation: 'Container'
-
-- stage: Deploy
-  displayName: 'Deploy to Azure'
-  dependsOn: Build
+- stage: Update_Manifest
+  displayName: 'Cập nhật kho hạ tầng GitOps'
+  dependsOn: Build_And_Push
   condition: succeeded()
-  variables:
-  - group: appsettings.json-dev
   jobs:
-  - deployment: DeployWeb
-    displayName: 'Deploy to Azure App Service'
-    environment: 'development'
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - download: current
-            artifact: drop
-
-          - task: AzureWebApp@1
-            displayName: 'Deploy API'
-            inputs:
-              azureSubscription: '$(azureSubscription)'
-              appType: 'webAppLinux'
-              appName: '$(webAppName)'
-              package: '$(Pipeline.Workspace)/drop/api/*.zip'
-              runtimeStack: 'DOTNETCORE|10.0'
-              appSettings: >
-                -ClientSettings__Url "$(ClientSettingsUrl)"
-                -ConnectionStrings__DefaultConnection "$(ConnectionStringsDefaultConnection)"
-                -EmailSettings__SmtpServer "$(EmailSettingsSmtpServer)"
-                -EmailSettings__Port "$(EmailSettingsPort)"
-                -EmailSettings__SenderEmail "$(EmailSettingsSenderEmail)"
-                -EmailSettings__SenderName "$(EmailSettingsSenderName)"
-                -EmailSettings__Password "$(EmailSettingsPassword)"
-                -GoogleAuth__ClientId "$(GoogleAuthClientId)"
-                -GoogleAuth__ClientSecret "$(GoogleAuthClientSecret)"
-                -JwtSettings__Key "$(JwtSettingsKey)"
-                -JwtSettings__Issuer "$(JwtSettingsIssuer)"
-                -JwtSettings__Audience "$(JwtSettingsAudience)"
-                -JwtSettings__DurationInMinutes "$(JwtSettingsDurationInMinutes)"
-                -Cloudinary__CloudName "$(CloudinaryCloudName)"
-                -Cloudinary__ApiKey "$(CloudinaryApiKey)"
-                -Cloudinary__ApiSecret "$(CloudinaryApiSecret)"
-                -Gemini__ApiKey "$(GeminiApiKey)"
-                -Gemini__Model "$(GeminiModel)"
-                -Zoom__AccountId "$(ZoomAccountId)"
-                -Zoom__ClientId "$(ZoomClientId)"
-                -Zoom__ClientSecret "$(ZoomClientSecret)"
+  - job: UpdateConfig
+    displayName: 'Báo cho ArgoCD cập nhật'
+    steps:
+    - script: |
+        set -e
+        git config --global user.email "bot@erms-project.com"
+        git config --global user.name "GitOps Bot"
+        
+        git clone https://$MY_PAT@dev.azure.com/EnterpriseResourcePlanningSystem/_git/EnterpriseResourcePlanningSystem_BE manifests
+        
+       
+        cd manifests/erms-api/overlays/dev
+        
+        sed -i "s/newTag:.*/newTag: '$(tag)'/" kustomization.yaml
+        git add kustomization.yaml
+        git commit -m "Auto-update DEV environment to image tag: $(tag)"
+        git push origin master
+      displayName: 'Cập nhật Kustomize cho DEV'
+      env:
+        MY_PAT: $(PAT)

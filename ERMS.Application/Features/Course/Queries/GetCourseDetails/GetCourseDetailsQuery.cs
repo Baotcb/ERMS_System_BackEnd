@@ -46,6 +46,10 @@ namespace ERMS.Application.Features.Courses.Queries.GetCourseDetails
 
         public int EnrollmentCount { get; set; }
 
+        public bool HasFinalQuiz { get; set; }
+
+        public Guid? FinalQuizId { get; set; }
+
         public List<string> Skills { get; set; } = new();
 
         public DateTime CreatedAt { get; set; }

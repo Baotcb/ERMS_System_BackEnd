@@ -5,6 +5,9 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Scalar.AspNetCore;
 using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.Data.SqlClient;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +20,47 @@ builder.Services.AddWebApi(builder.Configuration);
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
+
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        var exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+
+        var statusCode = exception switch
+        {
+            UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
+            KeyNotFoundException => StatusCodes.Status404NotFound,
+            ArgumentException => StatusCodes.Status400BadRequest,
+            InvalidOperationException => StatusCodes.Status400BadRequest,
+            DbUpdateConcurrencyException => StatusCodes.Status409Conflict,
+            DbUpdateException => StatusCodes.Status409Conflict,
+            SqlException => StatusCodes.Status409Conflict,
+            _ => StatusCodes.Status500InternalServerError
+        };
+
+        var detailMessage = exception?.InnerException?.Message ?? exception?.Message ?? "An unexpected error occurred.";
+
+        context.Response.StatusCode = statusCode;
+        context.Response.ContentType = "application/json";
+
+        await context.Response.WriteAsJsonAsync(new
+        {
+            message = detailMessage,
+            statusCode,
+            traceId = context.TraceIdentifier
+        });
+    });
+});
+
+
+var forwardedHeaderOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+};
+forwardedHeaderOptions.KnownNetworks.Clear();
+forwardedHeaderOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedHeaderOptions);
 
 
 app.MapOpenApi();

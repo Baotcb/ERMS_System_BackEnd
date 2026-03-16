@@ -15,19 +15,32 @@ namespace ERMS.UnitTests.Features.Lessons.Commands.UpdateLessonProgress
     public class UpdateLessonProgressHandlerTests
     {
         private readonly Mock<IERMSDbContext> _contextMock;
+        private readonly Mock<ICurrentUserService> _currentUserServiceMock;
         private readonly UpdateLessonProgressHandler _handler;
+        private readonly Guid _userId;
+        private readonly Guid _employeeId;
 
         public UpdateLessonProgressHandlerTests()
         {
             _contextMock = new Mock<IERMSDbContext>();
-            _handler = new UpdateLessonProgressHandler(_contextMock.Object);
+            _currentUserServiceMock = new Mock<ICurrentUserService>();
+            _userId = Guid.NewGuid();
+            _employeeId = Guid.NewGuid();
+
+            _currentUserServiceMock.Setup(x => x.UserId).Returns(_userId);
+
+            _handler = new UpdateLessonProgressHandler(_contextMock.Object, _currentUserServiceMock.Object);
         }
 
         private void SetupData(
+            List<ERMS.Domain.Entities.Organization.Employee> employees,
             List<Enrollment> enrollments,
             List<LessonProgress> progresses,
             List<Lesson> lessons)
         {
+            _contextMock.Setup(x => x.Employees)
+                .Returns(employees.AsQueryable().BuildMockDbSet().Object);
+
             _contextMock.Setup(x => x.Enrollments)
                 .Returns(enrollments.AsQueryable().BuildMockDbSet().Object);
 
@@ -42,14 +55,31 @@ namespace ERMS.UnitTests.Features.Lessons.Commands.UpdateLessonProgress
         public async Task Handle_EnrollmentNotFound_ShouldThrowException()
         {
             SetupData(
+                new List<ERMS.Domain.Entities.Organization.Employee>
+                {
+                    new()
+                    {
+                        Id = _employeeId,
+                        UserId = _userId
+                    }
+                },
                 new List<Enrollment>(),
                 new List<LessonProgress>(),
-                new List<Lesson>());
+                new List<Lesson>
+                {
+                    new()
+                    {
+                        Id = Guid.NewGuid(),
+                        CourseId = Guid.NewGuid(),
+                        IsDeleted = false
+                    }
+                });
+
+            var lessonId = _contextMock.Object.Lessons.First().Id;
 
             var command = new UpdateLessonProgressCommand
             {
-                EnrollmentId = Guid.NewGuid(),
-                LessonId = Guid.NewGuid()
+                LessonId = lessonId
             };
 
             Func<Task> act = () => _handler.Handle(command, CancellationToken.None);
@@ -68,10 +98,19 @@ namespace ERMS.UnitTests.Features.Lessons.Commands.UpdateLessonProgress
             var enrollment = new Enrollment
             {
                 Id = enrollmentId,
+                EmployeeId = _employeeId,
                 CourseId = courseId
             };
 
             SetupData(
+                new List<ERMS.Domain.Entities.Organization.Employee>
+                {
+                    new()
+                    {
+                        Id = _employeeId,
+                        UserId = _userId
+                    }
+                },
                 new List<Enrollment> { enrollment },
                 new List<LessonProgress>(),
                 new List<Lesson>
@@ -92,7 +131,6 @@ namespace ERMS.UnitTests.Features.Lessons.Commands.UpdateLessonProgress
 
             var command = new UpdateLessonProgressCommand
             {
-                EnrollmentId = enrollmentId,
                 LessonId = lessonId,
                 WatchPercentage = 50,
                 TimeSpentMinutes = 10
@@ -124,10 +162,19 @@ namespace ERMS.UnitTests.Features.Lessons.Commands.UpdateLessonProgress
             var enrollment = new Enrollment
             {
                 Id = enrollmentId,
+                EmployeeId = _employeeId,
                 CourseId = courseId
             };
 
             SetupData(
+                new List<ERMS.Domain.Entities.Organization.Employee>
+                {
+                    new()
+                    {
+                        Id = _employeeId,
+                        UserId = _userId
+                    }
+                },
                 new List<Enrollment> { enrollment },
                 new List<LessonProgress> { progress },
                 new List<Lesson>
@@ -146,7 +193,6 @@ namespace ERMS.UnitTests.Features.Lessons.Commands.UpdateLessonProgress
 
             var command = new UpdateLessonProgressCommand
             {
-                EnrollmentId = enrollmentId,
                 LessonId = lessonId,
                 WatchPercentage = 100,
                 TimeSpentMinutes = 10

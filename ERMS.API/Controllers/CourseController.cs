@@ -9,6 +9,7 @@ using ERMS.Application.Features.Enrollments.Commands.AssignEmployeesToCourse;
 using ERMS.Application.Features.Enrollments.Commands.UpdateAttendance;
 using ERMS.Application.Features.Enrollments.Queries.GetCourseAttendance;
 using ERMS.Application.Features.Quizzes.Commands.CreateQuiz;
+using ERMS.Application.Features.Quizzes.Commands.StartQuiz;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -135,6 +136,17 @@ namespace ERMS.API.Controllers
             command.CourseId = courseId;
 
             var result = await _mediator.Send(command);
+
+            return Ok(result);
+        }
+
+        [HttpPost("{courseId}/quizzes/start")]
+        public async Task<IActionResult> StartCourseQuiz(Guid courseId)
+        {
+            var result = await _mediator.Send(new StartQuizCommand
+            {
+                CourseId = courseId
+            });
 
             return Ok(result);
         }

@@ -14,23 +14,45 @@ namespace ERMS.Application.Features.Lessons.Commands.UpdateLessonProgress
         : IRequestHandler<UpdateLessonProgressCommand, bool>
     {
         private readonly IERMSDbContext _context;
+        private readonly ICurrentUserService _currentUserService;
 
-        public UpdateLessonProgressHandler(IERMSDbContext context)
+        public UpdateLessonProgressHandler(IERMSDbContext context, ICurrentUserService currentUserService)
         {
             _context = context;
+            _currentUserService = currentUserService;
         }
 
         public async Task<bool> Handle(UpdateLessonProgressCommand request, CancellationToken cancellationToken)
         {
+            var userId = _currentUserService.UserId;
+            if (userId == null)
+                throw new UnauthorizedAccessException("Người dùng chưa được xác thực");
+
+            var employee = await _context.Employees
+                .FirstOrDefaultAsync(x => x.UserId == userId, cancellationToken);
+
+            if (employee == null)
+                throw new KeyNotFoundException("Tài khoản chưa được liên kết với hồ sơ nhân viên");
+
+            var lesson = await _context.Lessons
+                .FirstOrDefaultAsync(x => x.Id == request.LessonId && !x.IsDeleted, cancellationToken);
+
+            if (lesson == null)
+                throw new KeyNotFoundException("Không tìm thấy bài học");
+
             var enrollment = await _context.Enrollments
-                .FirstOrDefaultAsync(e => e.Id == request.EnrollmentId && !e.IsDeleted, cancellationToken);
+                .FirstOrDefaultAsync(e =>
+                    e.EmployeeId == employee.Id &&
+                    e.CourseId == lesson.CourseId &&
+                    !e.IsDeleted,
+                    cancellationToken);
 
             if (enrollment == null)
                 throw new KeyNotFoundException("Không tìm thấy đăng ký khóa học");
 
             var progress = await _context.LessonProgresses
                 .FirstOrDefaultAsync(p =>
-                    p.EnrollmentId == request.EnrollmentId &&
+                    p.EnrollmentId == enrollment.Id &&
                     p.LessonId == request.LessonId,
                     cancellationToken);
 
@@ -39,7 +61,7 @@ namespace ERMS.Application.Features.Lessons.Commands.UpdateLessonProgress
                 progress = new LessonProgress
                 {
                     Id = Guid.NewGuid(),
-                    EnrollmentId = request.EnrollmentId,
+                    EnrollmentId = enrollment.Id,
                     LessonId = request.LessonId,
                     StartedAt = DateTime.UtcNow
                 };
