@@ -7,6 +7,7 @@ using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.Data.SqlClient;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,15 +33,20 @@ app.UseExceptionHandler(errorApp =>
             KeyNotFoundException => StatusCodes.Status404NotFound,
             ArgumentException => StatusCodes.Status400BadRequest,
             InvalidOperationException => StatusCodes.Status400BadRequest,
+            DbUpdateConcurrencyException => StatusCodes.Status409Conflict,
+            DbUpdateException => StatusCodes.Status409Conflict,
+            SqlException => StatusCodes.Status409Conflict,
             _ => StatusCodes.Status500InternalServerError
         };
+
+        var detailMessage = exception?.InnerException?.Message ?? exception?.Message ?? "An unexpected error occurred.";
 
         context.Response.StatusCode = statusCode;
         context.Response.ContentType = "application/json";
 
         await context.Response.WriteAsJsonAsync(new
         {
-            message = exception?.Message ?? "An unexpected error occurred.",
+            message = detailMessage,
             statusCode,
             traceId = context.TraceIdentifier
         });
