@@ -6,6 +6,8 @@ using ERMS.Application.Features.Courses.Queries.GetCourseDetails;
 using ERMS.Application.Features.Courses.Queries.GetCourseProgress;
 using ERMS.Application.Features.CourseSkills.Commands.CreateCourseSkill;
 using ERMS.Application.Features.Enrollments.Commands.AssignEmployeesToCourse;
+using ERMS.Application.Features.Enrollments.Commands.UpdateAttendance;
+using ERMS.Application.Features.Enrollments.Queries.GetCourseAttendance;
 using ERMS.Application.Features.Quizzes.Commands.CreateQuiz;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -152,6 +154,24 @@ namespace ERMS.API.Controllers
                 CourseId = courseId
             });
 
+            return Ok(result);
+        }
+
+        [HttpGet("{courseId}/attendance")]
+        public async Task<IActionResult> GetAttendance(Guid courseId)
+        {
+            var result = await _mediator.Send(new GetCourseAttendanceQuery
+            {
+                CourseId = courseId
+            });
+
+            return Ok(result);
+        }
+
+        [HttpPut("attendance")]
+        public async Task<IActionResult> UpdateAttendance(UpdateAttendanceCommand command)
+        {
+            var result = await _mediator.Send(command);
             return Ok(result);
         }
     }

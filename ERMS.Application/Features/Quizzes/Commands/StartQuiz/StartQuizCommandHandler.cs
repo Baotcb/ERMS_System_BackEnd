@@ -28,10 +28,16 @@ public sealed class StartQuizCommandHandler
             .FirstOrDefaultAsync(x => x.UserId == userId, cancellationToken);
 
         var enrollment = await _context.Enrollments
-            .FirstOrDefaultAsync(x => x.EmployeeId == employee.Id && !x.IsDeleted, cancellationToken);
+    .FirstOrDefaultAsync(x => x.EmployeeId == employee.Id && !x.IsDeleted, cancellationToken);
 
         if (enrollment == null)
             throw new Exception("Người dùng chưa đăng ký khóa học");
+
+        // CHECK COURSE COMPLETION
+        if (enrollment.Status != "Completed")
+        {
+            throw new Exception("Bạn phải hoàn thành khóa học trước khi làm bài kiểm tra.");
+        }
 
         var quiz = await _context.Quizzes
     .Include(x => x.Questions)
