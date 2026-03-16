@@ -1077,7 +1077,10 @@ namespace ERMS.Infrastructure.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("DepartmentId")
+                    b.Property<int?>("DepartmentId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("DepartmentId1")
                         .HasColumnType("int");
 
                     b.Property<string>("EmployeeCode")
@@ -1129,6 +1132,8 @@ namespace ERMS.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DepartmentId");
+
+                    b.HasIndex("DepartmentId1");
 
                     b.HasIndex("EnterpriseId");
 
@@ -1787,13 +1792,25 @@ namespace ERMS.Infrastructure.Migrations
                     b.Property<bool>("IsMandatory")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsOnline")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
                     b.Property<string>("Level")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Location")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<int?>("MaxEnrollments")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("PublishedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("StartTime")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Status")
@@ -1803,8 +1820,10 @@ namespace ERMS.Infrastructure.Migrations
                     b.Property<string>("ThumbnailUrl")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid>("TrainerId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<string>("TrainerEmail")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
 
                     b.Property<Guid?>("TrainingPlanId")
                         .HasColumnType("uniqueidentifier");
@@ -1815,8 +1834,6 @@ namespace ERMS.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("EnterpriseId");
-
-                    b.HasIndex("TrainerId");
 
                     b.HasIndex("TrainingPlanId");
 
@@ -2825,10 +2842,13 @@ namespace ERMS.Infrastructure.Migrations
             modelBuilder.Entity("ERMS.Domain.Entities.Organization.Employee", b =>
                 {
                     b.HasOne("ERMS.Domain.Entities.Organization.Department", "Department")
-                        .WithMany("Employees")
+                        .WithMany()
                         .HasForeignKey("DepartmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERMS.Domain.Entities.Organization.Department", null)
+                        .WithMany("Employees")
+                        .HasForeignKey("DepartmentId1");
 
                     b.HasOne("ERMS.Domain.Entities.Enterprise.Enterprise", "Enterprise")
                         .WithMany()
@@ -3077,19 +3097,11 @@ namespace ERMS.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("ERMS.Domain.Entities.Organization.Employee", "Trainer")
-                        .WithMany()
-                        .HasForeignKey("TrainerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("ERMS.Domain.Entities.Training.TrainingPlan", "TrainingPlan")
                         .WithMany("Courses")
                         .HasForeignKey("TrainingPlanId");
 
                     b.Navigation("Enterprise");
-
-                    b.Navigation("Trainer");
 
                     b.Navigation("TrainingPlan");
                 });

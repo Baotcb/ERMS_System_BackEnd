@@ -1,4 +1,5 @@
 using ERMS.Application.Interface;
+using ERMS.Domain.Constants.Roles;
 using ERMS.Domain.Entities.Identity;
 using ERMS.Domain.Entities.Organization;
 using MediatR;
@@ -148,8 +149,10 @@ namespace ERMS.Application.Features.Employees.Commands.ImportEmployeesFromFile
                 {
                     foreach (var row in validRows)
                     {
+                        var role = row.Role ?? AppRoles.Employee;
+                        var isDirectorRole = role.Equals(AppRoles.Director, StringComparison.OrdinalIgnoreCase);
                         // Check Dept
-                        if (!departments.ContainsKey(row.DepartmentCode?.ToUpperInvariant() ?? ""))
+                        if (!isDirectorRole && !departments.ContainsKey(row.DepartmentCode?.ToUpperInvariant() ?? ""))
                         {
                              result.Errors.Add(new ImportError { RowNumber = row.RowNumber, Email = row.Email, Column = "DepartmentCode", Message = $"Phòng ban '{row.DepartmentCode}' không tồn tại" });
                              result.FailedCount++;
@@ -179,8 +182,12 @@ namespace ERMS.Application.Features.Employees.Commands.ImportEmployeesFromFile
                 
                 foreach (var row in validRows)
                 {
+                    var roleToAdd = row.Role ?? AppRoles.Employee;
+                    var isDirectorRole = roleToAdd.Equals(AppRoles.Director, StringComparison.OrdinalIgnoreCase);
+
                     // Re-validate critical constraints to be sure
-                    if (!departments.TryGetValue(row.DepartmentCode?.ToUpperInvariant() ?? "", out var department))
+                    Department? department = null;
+                    if (!isDirectorRole && !departments.TryGetValue(row.DepartmentCode?.ToUpperInvariant() ?? "", out department))
                     {
                         result.Errors.Add(new ImportError { RowNumber = row.RowNumber, Email = row.Email, Column = "DepartmentCode", Message = $"Phòng ban '{row.DepartmentCode}' không tồn tại" });
                         result.FailedCount++;
@@ -221,8 +228,15 @@ namespace ERMS.Application.Features.Employees.Commands.ImportEmployeesFromFile
                         }
 
                         // Role
-                        var roleToAdd = row.Role ?? "Employee";
-                        await _userManager.AddToRoleAsync(user, roleToAdd);
+                        var addRoleResult = await _userManager.AddToRoleAsync(user, roleToAdd);
+                        if (!addRoleResult.Succeeded)
+                        {
+                            result.Errors.Add(new ImportError { RowNumber = row.RowNumber, Email = row.Email, Column = "Role", Message = string.Join(", ", addRoleResult.Errors.Select(e => e.Description)) });
+                            result.FailedCount++;
+                            await _userManager.DeleteAsync(user);
+                            user = null;
+                            continue;
+                        }
 
                         // Employee
                         employeeCount++;
@@ -231,7 +245,7 @@ namespace ERMS.Application.Features.Employees.Commands.ImportEmployeesFromFile
                             Id = Guid.CreateVersion7(),
                             UserId = user.Id,
                             EnterpriseId = enterpriseId.Value,
-                            DepartmentId = department.Id,
+                            DepartmentId = isDirectorRole ? null : department!.Id,
                             EmployeeCode = $"{enterprise.EnterpriseCode}-{employeeCount:D4}",
                             Position = row.Position,
                             EmploymentType = "FullTime",

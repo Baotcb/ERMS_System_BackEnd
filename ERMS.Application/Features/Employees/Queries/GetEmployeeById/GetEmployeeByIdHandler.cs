@@ -46,7 +46,7 @@ namespace ERMS.Application.Features.Employees.Queries.GetEmployeeById
                     FullName = e.User.FullName,
                     Email = e.User.Email!,
                     Phone = e.User.PhoneNumber,
-                    DepartmentId = e.DepartmentId,
+                    DepartmentId = e.DepartmentId ?? 0,
                     DepartmentName = e.Department.DepartmentName,
                     Position = e.Position,
                     JobPositionId = e.JobPositionId,

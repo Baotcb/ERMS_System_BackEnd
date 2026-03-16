@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Interface;
+using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Roles;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -56,7 +56,8 @@ namespace ERMS.Application.Features.Applications.Queries.GetAllOfferByHR
                     SentAt = o.SentAt,
                     SentById = o.SentById,
                     RespondedAt = o.RespondedAt,
-                    CandidateNote = o.CandidateNote
+                    CandidateNote = o.CandidateNote,
+                    ApplicationStage = o.Application.Stage
                 })
                 .ToListAsync(cancellationToken);
 

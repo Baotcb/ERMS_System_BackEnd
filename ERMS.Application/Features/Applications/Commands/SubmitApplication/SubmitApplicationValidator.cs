@@ -26,9 +26,9 @@ public sealed class SubmitApplicationValidator : AbstractValidator<SubmitApplica
             .WithMessage("File CV phải là định dạng PDF.");
 
         RuleFor(x => x.ExpectedSalary)
-            .GreaterThan(0)
+            .GreaterThanOrEqualTo(0)
             .When(x => x.ExpectedSalary.HasValue)
-            .WithMessage("Mức lương mong muốn phải là giá trị dương.");
+            .WithMessage("Mức lương mong muốn không được là số âm.");
 
         RuleFor(x => x.AvailableStartDate)
             .GreaterThanOrEqualTo(DateTime.UtcNow.Date)

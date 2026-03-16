@@ -102,7 +102,8 @@ namespace ERMS.UnitTests.Features.Users.Commands.ChangeProfile
                 DateOfBirth = new DateTime(1995, 5, 5),
                 Hometown = "New City",
                 Phones = "0987654321",
-                Address = "123 Street"
+                Address = "123 Street",
+                AvatarUrl = "https://res.cloudinary.com/demo/image/upload/avatar.png"
             };
 
             // Act
@@ -113,11 +114,65 @@ namespace ERMS.UnitTests.Features.Users.Commands.ChangeProfile
             result.FullName.Should().Be(command.FullName);
             result.DateOfBirth.Should().Be(command.DateOfBirth);
             result.Hometown.Should().Be(command.Hometown);
+            result.Phones.Should().Be(command.Phones);
+            result.AvatarUrl.Should().Be(command.AvatarUrl);
             result.DepartmentName.Should().Be("IT");
 
             user.FullName.Should().Be(command.FullName);
             user.DateOfBirth.Should().Be(command.DateOfBirth);
             user.Hometown.Should().Be(command.Hometown);
+            user.PhoneNumber.Should().Be(command.Phones);
+            user.AvatarUrl.Should().Be(command.AvatarUrl);
+        }
+
+        [Fact]
+        public async Task Handle_ShouldClearAvatar_WhenAvatarUrlIsNull()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var user = new User
+            {
+                Id = userId,
+                AvatarUrl = "https://res.cloudinary.com/demo/image/upload/old-avatar.png"
+            };
+
+            _currentUserServiceMock.Setup(x => x.UserId).Returns(userId);
+            _userManagerMock.Setup(x => x.FindByIdAsync(userId.ToString())).ReturnsAsync(user);
+            _userManagerMock.Setup(x => x.UpdateAsync(user)).ReturnsAsync(IdentityResult.Success);
+
+            var command = new ChangeProfileCommand
+            {
+                FullName = "Updated Name",
+                AvatarUrl = null
+            };
+
+            // Act
+            var result = await _handler.Handle(command, CancellationToken.None);
+
+            // Assert
+            result.AvatarUrl.Should().BeNull();
+            user.AvatarUrl.Should().BeNull();
+        }
+
+        [Fact]
+        public async Task Handle_ShouldThrowException_WhenAvatarUrlIsInvalid()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var user = new User { Id = userId };
+            _currentUserServiceMock.Setup(x => x.UserId).Returns(userId);
+            _userManagerMock.Setup(x => x.FindByIdAsync(userId.ToString())).ReturnsAsync(user);
+
+            var command = new ChangeProfileCommand
+            {
+                FullName = "Updated Name",
+                AvatarUrl = "not-a-valid-url"
+            };
+
+            // Act & Assert
+            await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
+                .Should().ThrowAsync<Exception>()
+                .WithMessage("Avatar URL không hợp lệ.");
         }
     }
 }

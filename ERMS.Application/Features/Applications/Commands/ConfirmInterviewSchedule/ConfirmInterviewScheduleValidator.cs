@@ -40,10 +40,7 @@ public sealed class ConfirmInterviewScheduleValidator : AbstractValidator<Confir
             .When(x => x.InterviewFormat == InterviewFormat.Offline)
             .WithMessage("Địa điểm là bắt buộc cho phỏng vấn trực tiếp.");
 
-        RuleFor(x => x.MeetingLink)
-            .NotEmpty()
-            .When(x => x.InterviewFormat == InterviewFormat.Online)
-            .WithMessage("Link cuộc hỌp là bắt buộc cho phỏng vấn trực tuyến.");
+        // MeetingLink is optional for Online format — Handler auto-creates Zoom if empty
 
         RuleFor(x => x.MeetingLink)
             .Must(link => Uri.TryCreate(link, UriKind.Absolute, out var uri)

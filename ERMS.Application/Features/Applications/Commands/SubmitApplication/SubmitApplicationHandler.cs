@@ -128,7 +128,7 @@ public sealed class SubmitApplicationHandler : IRequestHandler<SubmitApplication
             CandidateId = candidate.Id,
             ResumeId = resume.Id,
             CoverLetter = request.CoverLetter?.Trim(),
-            ExpectedSalary = request.ExpectedSalary,
+            ExpectedSalary = request.ExpectedSalary ?? 0,
             AvailableStartDate = request.AvailableStartDate,
             Stage = ApplicationStage.Applied,
             StageUpdatedAt = DateTime.UtcNow,
