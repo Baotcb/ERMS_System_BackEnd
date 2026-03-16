@@ -34,7 +34,8 @@ public sealed class StartQuizCommandHandler
         var quiz = await _context.Quizzes
             .Include(x => x.Questions)
             .FirstOrDefaultAsync(x =>
-                x.Id == request.QuizId &&
+                ((request.QuizId.HasValue && x.Id == request.QuizId.Value) ||
+                 (request.CourseId.HasValue && x.CourseId == request.CourseId.Value)) &&
                 x.IsActive &&
                 !x.IsDeleted,
                 cancellationToken);
