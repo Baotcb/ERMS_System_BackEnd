@@ -1,9 +1,9 @@
-﻿trigger:
+trigger:
   branches:
     include:
-    - dev
+    - DEV
     
-pr: none
+pr: none 
 variables:
   dockerRegistryConnection: 'DockerHubConnection'
   imageName: 'baotcq/erms-api'
@@ -32,7 +32,7 @@ stages:
           $(Build.SourceBranchName)
 
 - stage: Update_Manifest
-  displayName: 'Cập nhật kho hạ tầng GitOps (VPS)'
+  displayName: 'Cập nhật kho hạ tầng GitOps'
   dependsOn: Build_And_Push
   condition: succeeded()
   jobs:

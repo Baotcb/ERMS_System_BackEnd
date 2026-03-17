@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Interface;
+using ERMS.Application.Interface;
 using ERMS.Infrastructure.Data;
 using ERMS.Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
@@ -63,6 +63,14 @@ namespace ERMS.Infrastructure
             // Background CV Scoring
             services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
             services.AddHostedService<CvScoringBackgroundService>();
+
+            // IP geolocation proxy for public location detection.
+            services.AddMemoryCache();
+            services.AddHttpClient<IGeolocationService, GeolocationService>(client =>
+            {
+                client.BaseAddress = new Uri("http://ip-api.com/");
+                client.Timeout = TimeSpan.FromSeconds(5);
+            });
 
             return services;
         }

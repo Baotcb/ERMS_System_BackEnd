@@ -1,4 +1,5 @@
 using ERMS.Application.Features.JobPostings.Queries.GetPublicJobPostingById;
+using ERMS.Application.Features.JobPostings.Queries.GetPublicJobFilterOptions;
 using ERMS.Application.Features.JobPostings.Queries.GetPublicJobPostings;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -44,6 +45,26 @@ public class PublicJobsController : ControllerBase
         try
         {
             var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get public filter metadata for the jobs page
+    /// </summary>
+    [HttpGet("filter-options")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(GetPublicJobFilterOptionsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetFilterOptions()
+    {
+        try
+        {
+            var result = await _mediator.Send(new GetPublicJobFilterOptionsQuery());
             return Ok(result);
         }
         catch (Exception ex)

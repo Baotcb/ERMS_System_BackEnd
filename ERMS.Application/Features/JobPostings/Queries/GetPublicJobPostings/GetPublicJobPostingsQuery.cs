@@ -24,6 +24,31 @@ public sealed class GetPublicJobPostingsQuery : IRequest<GetPublicJobPostingsRes
     /// Optional filter by employment type (FullTime, PartTime, Contract)
     /// </summary>
     public string? EmploymentType { get; set; }
+
+    /// <summary>
+    /// Optional filter by normalized experience bucket (0, 0-1, 1-2, 2-3, 3-5, 5+)
+    /// </summary>
+    public string? ExperienceBucket { get; set; }
+
+    /// <summary>
+    /// Optional salary lower bound
+    /// </summary>
+    public decimal? MinSalary { get; set; }
+
+    /// <summary>
+    /// Optional salary upper bound
+    /// </summary>
+    public decimal? MaxSalary { get; set; }
+
+    /// <summary>
+    /// Optional filter by department ID
+    /// </summary>
+    public int? DepartmentId { get; set; }
+
+    /// <summary>
+    /// Sort option: newest, salary_desc, relevance
+    /// </summary>
+    public string? SortBy { get; set; }
     
     /// <summary>
     /// Optional filter by enterprise ID (for multi-tenant job board)
