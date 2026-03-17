@@ -1,4 +1,4 @@
-using ERMS.Application.Features.Courses.Commands.CreateCourse;
+﻿using ERMS.Application.Features.Courses.Commands.CreateCourse;
 using ERMS.Application.Features.Courses.Commands.PublishCourse;
 using ERMS.Application.Features.Courses.Commands.UpdateCourse;
 using ERMS.Application.Features.Courses.Queries.GetAllCourses;
@@ -8,8 +8,6 @@ using ERMS.Application.Features.CourseSkills.Commands.CreateCourseSkill;
 using ERMS.Application.Features.Enrollments.Commands.AssignEmployeesToCourse;
 using ERMS.Application.Features.Quizzes.Commands.CreateQuiz;
 using ERMS.Application.Features.Quizzes.Commands.StartQuiz;
-using ERMS.Application.Features.Workshops.Commands.ConfirmWorkshopCompletion;
-using ERMS.Application.Features.Workshops.Queries.GetWorkshopConfirmation;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -165,41 +163,6 @@ namespace ERMS.API.Controllers
             {
                 CourseId = courseId
             });
-
-            return Ok(result);
-        }
-
-        [HttpPost("{courseId}/workshop-confirmation")]
-        public async Task<IActionResult> ConfirmWorkshopCompletion(
-            Guid courseId,
-            [FromBody] ConfirmWorkshopCompletionCommand command)
-        {
-            try
-            {
-                command.CourseId = courseId;
-                var confirmationId = await _mediator.Send(command);
-                return Ok(new
-                {
-                    Message = "Workshop confirmed successfully",
-                    ConfirmationId = confirmationId
-                });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
-
-        [HttpGet("{courseId}/workshop-confirmation")]
-        public async Task<IActionResult> GetWorkshopConfirmation(Guid courseId)
-        {
-            var result = await _mediator.Send(
-                new GetWorkshopConfirmationQuery { CourseId = courseId });
-
-            if (result == null)
-            {
-                return NotFound(new { message = "Workshop chưa được xác nhận." });
-            }
 
             return Ok(result);
         }
