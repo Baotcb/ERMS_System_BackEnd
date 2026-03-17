@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Features.Courses.Commands.CreateCourse;
+using ERMS.Application.Features.Courses.Commands.CreateCourse;
 using ERMS.Application.Features.Courses.Commands.PublishCourse;
 using ERMS.Application.Features.Courses.Commands.UpdateCourse;
 using ERMS.Application.Features.Courses.Queries.GetAllCourses;
@@ -69,6 +69,13 @@ namespace ERMS.API.Controllers
                 Id = id
             };
             var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+
+        [HttpGet("department-training-results")]
+        public async Task<IActionResult> GetDepartmentTrainingResults()
+        {
+            var result = await _mediator.Send(new Application.Features.Enrollments.Queries.GetDepartmentTrainingResults.GetDepartmentTrainingResultsQuery());
             return Ok(result);
         }
 
@@ -164,6 +171,40 @@ namespace ERMS.API.Controllers
                 CourseId = courseId
             });
 
+            return Ok(result);
+        }
+
+        [HttpPost("{courseId}/workshop-confirmation")]
+        public async Task<IActionResult> ConfirmWorkshop(
+            Guid courseId,
+            [FromBody] Application.Features.Workshop.Commands.ConfirmWorkshop.ConfirmWorkshopCommand command)
+        {
+            command.CourseId = courseId;
+            try
+            {
+                var result = await _mediator.Send(command);
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("{courseId}/workshop-confirmation")]
+        public async Task<IActionResult> GetWorkshopConfirmation(Guid courseId)
+        {
+            var result = await _mediator.Send(
+                new Application.Features.Workshop.Queries.GetWorkshopConfirmation.GetWorkshopConfirmationQuery
+                {
+                    CourseId = courseId
+                });
+
+            if (result == null) return NotFound();
             return Ok(result);
         }
     }

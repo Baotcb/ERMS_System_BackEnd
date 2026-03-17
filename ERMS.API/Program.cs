@@ -1,7 +1,9 @@
 using ERMS.API;
 using ERMS.Application;
 using ERMS.Infrastructure;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.Data.SqlClient;
 using Scalar.AspNetCore;
 using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
@@ -19,8 +21,6 @@ builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
-<<<<<<< HEAD
-=======
 // Configure the HTTP request pipeline.
 app.UseForwardedHeaders();
 app.UseExceptionHandler(errorApp =>
@@ -54,16 +54,6 @@ app.UseExceptionHandler(errorApp =>
         });
     });
 });
-
->>>>>>> DEV
-
-var forwardedHeaderOptions = new ForwardedHeadersOptions
-{
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-};
-forwardedHeaderOptions.KnownNetworks.Clear();
-forwardedHeaderOptions.KnownProxies.Clear();
-app.UseForwardedHeaders(forwardedHeaderOptions);
 
 
 app.MapOpenApi();
