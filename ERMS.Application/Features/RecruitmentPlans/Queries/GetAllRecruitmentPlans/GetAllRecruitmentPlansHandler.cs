@@ -81,6 +81,8 @@ public sealed class GetAllRecruitmentPlansHandler : IRequestHandler<GetAllRecrui
                 EndDate = rp.EndDate,
                 TotalBudget = rp.TotalBudget,
                 Status = rp.Status,
+                DepartmentId = rp.DepartmentId,
+                DepartmentName = rp.Department.DepartmentName,
                 CreatedByName = rp.CreatedBy.FullName,
                 ApprovedByName = rp.ApprovedBy != null ? rp.ApprovedBy.FullName : null,
                 ApprovedAt = rp.ApprovedAt,
