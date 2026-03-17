@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using System.Threading;
 using System.Threading.Tasks;
@@ -71,6 +71,7 @@ namespace ERMS.Application.Interface
         DbSet<QuizQuestion> QuizQuestions { get; set; }
         DbSet<QuizAttempt> QuizAttempts { get; set; }
         DbSet<QuizAnswer> QuizAnswers { get; set; }
+        DbSet<WorkshopConfirmation> WorkshopConfirmations { get; set; }
 
       
         DbSet<Notification> Notifications { get; set; }

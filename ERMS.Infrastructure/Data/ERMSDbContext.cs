@@ -72,6 +72,7 @@ namespace ERMS.Infrastructure.Data
         public DbSet<QuizQuestion> QuizQuestions { get; set; }
         public DbSet<QuizAttempt> QuizAttempts { get; set; }
         public DbSet<QuizAnswer> QuizAnswers { get; set; }
+        public DbSet<WorkshopConfirmation> WorkshopConfirmations { get; set; }
 
     
         public DbSet<Notification> Notifications { get; set; }
@@ -400,6 +401,12 @@ namespace ERMS.Infrastructure.Data
             builder.Entity<Course>()
                 .Property(c => c.IsOnline)
                 .HasDefaultValue(false);
+
+            builder.Entity<WorkshopConfirmation>()
+                .HasOne(w => w.Course)
+                .WithMany()
+                .HasForeignKey(w => w.CourseId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
         public async Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
         {
