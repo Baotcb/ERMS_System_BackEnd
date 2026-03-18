@@ -75,9 +75,6 @@ namespace ERMS.Application.Interface
         DbSet<WorkshopConfirmation> WorkshopConfirmations { get; set; }
 
 
-        DbSet<CourseFeedback> CourseFeedbacks { get; set; }
-        DbSet<WorkshopConfirmation> WorkshopConfirmations { get; set; }
-
       
         DbSet<Notification> Notifications { get; set; }
 

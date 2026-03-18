@@ -78,10 +78,6 @@ namespace ERMS.Infrastructure.Data
     
         public DbSet<Notification> Notifications { get; set; }
 
-        
-        public DbSet<CourseFeedback> CourseFeedbacks { get; set; }
-        public DbSet<WorkshopConfirmation> WorkshopConfirmations { get; set; }
-
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -95,15 +91,7 @@ namespace ERMS.Infrastructure.Data
                 property.SetScale(2);
             }
 
-            // WorkshopConfirmation: JSON converter for EvidencePhotoUrls
-            builder.Entity<WorkshopConfirmation>(e =>
-            {
-                e.Property(w => w.EvidencePhotoUrls)
-                    .HasConversion(
-                        v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
-                        v => System.Text.Json.JsonSerializer.Deserialize<List<string>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new List<string>()
-                    );
-            });
+            // WorkshopConfirmation: EvidencePhotoUrls is stored as JSON string directly
 
        
             builder.Entity<Enterprise>()

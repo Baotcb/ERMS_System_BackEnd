@@ -15,7 +15,7 @@ namespace ERMS.Application.Features.Feedback.Commands.SubmitCourseFeedback
 
     public class SubmitCourseFeedbackResult
     {
-        public Guid FeedbackId { get; set; }
+        public int FeedbackId { get; set; }
         public string Message { get; set; } = "";
     }
 
@@ -62,7 +62,6 @@ namespace ERMS.Application.Features.Feedback.Commands.SubmitCourseFeedback
 
             var feedback = new Domain.Entities.Training.CourseFeedback
             {
-                Id = Guid.NewGuid(),
                 CourseId = request.CourseId,
                 EmployeeId = employee.Id,
                 CourseRating = request.CourseRating,
