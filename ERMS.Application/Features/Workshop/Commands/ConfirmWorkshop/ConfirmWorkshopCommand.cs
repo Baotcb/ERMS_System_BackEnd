@@ -1,6 +1,7 @@
 using ERMS.Application.Interface;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace ERMS.Application.Features.Workshop.Commands.ConfirmWorkshop
 {
@@ -51,10 +52,9 @@ namespace ERMS.Application.Features.Workshop.Commands.ConfirmWorkshop
 
             var confirmation = new Domain.Entities.Training.WorkshopConfirmation
             {
-                Id = Guid.NewGuid(),
                 CourseId = request.CourseId,
                 ConfirmedByUserId = userId.Value,
-                EvidencePhotoUrls = request.EvidencePhotoUrls,
+                EvidencePhotoUrls = JsonSerializer.Serialize(request.EvidencePhotoUrls),
                 Notes = request.Notes?.Trim(),
                 ConfirmedAt = DateTime.UtcNow,
                 CreatedAt = DateTime.UtcNow

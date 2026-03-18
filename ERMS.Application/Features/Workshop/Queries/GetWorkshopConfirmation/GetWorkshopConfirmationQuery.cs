@@ -1,6 +1,7 @@
 using ERMS.Application.Interface;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace ERMS.Application.Features.Workshop.Queries.GetWorkshopConfirmation
 {
@@ -43,7 +44,9 @@ namespace ERMS.Application.Features.Workshop.Queries.GetWorkshopConfirmation
                 Id = confirmation.Id.ToString(),
                 CourseId = confirmation.CourseId.ToString(),
                 ConfirmedByUserId = confirmation.ConfirmedByUserId.ToString(),
-                EvidencePhotoUrls = confirmation.EvidencePhotoUrls,
+                EvidencePhotoUrls = string.IsNullOrEmpty(confirmation.EvidencePhotoUrls)
+                    ? new List<string>()
+                    : JsonSerializer.Deserialize<List<string>>(confirmation.EvidencePhotoUrls) ?? new List<string>(),
                 Notes = confirmation.Notes,
                 ConfirmedAt = confirmation.ConfirmedAt
             };
