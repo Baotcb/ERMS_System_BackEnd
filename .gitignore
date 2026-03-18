@@ -366,4 +366,6 @@ FodyWeavers.xsd
 .env
 .dotnet/
 
-    
+# Secrets - appsettings contains API keys, passwords, connection strings
+**/appsettings.json
+**/appsettings.*.json

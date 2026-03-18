@@ -72,6 +72,8 @@ namespace ERMS.Infrastructure.Data
         public DbSet<QuizQuestion> QuizQuestions { get; set; }
         public DbSet<QuizAttempt> QuizAttempts { get; set; }
         public DbSet<QuizAnswer> QuizAnswers { get; set; }
+        public DbSet<CourseFeedback> CourseFeedbacks { get; set; }
+        public DbSet<WorkshopConfirmation> WorkshopConfirmations { get; set; }
 
     
         public DbSet<Notification> Notifications { get; set; }
@@ -92,6 +94,16 @@ namespace ERMS.Infrastructure.Data
                 property.SetPrecision(18);
                 property.SetScale(2);
             }
+
+            // WorkshopConfirmation: JSON converter for EvidencePhotoUrls
+            builder.Entity<WorkshopConfirmation>(e =>
+            {
+                e.Property(w => w.EvidencePhotoUrls)
+                    .HasConversion(
+                        v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                        v => System.Text.Json.JsonSerializer.Deserialize<List<string>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new List<string>()
+                    );
+            });
 
        
             builder.Entity<Enterprise>()
