@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Interface;
+using ERMS.Application.Interface;
 using ERMS.Domain.Entities.Training;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -66,21 +66,21 @@ namespace ERMS.Application.Features.Enrollments.Commands.AssignEmployeesToCourse
             if (course.IsOnline)
             {
                 // Chỉ tạo Zoom nếu Trainer là người trong hệ thống (hoặc theo logic riêng của bạn)
-                var isInternalTrainer = await _context.Employees.AnyAsync(e => e.User.Email == course.TrainerEmail, cancellationToken);
-                if (isInternalTrainer)
-                {
-                    var meeting = await _zoomService.CreateMeetingAsync(new ZoomMeetingRequest
+                    var isInternalTrainer = await _context.Employees.AnyAsync(e => e.User.Email == course.TrainerEmail, cancellationToken);
+                    if (isInternalTrainer)
                     {
-                        Topic = $"[ERMS] {course.CourseName}",
-                        StartTime = course.StartTime,
-                        Duration = course.DurationMinutes ?? 60
-                    }, cancellationToken);
-                    zoomLink = meeting.JoinUrl;
+                        var meeting = await _zoomService.CreateMeetingAsync(new ZoomMeetingRequest
+                        {
+                            Topic = $"[ERMS] {course.CourseName}",
+                            StartTime = course.StartTime,
+                            Duration = course.DurationMinutes ?? 60
+                        }, cancellationToken);
+                        zoomLink = meeting.JoinUrl;
+                    }
                 }
-            }
 
             // 4. Gửi Email thông báo (Phân biệt Trainer & Trainee)
-            await SendNotificationEmails(course, newEmployeeIds, zoomLink, cancellationToken);
+                await SendNotificationEmails(course, newEmployeeIds, zoomLink, cancellationToken);
 
             return new AssignEmployeesToCourseResult
             {

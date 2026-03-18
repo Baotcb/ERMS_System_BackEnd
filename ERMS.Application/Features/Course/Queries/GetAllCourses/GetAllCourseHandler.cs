@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Interface;
+using ERMS.Application.Interface;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
@@ -70,6 +70,9 @@ namespace ERMS.Application.Features.Courses.Queries.GetAllCourses
                     DurationMinutes = c.DurationMinutes,
                     Level = c.Level,
                     Status = c.Status,
+                    IsOnline = c.IsOnline,
+                    Location = c.Location,
+                    StartTime = c.StartTime,
                     IsMandatory = c.IsMandatory,
                     MaxEnrollments = c.MaxEnrollments,
                     EnrollmentDeadline = c.EnrollmentDeadline,

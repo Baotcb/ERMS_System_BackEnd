@@ -72,6 +72,8 @@ namespace ERMS.Infrastructure.Data
         public DbSet<QuizQuestion> QuizQuestions { get; set; }
         public DbSet<QuizAttempt> QuizAttempts { get; set; }
         public DbSet<QuizAnswer> QuizAnswers { get; set; }
+        public DbSet<CourseFeedback> CourseFeedbacks { get; set; }
+        public DbSet<WorkshopConfirmation> WorkshopConfirmations { get; set; }
 
     
         public DbSet<Notification> Notifications { get; set; }
@@ -88,6 +90,8 @@ namespace ERMS.Infrastructure.Data
                 property.SetPrecision(18);
                 property.SetScale(2);
             }
+
+            // WorkshopConfirmation: EvidencePhotoUrls is stored as JSON string directly
 
        
             builder.Entity<Enterprise>()
@@ -400,6 +404,39 @@ namespace ERMS.Infrastructure.Data
             builder.Entity<Course>()
                 .Property(c => c.IsOnline)
                 .HasDefaultValue(false);
+
+   
+            builder.Entity<CourseFeedback>()
+                .HasOne(x => x.Course)
+                .WithMany(c => c.CourseFeedbacks)
+                .HasForeignKey(x => x.CourseId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<CourseFeedback>()
+                .HasOne(x => x.Employee)
+                .WithMany()
+                .HasForeignKey(x => x.EmployeeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<WorkshopConfirmation>()
+                .HasOne(x => x.Course)
+                .WithOne(c => c.WorkshopConfirmation)
+                .HasForeignKey<WorkshopConfirmation>(x => x.CourseId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<WorkshopConfirmation>()
+                .HasOne(x => x.ConfirmedByUser)
+                .WithMany()
+                .HasForeignKey(x => x.ConfirmedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<WorkshopConfirmation>()
+                .HasIndex(x => x.CourseId)
+                .IsUnique();
+
+            builder.Entity<WorkshopConfirmation>()
+                .Property(x => x.EvidencePhotoUrls)
+                .HasDefaultValue("[]");
         }
         public async Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
         {

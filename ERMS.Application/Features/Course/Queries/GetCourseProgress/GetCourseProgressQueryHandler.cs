@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Interface;
+using ERMS.Application.Interface;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -68,12 +68,31 @@ public class GetCourseProgressQueryHandler
             ? 0
             : (completedLessons * 100) / totalLessons;
 
+        // For offline courses: quiz unlocked only when HR confirms workshop
+        // For online courses: quiz unlocked when all lessons completed
+        var course = await _context.Courses
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == request.CourseId, cancellationToken);
+
+        bool quizUnlocked;
+        if (course != null && !course.IsOnline)
+        {
+            // Offline course: check workshop confirmation
+            quizUnlocked = await _context.WorkshopConfirmations
+                .AnyAsync(w => w.CourseId == request.CourseId, cancellationToken);
+        }
+        else
+        {
+            // Online course: all lessons must be completed
+            quizUnlocked = completedLessons == totalLessons;
+        }
+
         return new CourseProgressDto
         {
             TotalLessons = totalLessons,
             CompletedLessons = completedLessons,
             ProgressPercentage = progress,
-            QuizUnlocked = completedLessons == totalLessons
+            QuizUnlocked = quizUnlocked
         };
     }
 }

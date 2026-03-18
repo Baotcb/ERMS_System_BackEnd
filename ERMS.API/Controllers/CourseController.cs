@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Features.Courses.Commands.CreateCourse;
+using ERMS.Application.Features.Courses.Commands.CreateCourse;
 using ERMS.Application.Features.Courses.Commands.PublishCourse;
 using ERMS.Application.Features.Courses.Commands.UpdateCourse;
 using ERMS.Application.Features.Courses.Queries.GetAllCourses;
@@ -6,8 +6,6 @@ using ERMS.Application.Features.Courses.Queries.GetCourseDetails;
 using ERMS.Application.Features.Courses.Queries.GetCourseProgress;
 using ERMS.Application.Features.CourseSkills.Commands.CreateCourseSkill;
 using ERMS.Application.Features.Enrollments.Commands.AssignEmployeesToCourse;
-using ERMS.Application.Features.Enrollments.Commands.UpdateAttendance;
-using ERMS.Application.Features.Enrollments.Queries.GetCourseAttendance;
 using ERMS.Application.Features.Quizzes.Commands.CreateQuiz;
 using ERMS.Application.Features.Quizzes.Commands.StartQuiz;
 using MediatR;
@@ -71,6 +69,13 @@ namespace ERMS.API.Controllers
                 Id = id
             };
             var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+
+        [HttpGet("department-training-results")]
+        public async Task<IActionResult> GetDepartmentTrainingResults()
+        {
+            var result = await _mediator.Send(new Application.Features.Enrollments.Queries.GetDepartmentTrainingResults.GetDepartmentTrainingResultsQuery());
             return Ok(result);
         }
 
@@ -169,21 +174,37 @@ namespace ERMS.API.Controllers
             return Ok(result);
         }
 
-        [HttpGet("{courseId}/attendance")]
-        public async Task<IActionResult> GetAttendance(Guid courseId)
+        [HttpPost("{courseId}/workshop-confirmation")]
+        public async Task<IActionResult> ConfirmWorkshop(
+            Guid courseId,
+            [FromBody] Application.Features.Workshop.Commands.ConfirmWorkshop.ConfirmWorkshopCommand command)
         {
-            var result = await _mediator.Send(new GetCourseAttendanceQuery
+            command.CourseId = courseId;
+            try
             {
-                CourseId = courseId
-            });
-
-            return Ok(result);
+                var result = await _mediator.Send(command);
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
-        [HttpPut("attendance")]
-        public async Task<IActionResult> UpdateAttendance(UpdateAttendanceCommand command)
+        [HttpGet("{courseId}/workshop-confirmation")]
+        public async Task<IActionResult> GetWorkshopConfirmation(Guid courseId)
         {
-            var result = await _mediator.Send(command);
+            var result = await _mediator.Send(
+                new Application.Features.Workshop.Queries.GetWorkshopConfirmation.GetWorkshopConfirmationQuery
+                {
+                    CourseId = courseId
+                });
+
+            if (result == null) return NotFound();
             return Ok(result);
         }
     }

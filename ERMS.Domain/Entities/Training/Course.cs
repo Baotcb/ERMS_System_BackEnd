@@ -36,5 +36,7 @@ namespace ERMS.Domain.Entities.Training
         public virtual ICollection<CourseSkill> CourseSkills { get; set; } = new List<CourseSkill>();
         public virtual ICollection<Lesson> Lessons { get; set; } = new List<Lesson>();
         public virtual ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
+        public virtual ICollection<CourseFeedback> CourseFeedbacks { get; set; } = new List<CourseFeedback>();
+        public virtual WorkshopConfirmation? WorkshopConfirmation { get; set; }
     }
 }

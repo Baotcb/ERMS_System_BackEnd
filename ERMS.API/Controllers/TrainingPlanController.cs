@@ -21,7 +21,7 @@ namespace ERMS.API.Controllers
     public class TrainingPlanController : ControllerBase
     {
         private readonly IMediator _mediator;
-        
+
         public TrainingPlanController(IMediator mediator)
         {
             _mediator = mediator;
