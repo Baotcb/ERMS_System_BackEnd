@@ -1,4 +1,4 @@
-using ERMS.Application.Features.JobPostings.Commands.PublishJobPosting;
+﻿using ERMS.Application.Features.JobPostings.Commands.PublishJobPosting;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Recruitment;
 using ERMS.Domain.Constants.Roles;
@@ -64,7 +64,7 @@ namespace ERMS.UnitTests.Features.JobPostings.Commands.PublishJobPosting
             // Act & Assert
             await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
                 .Should().ThrowAsync<Exception>()
-                .WithMessage($"Cannot publish. Current status '{JobPostingStatus.Published}' must be 'Draft'.");
+                .WithMessage($"Không thể đăng tin. Trạng thái hiện tại '{JobPostingStatus.Published}' phải là 'Draft'.");
         }
 
         [Fact]

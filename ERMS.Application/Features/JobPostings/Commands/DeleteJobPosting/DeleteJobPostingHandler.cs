@@ -26,16 +26,16 @@ public sealed class DeleteJobPostingHandler : IRequestHandler<DeleteJobPostingCo
     public async Task<Unit> Handle(DeleteJobPostingCommand request, CancellationToken cancellationToken)
     {
         var userId = _currentUserService.UserId
-            ?? throw new UnauthorizedAccessException("User not authenticated.");
+            ?? throw new UnauthorizedAccessException("Người dùng chưa được xác thực.");
 
         var userRoles = _currentUserService.Roles;
         if (userRoles == null || !userRoles.Contains(AppRoles.HRManager))
         {
-            throw new UnauthorizedAccessException("Only HR Manager can delete job postings.");
+            throw new UnauthorizedAccessException("Chỉ HR Manager mới có quyền xóa tin tuyển dụng.");
         }
 
         var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
-            ?? throw new UnauthorizedAccessException("User is not associated with any enterprise.");
+            ?? throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
 
         var jobPosting = await _context.JobPostings
             .FirstOrDefaultAsync(jp =>
@@ -43,7 +43,7 @@ public sealed class DeleteJobPostingHandler : IRequestHandler<DeleteJobPostingCo
                 && jp.EnterpriseId == enterpriseId
                 && !jp.IsDeleted,
                 cancellationToken)
-            ?? throw new Exception($"JobPosting with ID {request.Id} not found.");
+            ?? throw new Exception($"Không tìm thấy tin tuyển dụng với ID {request.Id}.");
 
         // Check if job posting is published and has applications
         if (JobPostingStatus.IsPublished(jobPosting.Status))
@@ -53,7 +53,7 @@ public sealed class DeleteJobPostingHandler : IRequestHandler<DeleteJobPostingCo
 
             if (hasApplications)
             {
-                throw new InvalidOperationException("Cannot delete a published job posting that has candidate applications. Please close the job posting instead.");
+                throw new InvalidOperationException("Không thể xóa tin tuyển dụng đã đăng có ứng viên nộp hồ sơ. Vui lòng đóng tin tuyển dụng thay vì xóa.");
             }
         }
 

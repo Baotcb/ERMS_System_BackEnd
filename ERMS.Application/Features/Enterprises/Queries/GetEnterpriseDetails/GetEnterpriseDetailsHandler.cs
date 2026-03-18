@@ -32,7 +32,7 @@ public class GetEnterpriseDetailsHandler : IRequestHandler<GetEnterpriseDetailsQ
         if (enterprise == null)
         {
             _logger.LogWarning("Enterprise Details request failed: Enterprise with ID {EnterpriseId} was not found, deleted, or is inactive.", request.Id);
-            throw new Exception($"Enterprise with ID {request.Id} not found or is currently unavailable.");
+            throw new Exception($"Không tìm thấy doanh nghiệp với ID {request.Id} hoặc hiện không khả dụng.");
         }
 
         return new GetEnterpriseDetailsResponse

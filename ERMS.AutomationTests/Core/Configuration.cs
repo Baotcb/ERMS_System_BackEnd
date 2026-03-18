@@ -4,7 +4,7 @@ using System.Text;
 
 namespace ERMS.AutomationTests.Core
 {
-    internal class Configuration
+    public class Configuration
     {
     }
 }

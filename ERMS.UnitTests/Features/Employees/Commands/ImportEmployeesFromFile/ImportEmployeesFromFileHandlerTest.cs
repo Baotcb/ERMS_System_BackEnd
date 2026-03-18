@@ -275,6 +275,51 @@ public class ImportEmployeesFromFileHandlerTest
     }
 
     [Fact]
+    public async Task Handle_WhenDryRunWithDirectorWithoutDepartment_AllowsRow()
+    {
+        // Arrange
+        var enterpriseId = Guid.NewGuid();
+        SetupBasicContext(enterpriseId, new List<Department>());
+
+        var fileMock = CreateMockFormFile("test.xlsx", "fake excel content");
+        var command = new ImportEmployeesFromFileCommand
+        {
+            File = fileMock,
+            Commit = false
+        };
+
+        var parseResult = new ExcelParseResult
+        {
+            Rows = new List<ParsedEmployeeRow>
+            {
+                new ParsedEmployeeRow
+                {
+                    RowNumber = 2,
+                    IsValid = true,
+                    Email = "director@example.com",
+                    FullName = "Director User",
+                    DepartmentCode = null,
+                    Role = "Director"
+                }
+            }
+        };
+
+        _mockExcelParser.Setup(x => x.ParseEmployeeImportFile(It.IsAny<Stream>(), It.IsAny<string>()))
+            .Returns(parseResult);
+
+        _mockUserManager.Setup(x => x.FindByEmailAsync(It.IsAny<string>()))
+            .ReturnsAsync((User?)null);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.Errors.Should().NotContain(e => e.Column == "DepartmentCode");
+        result.SuccessCount.Should().Be(1);
+        result.FailedCount.Should().Be(0);
+    }
+
+    [Fact]
     public async Task Handle_WhenDryRunWithExistingEmail_ReturnsError()
     {
         // Arrange
@@ -462,6 +507,68 @@ public class ImportEmployeesFromFileHandlerTest
         _mockUserManager.Verify(x => x.AddToRoleAsync(It.IsAny<User>(), "Employee"), Times.Once);
         _mockContext.Verify(x => x.Employees.Add(It.IsAny<Employee>()), Times.Once);
         _mockContext.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_WhenCommitWithDirectorWithoutDepartment_CreatesEmployeeWithNullDepartment()
+    {
+        // Arrange
+        var enterpriseId = Guid.NewGuid();
+        var enterprise = new Enterprise
+        {
+            Id = enterpriseId,
+            EnterpriseCode = "ENT",
+            EnterpriseName = "Test Enterprise",
+            IsDeleted = false
+        };
+
+        SetupBasicContext(enterpriseId, new List<Department>(), enterprise);
+
+        var fileMock = CreateMockFormFile("test.xlsx", "fake excel content");
+        var command = new ImportEmployeesFromFileCommand
+        {
+            File = fileMock,
+            Commit = true
+        };
+
+        var parseResult = new ExcelParseResult
+        {
+            Rows = new List<ParsedEmployeeRow>
+            {
+                new ParsedEmployeeRow
+                {
+                    RowNumber = 2,
+                    IsValid = true,
+                    Email = "director@example.com",
+                    FullName = "Director User",
+                    DepartmentCode = null,
+                    Position = "Director",
+                    Password = "Password123!",
+                    Role = "Director"
+                }
+            }
+        };
+
+        _mockExcelParser.Setup(x => x.ParseEmployeeImportFile(It.IsAny<Stream>(), It.IsAny<string>()))
+            .Returns(parseResult);
+
+        _mockUserManager.Setup(x => x.FindByEmailAsync(It.IsAny<string>()))
+            .ReturnsAsync((User?)null);
+
+        _mockUserManager.Setup(x => x.CreateAsync(It.IsAny<User>(), It.IsAny<string>()))
+            .ReturnsAsync(IdentityResult.Success);
+
+        _mockUserManager.Setup(x => x.AddToRoleAsync(It.IsAny<User>(), It.IsAny<string>()))
+            .ReturnsAsync(IdentityResult.Success);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.SuccessCount.Should().Be(1);
+        result.FailedCount.Should().Be(0);
+        _mockUserManager.Verify(x => x.AddToRoleAsync(It.IsAny<User>(), "Director"), Times.Once);
+        _mockContext.Verify(x => x.Employees.Add(It.Is<Employee>(e => e.DepartmentId == null)), Times.Once);
     }
 
     [Fact]

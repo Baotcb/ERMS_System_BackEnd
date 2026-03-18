@@ -29,17 +29,17 @@ public sealed class CreateJobPostingHandler : IRequestHandler<CreateJobPostingCo
     {
         // 1. Validate current user
         var userId = _currentUserService.UserId 
-            ?? throw new UnauthorizedAccessException("User not authenticated.");
+            ?? throw new UnauthorizedAccessException("Người dùng chưa được xác thực.");
 
         var userRoles = _currentUserService.Roles;
         if (userRoles == null || !userRoles.Contains(AppRoles.HRManager))
         {
-            throw new UnauthorizedAccessException("Only HR Manager can create job postings.");
+            throw new UnauthorizedAccessException("Chỉ HR Manager mới có quyền tạo tin tuyển dụng.");
         }
 
         // 2. Get enterprise context
         var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
-            ?? throw new UnauthorizedAccessException("User is not associated with any enterprise.");
+            ?? throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
 
         // 3. Load PlanDetail with RecruitmentPlan
         var planDetail = await _context.PlanDetails
@@ -49,18 +49,18 @@ public sealed class CreateJobPostingHandler : IRequestHandler<CreateJobPostingCo
                 && pd.RecruitmentPlan.EnterpriseId == enterpriseId
                 && !pd.IsDeleted, 
                 cancellationToken)
-            ?? throw new Exception($"PlanDetail with ID {request.PlanDetailId} not found.");
+            ?? throw new Exception($"Không tìm thấy chi tiết kế hoạch với ID {request.PlanDetailId}.");
 
         // 4. VALIDATION 1: Parent RecruitmentPlan must be Approved by Director
         if (!PlanStatus.IsApproved(planDetail.RecruitmentPlan.Status))
         {
-            throw new Exception($"BusinessRuleException: RecruitmentPlan must be 'Approved' by Director before creating JobPosting. Current: {planDetail.RecruitmentPlan.Status}");
+            throw new Exception($"Kế hoạch tuyển dụng phải được Giám đốc phê duyệt trước khi tạo tin tuyển dụng. Hiện tại: {planDetail.RecruitmentPlan.Status}");
         }
 
         // 5. VALIDATION 2: PlanDetail status must be "Approved"
         if (!PlanDetailStatus.IsApproved(planDetail.Status))
         {
-            throw new Exception($"BusinessRuleException: PlanDetail status must be 'Approved'. Current: {planDetail.Status}");
+            throw new Exception($"Trạng thái chi tiết kế hoạch phải là 'Approved'. Hiện tại: {planDetail.Status}");
         }
 
         // 6. VALIDATION 3: Quota Check
@@ -72,13 +72,13 @@ public sealed class CreateJobPostingHandler : IRequestHandler<CreateJobPostingCo
 
         if (hiredCount >= planDetail.Quantity)
         {
-            throw new Exception($"BusinessRuleException: Quota exhausted. Required: {planDetail.Quantity}, Hired: {hiredCount}");
+            throw new Exception($"Hết chỉ tiêu. Yêu cầu: {planDetail.Quantity}, Đã tuyển: {hiredCount}");
         }
 
         // 7. VALIDATION 4: RequiredSkills must not be empty (Critical for AI CV scanning)
         if (string.IsNullOrWhiteSpace(planDetail.RequiredSkills))
         {
-            throw new Exception("BusinessRuleException: PlanDetail.RequiredSkills is empty. AI CV scanning requires job requirements to function properly.");
+            throw new Exception("Yêu cầu kỹ năng trong chi tiết kế hoạch trống. Chức năng sàng lọc CV bằng AI cần yêu cầu công việc để hoạt động.");
         }
 
         // 8. Create JobPosting with AUTO-FILL from PlanDetail

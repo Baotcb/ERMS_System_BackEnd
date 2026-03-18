@@ -2,7 +2,9 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.IdentityModel.Tokens;
+using System.Net;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
@@ -17,6 +19,27 @@ namespace ERMS.API
             services.AddOpenApi();
             services.AddEndpointsApiExplorer();
             services.AddHttpContextAccessor();
+            services.Configure<ForwardedHeadersOptions>(options =>
+            {
+                options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+                options.ForwardLimit = 1;
+
+                foreach (var proxy in configuration.GetSection("ForwardedHeaders:KnownProxies").Get<string[]>() ?? [])
+                {
+                    if (IPAddress.TryParse(proxy, out var parsedProxy))
+                    {
+                        options.KnownProxies.Add(parsedProxy);
+                    }
+                }
+
+                foreach (var network in configuration.GetSection("ForwardedHeaders:KnownNetworks").Get<string[]>() ?? [])
+                {
+                    if (TryParseCidr(network, out var parsedNetwork))
+                    {
+                        options.KnownIPNetworks.Add(parsedNetwork);
+                    }
+                }
+            });
 
 
 
@@ -134,6 +157,11 @@ namespace ERMS.API
 
 
             return services;
+        }
+
+        private static bool TryParseCidr(string cidr, out System.Net.IPNetwork network)
+        {
+            return System.Net.IPNetwork.TryParse(cidr, out network);
         }
     }
 }

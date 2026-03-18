@@ -23,18 +23,18 @@ public sealed class GetAllApplicationsHandler : IRequestHandler<GetAllApplicatio
     {
         // 1. Validate current user is authenticated
         var userId = _currentUserService.UserId
-            ?? throw new UnauthorizedAccessException("User not authenticated.");
+            ?? throw new UnauthorizedAccessException("Người dùng chưa được xác thực.");
 
         // 2. Role check: HRManager only
         var userRoles = _currentUserService.Roles;
         if (userRoles == null || !userRoles.Contains(AppRoles.HRManager))
         {
-            throw new UnauthorizedAccessException("Only HR Manager can view all enterprise applications.");
+            throw new UnauthorizedAccessException("Chỉ HR Manager mới có quyền xem tất cả hồ sơ ứng tuyển của doanh nghiệp.");
         }
 
         // 3. Enterprise scoping
         var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
-            ?? throw new UnauthorizedAccessException("User is not associated with any enterprise.");
+            ?? throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
 
         // 4. Build query: Applications whose JobPosting belongs to the enterprise
         var query = _context.Applications

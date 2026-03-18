@@ -14,25 +14,25 @@ public sealed class SubmitInterviewFeedbackValidator : AbstractValidator<SubmitI
     {
         RuleFor(x => x.ApplicationId)
             .NotEmpty()
-            .WithMessage("ApplicationId is required.");
+            .WithMessage("ApplicationId là bắt buộc.");
 
         RuleFor(x => x.InterviewId)
             .NotEmpty()
-            .WithMessage("InterviewId is required.");
+            .WithMessage("InterviewId là bắt buộc.");
 
         RuleFor(x => x.Rating)
             .InclusiveBetween(1, 5)
-            .WithMessage("Rating must be between 1 and 5.");
+            .WithMessage("Điểm đánh giá phải từ 1 đến 5.");
 
         RuleFor(x => x.Feedback)
             .NotEmpty()
-            .WithMessage("Feedback is required.")
+            .WithMessage("Nhận xét là bắt buộc.")
             .MaximumLength(MaxFeedbackLength)
-            .WithMessage($"Feedback must not exceed {MaxFeedbackLength} characters.");
+            .WithMessage($"Nhận xét không được vượt quá {MaxFeedbackLength} ký tự.");
 
         RuleFor(x => x.Recommendation)
             .MaximumLength(MaxRecommendationLength)
             .When(x => !string.IsNullOrEmpty(x.Recommendation))
-            .WithMessage($"Recommendation must not exceed {MaxRecommendationLength} characters.");
+            .WithMessage($"Đề xuất không được vượt quá {MaxRecommendationLength} ký tự.");
     }
 }

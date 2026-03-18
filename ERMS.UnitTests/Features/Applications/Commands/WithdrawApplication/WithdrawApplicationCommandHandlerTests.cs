@@ -1,4 +1,4 @@
-using ERMS.Application.Features.Applications.Commands.WithdrawApplication;
+﻿using ERMS.Application.Features.Applications.Commands.WithdrawApplication;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Application;
 using ERMS.Domain.Constants.Roles;
@@ -136,7 +136,7 @@ public class WithdrawApplicationCommandHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("User not authenticated.");
+            .WithMessage("Người dùng chưa được xác thực.");
     }
 
     [Fact]
@@ -151,7 +151,7 @@ public class WithdrawApplicationCommandHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("Only candidates can withdraw applications.");
+            .WithMessage("Chỉ ứng viên mới có quyền rút hồ sơ ứng tuyển.");
     }
 
     [Fact]
@@ -166,7 +166,7 @@ public class WithdrawApplicationCommandHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("Only candidates can withdraw applications.");
+            .WithMessage("Chỉ ứng viên mới có quyền rút hồ sơ ứng tuyển.");
     }
 
     [Fact]
@@ -184,7 +184,7 @@ public class WithdrawApplicationCommandHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("You do not have permission to withdraw this application.");
+            .WithMessage("Bạn không có quyền rút hồ sơ này.");
     }
 
     #endregion
@@ -203,7 +203,7 @@ public class WithdrawApplicationCommandHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("Candidate profile not found.");
+            .WithMessage("Không tìm thấy hồ sơ ứng viên.");
     }
 
     [Fact]
@@ -219,7 +219,7 @@ public class WithdrawApplicationCommandHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage($"*Application with ID {_applicationId} not found*");
+            .WithMessage($"*Không tìm thấy hồ sơ ứng tuyển với ID {_applicationId}*");
     }
 
     [Fact]
@@ -238,7 +238,7 @@ public class WithdrawApplicationCommandHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage($"*Application with ID {_applicationId} not found*");
+            .WithMessage($"*Không tìm thấy hồ sơ ứng tuyển với ID {_applicationId}*");
     }
 
     #endregion
@@ -260,7 +260,7 @@ public class WithdrawApplicationCommandHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("*Cannot withdraw application*terminal stage*");
+            .WithMessage("*Không thể rút hồ sơ ứng tuyển*trạng thái kết thúc*");
     }
 
     [Fact]
@@ -278,7 +278,7 @@ public class WithdrawApplicationCommandHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("*Cannot withdraw application*terminal stage*");
+            .WithMessage("*Không thể rút hồ sơ ứng tuyển*trạng thái kết thúc*");
     }
 
     [Fact]
@@ -296,7 +296,7 @@ public class WithdrawApplicationCommandHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("*Cannot withdraw application*terminal stage*");
+            .WithMessage("*Không thể rút hồ sơ ứng tuyển*trạng thái kết thúc*");
     }
 
     #endregion

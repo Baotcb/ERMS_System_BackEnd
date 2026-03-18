@@ -1,4 +1,4 @@
-using ERMS.Application.Features.Applications.Commands.RejectOffer;
+﻿using ERMS.Application.Features.Applications.Commands.RejectOffer;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Application;
 using ERMS.Domain.Constants.Roles;
@@ -152,7 +152,7 @@ public class RejectOfferCommandHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("User not authenticated.");
+            .WithMessage("Người dùng chưa được xác thực.");
     }
 
     [Fact]
@@ -166,7 +166,7 @@ public class RejectOfferCommandHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("Only candidates can reject offers.");
+            .WithMessage("Chỉ ứng viên mới có quyền từ chối đề nghị.");
     }
 
     [Fact]
@@ -184,7 +184,7 @@ public class RejectOfferCommandHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("You do not have permission to access this offer.");
+            .WithMessage("Bạn không có quyền truy cập đề nghị này.");
     }
 
     #endregion
@@ -202,7 +202,7 @@ public class RejectOfferCommandHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("Candidate profile not found.");
+            .WithMessage("Không tìm thấy hồ sơ ứng viên.");
     }
 
     [Fact]
@@ -217,7 +217,7 @@ public class RejectOfferCommandHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage($"*Offer with ID {_offerId} not found*");
+            .WithMessage($"*Không tìm thấy đề nghị với ID {_offerId}*");
     }
 
     #endregion
@@ -239,7 +239,7 @@ public class RejectOfferCommandHandlerTests
         // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
-            .WithMessage("*Cannot reject offer*Only offers with status 'Sent' can be rejected*");
+            .WithMessage("*Đề nghị này không thể bị từ chối*Chỉ đề nghị có trạng thái 'Sent' mới có thể từ chối*");
     }
 
     #endregion

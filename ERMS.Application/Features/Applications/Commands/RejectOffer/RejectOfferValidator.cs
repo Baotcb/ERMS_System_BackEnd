@@ -8,10 +8,10 @@ public sealed class RejectOfferValidator : AbstractValidator<RejectOfferCommand>
     {
         RuleFor(x => x.OfferId)
             .NotEmpty()
-            .WithMessage("OfferId is required.");
+            .WithMessage("OfferId là bắt buộc.");
 
         RuleFor(x => x.CandidateNote)
             .MaximumLength(1000)
-            .WithMessage("CandidateNote must not exceed 1000 characters.");
+            .WithMessage("Ghi chú không được vượt quá 1000 ký tự.");
     }
 }

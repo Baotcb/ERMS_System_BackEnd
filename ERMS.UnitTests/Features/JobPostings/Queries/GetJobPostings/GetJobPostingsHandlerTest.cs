@@ -1,4 +1,4 @@
-using ERMS.Application.Features.JobPostings.Queries.GetJobPostings;
+﻿using ERMS.Application.Features.JobPostings.Queries.GetJobPostings;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Roles;
 using ERMS.Domain.Entities.Recruitment;
@@ -45,7 +45,7 @@ namespace ERMS.UnitTests.Features.JobPostings.Queries.GetJobPostings
             // Act & Assert
             await _handler.Invoking(h => h.Handle(query, CancellationToken.None))
                 .Should().ThrowAsync<UnauthorizedAccessException>()
-                .WithMessage("Only HR Manager or Director can view job postings.");
+                .WithMessage("Chỉ HR Manager hoặc Giám đốc mới có quyền xem tin tuyển dụng.");
         }
 
         [Fact]

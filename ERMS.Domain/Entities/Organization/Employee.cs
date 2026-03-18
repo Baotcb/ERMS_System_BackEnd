@@ -10,9 +10,9 @@ namespace ERMS.Domain.Entities.Organization
         public Guid UserId { get; set; }
         public Guid EnterpriseId { get; set; }
         public string EmployeeCode { get; set; } = null!;
-        public int DepartmentId { get; set; }
+        public int? DepartmentId { get; set; }
         public string? Position { get; set; }
-        public Guid? JobPositionId { get; set; } // Added in schema update
+        public Guid? JobPositionId { get; set; } 
         public DateTime? HireDate { get; set; }
         public DateTime? TerminationDate { get; set; }
         public string EmploymentType { get; set; } = "FullTime";
@@ -25,7 +25,7 @@ namespace ERMS.Domain.Entities.Organization
 
         public virtual Identity.User User { get; set; } = null!;
         public virtual Enterprise.Enterprise Enterprise { get; set; } = null!;
-        public virtual Department Department { get; set; } = null!;
+        public virtual Department? Department { get; set; }
         public virtual Employee? Manager { get; set; } // Direct manager
         public virtual JobPosition? JobPosition { get; set; }
         public virtual ICollection<Employee> DirectReports { get; set; } = new List<Employee>();

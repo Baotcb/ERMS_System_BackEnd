@@ -1077,7 +1077,10 @@ namespace ERMS.Infrastructure.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("DepartmentId")
+                    b.Property<int?>("DepartmentId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("DepartmentId1")
                         .HasColumnType("int");
 
                     b.Property<string>("EmployeeCode")
@@ -1129,6 +1132,8 @@ namespace ERMS.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DepartmentId");
+
+                    b.HasIndex("DepartmentId1");
 
                     b.HasIndex("EnterpriseId");
 
@@ -1787,13 +1792,25 @@ namespace ERMS.Infrastructure.Migrations
                     b.Property<bool>("IsMandatory")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsOnline")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
                     b.Property<string>("Level")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Location")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<int?>("MaxEnrollments")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("PublishedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("StartTime")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Status")
@@ -1803,8 +1820,10 @@ namespace ERMS.Infrastructure.Migrations
                     b.Property<string>("ThumbnailUrl")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid>("TrainerId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<string>("TrainerEmail")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
 
                     b.Property<Guid?>("TrainingPlanId")
                         .HasColumnType("uniqueidentifier");
@@ -1816,11 +1835,53 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("EnterpriseId");
 
-                    b.HasIndex("TrainerId");
-
                     b.HasIndex("TrainingPlanId");
 
                     b.ToTable("Courses");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.CourseFeedback", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Comment")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("CourseRating")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsAnonymous")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("TrainerRating")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.ToTable("CourseFeedbacks");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.CourseSkill", b =>
@@ -2373,6 +2434,51 @@ namespace ERMS.Infrastructure.Migrations
                     b.ToTable("TrainingRequests");
                 });
 
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.WorkshopConfirmation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("ConfirmedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("ConfirmedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EvidencePhotoUrls")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(max)")
+                        .HasDefaultValue("[]");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConfirmedByUserId");
+
+                    b.HasIndex("CourseId")
+                        .IsUnique();
+
+                    b.ToTable("WorkshopConfirmations");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2825,10 +2931,13 @@ namespace ERMS.Infrastructure.Migrations
             modelBuilder.Entity("ERMS.Domain.Entities.Organization.Employee", b =>
                 {
                     b.HasOne("ERMS.Domain.Entities.Organization.Department", "Department")
-                        .WithMany("Employees")
+                        .WithMany()
                         .HasForeignKey("DepartmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERMS.Domain.Entities.Organization.Department", null)
+                        .WithMany("Employees")
+                        .HasForeignKey("DepartmentId1");
 
                     b.HasOne("ERMS.Domain.Entities.Enterprise.Enterprise", "Enterprise")
                         .WithMany()
@@ -3077,21 +3186,32 @@ namespace ERMS.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("ERMS.Domain.Entities.Organization.Employee", "Trainer")
-                        .WithMany()
-                        .HasForeignKey("TrainerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("ERMS.Domain.Entities.Training.TrainingPlan", "TrainingPlan")
                         .WithMany("Courses")
                         .HasForeignKey("TrainingPlanId");
 
                     b.Navigation("Enterprise");
 
-                    b.Navigation("Trainer");
-
                     b.Navigation("TrainingPlan");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.CourseFeedback", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Training.Course", "Course")
+                        .WithMany("CourseFeedbacks")
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Organization.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Course");
+
+                    b.Navigation("Employee");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.CourseSkill", b =>
@@ -3287,6 +3407,25 @@ namespace ERMS.Infrastructure.Migrations
                     b.Navigation("TrainingPlan");
                 });
 
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.WorkshopConfirmation", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "ConfirmedByUser")
+                        .WithMany()
+                        .HasForeignKey("ConfirmedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Training.Course", "Course")
+                        .WithOne("WorkshopConfirmation")
+                        .HasForeignKey("ERMS.Domain.Entities.Training.WorkshopConfirmation", "CourseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ConfirmedByUser");
+
+                    b.Navigation("Course");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", null)
@@ -3422,6 +3561,8 @@ namespace ERMS.Infrastructure.Migrations
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.Course", b =>
                 {
+                    b.Navigation("CourseFeedbacks");
+
                     b.Navigation("CourseSkills");
 
                     b.Navigation("Enrollments");
@@ -3429,6 +3570,8 @@ namespace ERMS.Infrastructure.Migrations
                     b.Navigation("Lessons");
 
                     b.Navigation("Quiz");
+
+                    b.Navigation("WorkshopConfirmation");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.Enrollment", b =>

@@ -4,10 +4,14 @@ using ERMS.Application.Features.Employees.Commands.DeleteEmployee;
 using ERMS.Application.Features.Employees.Commands.ImportEmployeesFromFile;
 using ERMS.Application.Features.Employees.Commands.UpdateEmployee;
 using ERMS.Application.Features.Employees.Queries.GetAllEmployees;
+using ERMS.Application.Features.Employees.Queries.GetEmployeeDetail;
+using ERMS.Application.Features.Employees.Queries.GetEmployeeById;
+using ERMS.Domain.Constants.Roles;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -43,9 +47,32 @@ namespace ERMS.API.Controllers
         }
 
         /// <summary>
+        /// Lấy chi tiết nhân viên
+        /// </summary>
+        [HttpGet("detail")]
+        public async Task<IActionResult> GetDetail([FromQuery] Guid id)
+        {
+            try
+            {
+                var result = await _mediator.Send(new GetEmployeeDetailQuery { Id = id });
+                if (result == null)
+                {
+                    return NotFound(new { message = "Nhân viên không tồn tại" });
+                }
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Tạo nhân viên mới (+ tài khoản)
         /// </summary>
         [HttpPost]
+        [Authorize(Roles = "HRManager,Director")]
         public async Task<IActionResult> Create([FromBody] CreateEmployeeCommand command)
         {
             if (!ModelState.IsValid)
@@ -67,10 +94,38 @@ namespace ERMS.API.Controllers
         }
 
         /// <summary>
+        /// Lấy thông tin chi tiết nhân viên theo ID
+        /// </summary>
+        [HttpGet("{id:guid}")]
+        [Authorize(Roles = AppRoles.HRManager + "," + AppRoles.Director)]
+        public async Task<IActionResult> GetById(Guid id)
+        {
+            try
+            {
+                var query = new GetEmployeeByIdQuery { Id = id };
+                var result = await _mediator.Send(query);
+                return Ok(result);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Cập nhật nhân viên
         /// </summary>
         /// <remarks>ID must be provided in the request body.</remarks>
         [HttpPut]
+        [Authorize(Roles = AppRoles.HRManager + "," + AppRoles.Director)]
         public async Task<IActionResult> Update([FromBody] UpdateEmployeeCommand command)
         {
             if (!ModelState.IsValid)
@@ -92,6 +147,7 @@ namespace ERMS.API.Controllers
         /// </summary>
         /// <remarks>ID and EnterpriseId must be provided in the request body.</remarks>
         [HttpDelete]
+        [Authorize(Roles = "HRManager,Director")]
         public async Task<IActionResult> Delete([FromBody] DeleteEmployeeCommand command)
         {
             try
@@ -109,6 +165,7 @@ namespace ERMS.API.Controllers
         /// Import nhân viên hàng loạt (từ Excel - JSON input)
         /// </summary>
         [HttpPost("bulk")]
+        [Authorize(Roles = "HRManager,Director")]
         public async Task<IActionResult> BulkCreate([FromBody] BulkCreateEmployeesCommand command)
         {
             if (!ModelState.IsValid)
@@ -129,6 +186,7 @@ namespace ERMS.API.Controllers
         /// Import nhân viên từ file Excel/CSV
         /// </summary>
         [HttpPost("import")]
+        [Authorize(Roles = "HRManager,Director")]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> ImportFromFile([FromForm] IFormFile file)
         {

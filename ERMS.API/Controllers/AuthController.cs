@@ -184,7 +184,9 @@ namespace ERMS.API.Controllers
                 var result = await _sender.Send(command);
                 return Ok(new
                 {
-                    message = "Email xác thực đã được gửi.",
+                    message = result
+                        ? "Email xác thực đã được gửi."
+                        : "Không thể gửi email xác thực. Vui lòng thử lại sau.",
                     success = result
                 });
             }
@@ -215,9 +217,14 @@ namespace ERMS.API.Controllers
             try
             {
                 var userId = await _sender.Send(command);
+                var emailSent = await _mediator.Send(
+                    new ResendConfirmationCommand { Email = command.Email });
+
                 return Ok(new
                 {
-                    message = "Tạo tài khoản thành công! Vui lòng kiểm tra email.",
+                    message = emailSent
+                        ? "Tạo tài khoản thành công! Vui lòng kiểm tra email."
+                        : "Tạo tài khoản thành công nhưng không thể gửi email xác thực.",
                     userId
                 });
             }
