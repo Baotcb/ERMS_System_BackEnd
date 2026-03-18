@@ -41,6 +41,7 @@ public sealed class PublicJobPostingDto
     public DateTime? PublishedAt { get; set; }
     
     // Enterprise info for public display
+    public Guid EnterpriseId { get; set; }
     public string EnterpriseName { get; set; } = string.Empty;
     public string? EnterpriseLogoUrl { get; set; }
     public string DepartmentName { get; set; } = string.Empty;

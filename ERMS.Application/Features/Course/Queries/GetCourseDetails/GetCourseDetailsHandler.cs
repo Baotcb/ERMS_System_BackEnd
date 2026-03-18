@@ -36,9 +36,11 @@ namespace ERMS.Application.Features.Courses.Queries.GetCourseDetails
                     CourseCode = c.CourseCode,
                     Description = c.Description,
                     ThumbnailUrl = c.ThumbnailUrl,
-                    TrainerId = c.TrainerId,
-                    TrainerName = c.Trainer.User.FullName,
+                    TrainerEmail = c.TrainerEmail,
                     DurationMinutes = c.DurationMinutes,
+                    StartTime = c.StartTime,
+                    IsOnline = c.IsOnline,
+                    Location = c.Location,
                     Level = c.Level,
                     Status = c.Status,
                     IsMandatory = c.IsMandatory,
@@ -49,6 +51,10 @@ namespace ERMS.Application.Features.Courses.Queries.GetCourseDetails
 
                     LessonCount = c.Lessons.Count(l => !l.IsDeleted),
                     EnrollmentCount = c.Enrollments.Count(e => !e.IsDeleted),
+                    HasFinalQuiz = c.Quiz != null && c.Quiz.IsActive && !c.Quiz.IsDeleted,
+                    FinalQuizId = c.Quiz != null && c.Quiz.IsActive && !c.Quiz.IsDeleted
+                        ? c.Quiz.Id
+                        : null,
 
                     Skills = c.CourseSkills
                         .Select(cs => cs.Skill.SkillName)

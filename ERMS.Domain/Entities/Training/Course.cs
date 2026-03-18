@@ -12,8 +12,11 @@ namespace ERMS.Domain.Entities.Training
         public string CourseName { get; set; } = null!;
         public string CourseCode { get; set; } = null!;
         public string? Description { get; set; }
+        public string TrainerEmail { get; set; } = null!;
+        public string? Location { get; set; }
+        public DateTime StartTime { get; set; }
+        public bool IsOnline { get; set; }
         public string? ThumbnailUrl { get; set; }
-        public Guid TrainerId { get; set; }
         public int? DurationMinutes { get; set; }
         public string? Level { get; set; }
         public string Status { get; set; } = "Draft";
@@ -27,11 +30,13 @@ namespace ERMS.Domain.Entities.Training
 
         public virtual Enterprise.Enterprise Enterprise { get; set; } = null!;
         public virtual TrainingPlan? TrainingPlan { get; set; }
-        public virtual Employee Trainer { get; set; } = null!;
-        
+
+
         public virtual Quiz? Quiz { get; set; }
         public virtual ICollection<CourseSkill> CourseSkills { get; set; } = new List<CourseSkill>();
         public virtual ICollection<Lesson> Lessons { get; set; } = new List<Lesson>();
         public virtual ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
+        public virtual ICollection<CourseFeedback> CourseFeedbacks { get; set; } = new List<CourseFeedback>();
+        public virtual WorkshopConfirmation? WorkshopConfirmation { get; set; }
     }
 }

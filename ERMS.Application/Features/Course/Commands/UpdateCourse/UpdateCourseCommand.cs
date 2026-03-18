@@ -15,8 +15,10 @@ namespace ERMS.Application.Features.Courses.Commands.UpdateCourse
         public string? Description { get; set; }
 
         public string? ThumbnailUrl { get; set; }
-
-        public Guid TrainerId { get; set; }
+        public string TrainerEmail { get; set; }
+        public string? Location { get; set; }
+        public DateTime StartTime { get; set; }
+        public bool IsOnline { get; set; }
 
         public int? DurationMinutes { get; set; }
 

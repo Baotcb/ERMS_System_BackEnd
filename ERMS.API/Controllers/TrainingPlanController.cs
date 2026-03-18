@@ -2,8 +2,10 @@
 using ERMS.Application.Features.Training.Commands.CreateTrainingPlan;
 using ERMS.Application.Features.Training.Commands.CreateTrainingRequest;
 using ERMS.Application.Features.Training.Commands.RejectTrainingPlan;
+using ERMS.Application.Features.Training.Commands.UpdateTrainingPlan;
 using ERMS.Application.Features.Training.Queries.GetAllTrainingPlans;
 using ERMS.Application.Features.Training.Queries.GetAllTrainingRequests;
+using ERMS.Application.Features.Training.Queries.GetTrainingPlanDetail;
 using ERMS.Domain.Constants.Roles;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -44,7 +46,7 @@ namespace ERMS.API.Controllers
             }
         }
 
-        [Authorize(Roles = AppRoles.HRManager+","+AppRoles.Director+","+AppRoles.DepartmentHead)]
+        [Authorize(Roles = AppRoles.HRManager+","+AppRoles.Director+","+AppRoles.DepartmentHead )]
         [HttpGet]
         public async Task<IActionResult> GetAll([FromQuery] GetAllTrainingPlansQuery query)
         {
@@ -52,6 +54,46 @@ namespace ERMS.API.Controllers
             {
                 var result = await _mediator.Send(query);
                 return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetDetail(Guid id)
+        {
+            try
+            {
+                var result = await _mediator.Send(
+                    new GetTrainingPlanDetailQuery { Id = id });
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(
+    Guid id,
+    [FromBody] UpdateTrainingPlanCommand command)
+        {
+            if (id != command.Id)
+                return BadRequest("Id không hợp lệ");
+
+            try
+            {
+                var result = await _mediator.Send(command);
+
+                return Ok(new
+                {
+                    message = "Cập nhật kế hoạch đào tạo thành công",
+                    trainingPlanId = result
+                });
             }
             catch (Exception ex)
             {

@@ -21,9 +21,10 @@ namespace ERMS.Application.Features.Courses.Queries.GetCourseDetails
 
         public string? ThumbnailUrl { get; set; }
 
-        public Guid TrainerId { get; set; }
-
-        public string? TrainerName { get; set; }
+        public string TrainerEmail { get; set; }
+        public string? Location { get; set; }
+        public DateTime StartTime { get; set; }
+        public bool IsOnline { get; set; }
 
         public int? DurationMinutes { get; set; }
 
@@ -44,6 +45,10 @@ namespace ERMS.Application.Features.Courses.Queries.GetCourseDetails
         public int LessonCount { get; set; }
 
         public int EnrollmentCount { get; set; }
+
+        public bool HasFinalQuiz { get; set; }
+
+        public Guid? FinalQuizId { get; set; }
 
         public List<string> Skills { get; set; } = new();
 
