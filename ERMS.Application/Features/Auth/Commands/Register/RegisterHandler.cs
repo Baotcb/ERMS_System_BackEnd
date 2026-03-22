@@ -4,6 +4,7 @@ using ERMS.Domain.Entities.Candidate;
 using ERMS.Domain.Entities.Identity;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
 
 namespace ERMS.Application.Features.Auth.Commands.Register
 {
@@ -12,15 +13,18 @@ namespace ERMS.Application.Features.Auth.Commands.Register
         private readonly UserManager<User> _userManager;
         private readonly RoleManager<IdentityRole<Guid>> _roleManager;
         private readonly IERMSDbContext _context;
+        private readonly ILogger<RegisterHandler> _logger;
 
         public RegisterHandler(
             UserManager<User> userManager,
             RoleManager<IdentityRole<Guid>> roleManager,
-            IERMSDbContext context)
+            IERMSDbContext context,
+            ILogger<RegisterHandler> logger)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _context = context;
+            _logger = logger;
         }
 
         public async Task<Guid> Handle(RegisterCommand request, CancellationToken cancellationToken)
@@ -28,7 +32,7 @@ namespace ERMS.Application.Features.Auth.Commands.Register
             var existingUser = await _userManager.FindByEmailAsync(request.Email);
             if (existingUser != null)
             {
-                throw new Exception("Email đã tồn tại trong hệ thống.");
+                throw new Exception("Email da ton tai trong he thong.");
             }
 
             var user = new User
@@ -44,29 +48,82 @@ namespace ERMS.Application.Features.Auth.Commands.Register
             if (!result.Succeeded)
             {
                 var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                throw new Exception($"Đăng ký không thành công: {errors}");
+                throw new Exception($"Dang ky khong thanh cong: {errors}");
             }
 
-            if (await _roleManager.RoleExistsAsync(AppRoles.Candidate.ToString()))
+            try
             {
-                await _userManager.AddToRoleAsync(user, AppRoles.Candidate.ToString());
+                await EnsureCandidateRoleExistsAsync();
+
+                var addRoleResult = await _userManager.AddToRoleAsync(user, AppRoles.Candidate);
+                if (!addRoleResult.Succeeded)
+                {
+                    var errors = string.Join(", ", addRoleResult.Errors.Select(e => e.Description));
+                    throw new Exception($"Khong the gan vai tro ung vien: {errors}");
+                }
+
+                var candidate = new Candidate
+                {
+                    Id = Guid.CreateVersion7(),
+                    UserId = user.Id,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.Candidates.Add(candidate);
+                await _context.SaveChangesAsync(cancellationToken);
+
+                return user.Id;
             }
-            else
+            catch
             {
-                await _userManager.AddToRoleAsync(user, AppRoles.Candidate);
+                await CleanupCreatedUserAsync(user);
+                throw;
+            }
+        }
+
+        private async Task EnsureCandidateRoleExistsAsync()
+        {
+            if (await _roleManager.RoleExistsAsync(AppRoles.Candidate))
+            {
+                return;
             }
 
-            var candidate = new Candidate
+            var createRoleResult = await _roleManager.CreateAsync(new IdentityRole<Guid>(AppRoles.Candidate));
+            if (createRoleResult.Succeeded || await _roleManager.RoleExistsAsync(AppRoles.Candidate))
             {
-                Id = Guid.CreateVersion7(),
-                UserId = user.Id,
-                CreatedAt = DateTime.UtcNow
-            };
+                return;
+            }
 
-            _context.Candidates.Add(candidate);
-            await _context.SaveChangesAsync(cancellationToken);
+            var errors = string.Join(", ", createRoleResult.Errors.Select(e => e.Description));
+            throw new Exception($"Khong the tao vai tro ung vien: {errors}");
+        }
 
-            return user.Id;
+        private async Task CleanupCreatedUserAsync(User user)
+        {
+            if (user.Id == Guid.Empty)
+            {
+                return;
+            }
+
+            try
+            {
+                var deleteResult = await _userManager.DeleteAsync(user);
+                if (!deleteResult.Succeeded)
+                {
+                    var errors = string.Join(", ", deleteResult.Errors.Select(e => e.Description));
+                    _logger.LogError(
+                        "Failed to cleanup partially created candidate user {Email}. Errors: {Errors}",
+                        user.Email,
+                        errors);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Failed to cleanup partially created candidate user {Email}",
+                    user.Email);
+            }
         }
     }
 }

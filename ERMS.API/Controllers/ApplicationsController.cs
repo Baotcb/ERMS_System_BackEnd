@@ -5,6 +5,7 @@ using ERMS.Application.Features.Applications.Commands.AssignInterviewer;
 using ERMS.Application.Features.Applications.Commands.ConfirmInterviewSchedule;
 using ERMS.Application.Features.Applications.Commands.CreateOffer;
 using ERMS.Application.Features.Applications.Commands.ForwardApplication;
+using ERMS.Application.Features.Applications.Commands.RejectApplication;
 using ERMS.Application.Features.Applications.Commands.RejectOffer;
 using ERMS.Application.Features.Applications.Commands.SubmitApplication;
 using ERMS.Application.Features.Applications.Commands.SubmitFinalDecision;
@@ -219,6 +220,44 @@ public class ApplicationsController : ControllerBase
     }
 
     /// <summary>
+    /// Reject an application from the HR side
+    /// </summary>
+    /// <remarks>
+    /// **Access:** HR Manager only
+    ///
+    /// Allows HR to reject an application that is currently in Applied, Reviewing, or Shortlisted stage.
+    /// A rejection reason is required and will be stored for downstream communication.
+    /// </remarks>
+    /// <param name="command">Reject command with ApplicationId and required rejection reason</param>
+    /// <returns>Updated application status</returns>
+    [HttpPatch("reject")]
+    [Authorize(Roles = AppRoles.HRManager)]
+    [ProducesResponseType(typeof(RejectApplicationResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> RejectApplication([FromBody] RejectApplicationCommand command)
+    {
+        try
+        {
+            var result = await _mediator.Send(command);
+            return Ok(new
+            {
+                message = "Application rejected successfully.",
+                data = result
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Submit a job application with CV (PDF file)
     /// </summary>
     /// <remarks>
@@ -276,7 +315,7 @@ public class ApplicationsController : ControllerBase
     /// Allows a candidate to withdraw their own active application.
     /// The application must not be in a terminal stage (Rejected, Hired, or already Withdrawn).
     /// </remarks>
-    /// <param name="command">Withdraw command with ApplicationId</param>
+    /// <param name="command">Withdraw command with ApplicationId and optional reason</param>
     /// <returns>Updated application status</returns>
     [HttpPatch("withdraw")]
     [Authorize(Roles = AppRoles.Candidate)]
@@ -676,11 +715,11 @@ public class ApplicationsController : ControllerBase
     /// 
     /// Allows a candidate to reject an offer that has been sent to them.
     /// The offer must have status "Sent".
-    /// Upon rejection, the offer status changes to "Rejected" but the application stage remains "Offered".
-    /// An optional CandidateNote can be provided to explain the rejection.
+    /// Upon rejection, the offer status changes to "Rejected" and the application stage also moves to "Rejected".
+    /// A CandidateNote is required to explain the rejection.
     /// **OfferId must be provided in the request body.**
     /// </remarks>
-    /// <param name="command">Reject command with OfferId and optional CandidateNote</param>
+    /// <param name="command">Reject command with OfferId and required CandidateNote</param>
     /// <returns>Updated offer status</returns>
     [HttpPatch("reject-offer")]
     [Authorize(Roles = AppRoles.Candidate)]
