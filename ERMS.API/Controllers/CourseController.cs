@@ -1,3 +1,5 @@
+using ERMS.Application.Features.Certifications.Queries;
+using ERMS.Application.Features.Certifications.Queries.GetMyCertifications;
 using ERMS.Application.Features.Courses.Commands.CreateCourse;
 using ERMS.Application.Features.Courses.Commands.PublishCourse;
 using ERMS.Application.Features.Courses.Commands.UpdateCourse;
@@ -205,6 +207,22 @@ namespace ERMS.API.Controllers
                 });
 
             if (result == null) return NotFound();
+            return Ok(result);
+        }
+
+        [HttpGet("my-certifications")]
+        public async Task<IActionResult> GetMyCertifications()
+        {
+            var result = await _mediator.Send(new GetMyCertificationsQuery());
+            return Ok(result);
+        }
+
+        [HttpGet("my-certifications/{courseId}")]
+        public async Task<IActionResult> GetMyCertificationsByCourse(Guid courseId)
+        {
+            var result = await _mediator.Send(
+                new GetMyCertificationsByCourseQuery { CourseId = courseId });
+
             return Ok(result);
         }
     }
