@@ -348,17 +348,13 @@ namespace ERMS.Infrastructure.Data
                 .HasForeignKey(e => e.EnterpriseId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // JobPosting: Enterprise -> Department -> JobPosting vs Enterprise -> JobPosting
+
             builder.Entity<JobPosting>()
                 .HasOne(j => j.Enterprise)
                 .WithMany()
                 .HasForeignKey(j => j.EnterpriseId)
                 .OnDelete(DeleteBehavior.Restrict);
-            
-            // PlanDetail: Enterprise -> RecruitmentPlan -> PlanDetail vs Enterprise -> Department -> PlanDetail (PlanDetail -> Department relationship removed)
-
-
-            // TrainingRequest: Enterprise -> Department -> TrainingRequest vs Enterprise -> TrainingRequest
+          
             builder.Entity<TrainingRequest>()
                 .HasOne(t => t.Enterprise)
                 .WithMany()
@@ -418,6 +414,10 @@ namespace ERMS.Infrastructure.Data
                 .HasForeignKey(x => x.EmployeeId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            builder.Entity<CourseFeedback>()
+                .Property(x => x.IsDeleted)
+                .HasDefaultValue(false);
+
             builder.Entity<WorkshopConfirmation>()
                 .HasOne(x => x.Course)
                 .WithOne(c => c.WorkshopConfirmation)
@@ -437,6 +437,10 @@ namespace ERMS.Infrastructure.Data
             builder.Entity<WorkshopConfirmation>()
                 .Property(x => x.EvidencePhotoUrls)
                 .HasDefaultValue("[]");
+
+            builder.Entity<WorkshopConfirmation>()
+                .Property(x => x.IsDeleted)
+                .HasDefaultValue(false);
         }
         public async Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
         {
