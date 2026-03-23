@@ -53,7 +53,7 @@ namespace ERMS.UnitTests.Features.Auth.Command.Register
 
             await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
                 .Should().ThrowAsync<Exception>()
-                .WithMessage("Email da ton tai trong he thong.");
+                .WithMessage("Email đã tồn tại trong hệ thống.");
         }
 
         [Fact]
@@ -69,7 +69,7 @@ namespace ERMS.UnitTests.Features.Auth.Command.Register
 
             await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
                 .Should().ThrowAsync<Exception>()
-                .WithMessage($"Dang ky khong thanh cong: {identityError.Description}");
+                .WithMessage($"Đăng ký không thành công: {identityError.Description}");
         }
 
         [Fact]
@@ -115,7 +115,7 @@ namespace ERMS.UnitTests.Features.Auth.Command.Register
 
             await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
                 .Should().ThrowAsync<Exception>()
-                .WithMessage("Khong the gan vai tro ung vien: Role assignment failed");
+                .WithMessage("Không thể gán vai trò ứng viên: Role assignment failed");
 
             _userManagerMock.Verify(x => x.DeleteAsync(It.Is<User>(u => u.Id == createdUserId)), Times.Once);
             _contextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);

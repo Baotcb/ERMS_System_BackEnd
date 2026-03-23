@@ -32,7 +32,7 @@ namespace ERMS.Application.Features.Auth.Commands.Register
             var existingUser = await _userManager.FindByEmailAsync(request.Email);
             if (existingUser != null)
             {
-                throw new Exception("Email da ton tai trong he thong.");
+                throw new Exception("Email đã tồn tại trong hệ thống.");
             }
 
             var user = new User
@@ -48,7 +48,7 @@ namespace ERMS.Application.Features.Auth.Commands.Register
             if (!result.Succeeded)
             {
                 var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                throw new Exception($"Dang ky khong thanh cong: {errors}");
+                throw new Exception($"Đăng ký không thành công: {errors}");
             }
 
             try
@@ -59,7 +59,7 @@ namespace ERMS.Application.Features.Auth.Commands.Register
                 if (!addRoleResult.Succeeded)
                 {
                     var errors = string.Join(", ", addRoleResult.Errors.Select(e => e.Description));
-                    throw new Exception($"Khong the gan vai tro ung vien: {errors}");
+                    throw new Exception($"Không thể gán vai trò ứng viên: {errors}");
                 }
 
                 var candidate = new Candidate
@@ -95,7 +95,7 @@ namespace ERMS.Application.Features.Auth.Commands.Register
             }
 
             var errors = string.Join(", ", createRoleResult.Errors.Select(e => e.Description));
-            throw new Exception($"Khong the tao vai tro ung vien: {errors}");
+            throw new Exception($"Không thể tạo vai trò ứng viên: {errors}");
         }
 
         private async Task CleanupCreatedUserAsync(User user)
