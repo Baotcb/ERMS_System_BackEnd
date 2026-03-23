@@ -101,6 +101,15 @@ public class WithdrawApplicationCommandHandlerTests
         };
     }
 
+    private WithdrawApplicationCommand CreateValidCommand(string? reason)
+    {
+        return new WithdrawApplicationCommand
+        {
+            ApplicationId = _applicationId,
+            Reason = reason
+        };
+    }
+
     private void SetupCandidatesDbSet(Candidate? candidate)
     {
         var data = candidate != null
@@ -465,6 +474,44 @@ public class WithdrawApplicationCommandHandlerTests
 
         // Assert
         application.UpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
+    public async Task Handle_ShouldPersistWithdrawalReason_WhenProvided()
+    {
+        // Arrange
+        SetupAuthenticatedCandidate();
+        SetupCandidatesDbSet(CreateCandidateEntity());
+
+        var application = CreateApplication(ApplicationStage.Applied);
+        SetupApplicationsDbSet(application);
+
+        var command = CreateValidCommand("Đã nhận việc khác");
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        application.RejectionReason.Should().Be("Đã nhận việc khác");
+    }
+
+    [Fact]
+    public async Task Handle_ShouldTrimWithdrawalReason_WhenProvided()
+    {
+        // Arrange
+        SetupAuthenticatedCandidate();
+        SetupCandidatesDbSet(CreateCandidateEntity());
+
+        var application = CreateApplication(ApplicationStage.Applied);
+        SetupApplicationsDbSet(application);
+
+        var command = CreateValidCommand("  Đã nhận việc khác  ");
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        application.RejectionReason.Should().Be("Đã nhận việc khác");
     }
 
     [Fact]

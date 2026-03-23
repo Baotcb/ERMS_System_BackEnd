@@ -24,7 +24,7 @@ public sealed class SubmitFinalDecisionValidator : AbstractValidator<SubmitFinal
         RuleFor(x => x.Decision)
             .NotEmpty()
             .WithMessage("Quyết định là bắt buộc.")
-            .Must(d => InterviewDecision.IsValid(d))
+            .Must(InterviewDecision.IsValid)
             .WithMessage($"Quyết định phải là một trong: {string.Join(", ", InterviewDecision.ValidDecisions)}.");
 
         RuleFor(x => x.OverallRating)
@@ -36,6 +36,11 @@ public sealed class SubmitFinalDecisionValidator : AbstractValidator<SubmitFinal
             .MaximumLength(MaxFeedbackLength)
             .When(x => !string.IsNullOrEmpty(x.OverallFeedback))
             .WithMessage($"Đánh giá tổng thể không được vượt quá {MaxFeedbackLength} ký tự.");
+
+        RuleFor(x => x.OverallFeedback)
+            .NotEmpty()
+            .When(x => string.Equals(x.Decision, InterviewDecision.Fail, StringComparison.OrdinalIgnoreCase))
+            .WithMessage("Phải nhập đánh giá tổng quan khi từ chối ứng viên.");
 
         RuleFor(x => x.Note)
             .MaximumLength(MaxNoteLength)

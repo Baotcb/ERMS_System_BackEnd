@@ -46,6 +46,7 @@ namespace ERMS.Infrastructure
             services.AddScoped<ICurrentUserService, CurrentUserService>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddTransient<IEmailService, EmailService>();
+            services.AddTransient<IRejectionEmailService, RejectionEmailService>();
             services.AddScoped<IExcelParserService, ExcelParserService>();
             services.AddScoped<IGoogleAuthService, GoogleAuthService>();
 

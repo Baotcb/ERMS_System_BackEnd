@@ -1080,9 +1080,6 @@ namespace ERMS.Infrastructure.Migrations
                     b.Property<int?>("DepartmentId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("DepartmentId1")
-                        .HasColumnType("int");
-
                     b.Property<string>("EmployeeCode")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -1132,8 +1129,6 @@ namespace ERMS.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DepartmentId");
-
-                    b.HasIndex("DepartmentId1");
 
                     b.HasIndex("EnterpriseId");
 
@@ -2931,13 +2926,9 @@ namespace ERMS.Infrastructure.Migrations
             modelBuilder.Entity("ERMS.Domain.Entities.Organization.Employee", b =>
                 {
                     b.HasOne("ERMS.Domain.Entities.Organization.Department", "Department")
-                        .WithMany()
+                        .WithMany("Employees")
                         .HasForeignKey("DepartmentId")
                         .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("ERMS.Domain.Entities.Organization.Department", null)
-                        .WithMany("Employees")
-                        .HasForeignKey("DepartmentId1");
 
                     b.HasOne("ERMS.Domain.Entities.Enterprise.Enterprise", "Enterprise")
                         .WithMany()

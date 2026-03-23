@@ -10,7 +10,6 @@ namespace ERMS.Application.Features.Applications.Commands.RejectOffer;
 /// <summary>
 /// Handler for rejecting a job offer.
 /// Only the owning Candidate can reject their own offer.
-/// Application stage remains "Offered" (not changed to "Rejected").
 /// </summary>
 public sealed class RejectOfferCommandHandler : IRequestHandler<RejectOfferCommand, RejectOfferResult>
 {
@@ -58,27 +57,39 @@ public sealed class RejectOfferCommandHandler : IRequestHandler<RejectOfferComma
             throw new UnauthorizedAccessException("Bạn không có quyền truy cập đề nghị này.");
         }
 
-        // 6. Validate offer status — only "Sent" offers can be rejected
+        // 6. Validate offer status - only "Sent" offers can be rejected
         if (!OfferStatus.CanRespond(offer.Status))
         {
             throw new Exception($"Đề nghị này không thể bị từ chối. Trạng thái hiện tại là '{offer.Status}'. Chỉ đề nghị có trạng thái 'Sent' mới có thể từ chối.");
         }
 
+        var candidateNote = request.CandidateNote.Trim();
+        var respondedAt = DateTime.UtcNow;
+
         // 7. Update Offer
         offer.Status = OfferStatus.Rejected;
-        offer.RespondedAt = DateTime.UtcNow;
-        offer.CandidateNote = request.CandidateNote;
-        offer.UpdatedAt = DateTime.UtcNow;
+        offer.RespondedAt = respondedAt;
+        offer.CandidateNote = candidateNote;
+        offer.UpdatedAt = respondedAt;
 
-        // NOTE: Application.Stage intentionally NOT changed.
-        // "Rejected" stage is reserved for HR-side rejection.
-        // The application stays at "Offered" stage.
+        // 8. Update Application stage to Rejected
+        var application = offer.Application;
+        application.Stage = ApplicationStage.Rejected;
+        application.RejectedAt = respondedAt;
+        application.RejectedById = userId;
+        application.RejectionReason = candidateNote;
+        application.StageUpdatedAt = respondedAt;
+        application.UpdatedAt = respondedAt;
 
         await _context.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation(
-            "Offer {OfferId} rejected by candidate {CandidateId} (UserId: {UserId}). Application {ApplicationId} stage remains unchanged.",
-            offer.Id, candidate.Id, userId, offer.ApplicationId);
+            "Offer {OfferId} rejected by candidate {CandidateId} (UserId: {UserId}). Application {ApplicationId} moved to {Stage}.",
+            offer.Id,
+            candidate.Id,
+            userId,
+            offer.ApplicationId,
+            application.Stage);
 
         return new RejectOfferResult
         {

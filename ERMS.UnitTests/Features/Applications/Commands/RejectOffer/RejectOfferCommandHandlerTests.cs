@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Features.Applications.Commands.RejectOffer;
+using ERMS.Application.Features.Applications.Commands.RejectOffer;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Application;
 using ERMS.Domain.Constants.Roles;
@@ -109,7 +109,7 @@ public class RejectOfferCommandHandlerTests
         };
     }
 
-    private RejectOfferCommand CreateValidCommand(string? candidateNote = null)
+    private RejectOfferCommand CreateValidCommand(string candidateNote = "I found a better opportunity.")
     {
         return new RejectOfferCommand
         {
@@ -145,11 +145,9 @@ public class RejectOfferCommandHandlerTests
     [Fact]
     public async Task Handle_ShouldThrowUnauthorizedAccessException_WhenUserNotAuthenticated()
     {
-        // Arrange
         _currentUserServiceMock.Setup(x => x.UserId).Returns((Guid?)null);
         var command = CreateValidCommand();
 
-        // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
             .WithMessage("Người dùng chưa được xác thực.");
@@ -158,12 +156,10 @@ public class RejectOfferCommandHandlerTests
     [Fact]
     public async Task Handle_ShouldThrowUnauthorizedAccessException_WhenUserIsNotCandidate()
     {
-        // Arrange
         _currentUserServiceMock.Setup(x => x.UserId).Returns(_userId);
         _currentUserServiceMock.Setup(x => x.Roles).Returns([AppRoles.HRManager]);
         var command = CreateValidCommand();
 
-        // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
             .WithMessage("Chỉ ứng viên mới có quyền từ chối đề nghị.");
@@ -172,7 +168,6 @@ public class RejectOfferCommandHandlerTests
     [Fact]
     public async Task Handle_ShouldThrowUnauthorizedAccessException_WhenCandidateTriesToRejectAnotherCandidatesOffer()
     {
-        // Arrange
         SetupAuthenticatedCandidate();
         SetupCandidatesDbSet(CreateCandidateEntity());
 
@@ -181,7 +176,6 @@ public class RejectOfferCommandHandlerTests
 
         var command = CreateValidCommand();
 
-        // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<UnauthorizedAccessException>()
             .WithMessage("Bạn không có quyền truy cập đề nghị này.");
@@ -194,12 +188,10 @@ public class RejectOfferCommandHandlerTests
     [Fact]
     public async Task Handle_ShouldThrowException_WhenCandidateProfileNotFound()
     {
-        // Arrange
         SetupAuthenticatedCandidate();
         SetupCandidatesDbSet(null);
         var command = CreateValidCommand();
 
-        // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
             .WithMessage("Không tìm thấy hồ sơ ứng viên.");
@@ -208,13 +200,11 @@ public class RejectOfferCommandHandlerTests
     [Fact]
     public async Task Handle_ShouldThrowException_WhenOfferNotFound()
     {
-        // Arrange
         SetupAuthenticatedCandidate();
         SetupCandidatesDbSet(CreateCandidateEntity());
         SetupOffersDbSet(null);
         var command = CreateValidCommand();
 
-        // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
             .WithMessage($"*Không tìm thấy đề nghị với ID {_offerId}*");
@@ -227,7 +217,6 @@ public class RejectOfferCommandHandlerTests
     [Fact]
     public async Task Handle_ShouldThrowException_WhenOfferStatusIsNotSent()
     {
-        // Arrange
         SetupAuthenticatedCandidate();
         SetupCandidatesDbSet(CreateCandidateEntity());
 
@@ -236,7 +225,6 @@ public class RejectOfferCommandHandlerTests
 
         var command = CreateValidCommand();
 
-        // Act & Assert
         await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
             .Should().ThrowAsync<Exception>()
             .WithMessage("*Đề nghị này không thể bị từ chối*Chỉ đề nghị có trạng thái 'Sent' mới có thể từ chối*");
@@ -249,7 +237,6 @@ public class RejectOfferCommandHandlerTests
     [Fact]
     public async Task Handle_ShouldSuccessfullyRejectOffer()
     {
-        // Arrange
         SetupAuthenticatedCandidate();
         SetupCandidatesDbSet(CreateCandidateEntity());
 
@@ -258,10 +245,8 @@ public class RejectOfferCommandHandlerTests
 
         var command = CreateValidCommand();
 
-        // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
-        // Assert
         result.OfferId.Should().Be(_offerId);
         result.NewOfferStatus.Should().Be(OfferStatus.Rejected);
         result.RespondedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
@@ -270,77 +255,75 @@ public class RejectOfferCommandHandlerTests
     [Fact]
     public async Task Handle_ShouldSetOfferStatusToRejected()
     {
-        // Arrange
         SetupAuthenticatedCandidate();
         SetupCandidatesDbSet(CreateCandidateEntity());
 
         var offer = CreateOffer();
         SetupOffersDbSet(offer);
 
-        var command = CreateValidCommand();
+        await _handler.Handle(CreateValidCommand(), CancellationToken.None);
 
-        // Act
-        await _handler.Handle(command, CancellationToken.None);
-
-        // Assert
         offer.Status.Should().Be(OfferStatus.Rejected);
         offer.RespondedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
     }
 
     [Fact]
-    public async Task Handle_ShouldNotChangeApplicationStage()
+    public async Task Handle_ShouldChangeApplicationStageToRejected()
     {
-        // Arrange
         SetupAuthenticatedCandidate();
         SetupCandidatesDbSet(CreateCandidateEntity());
 
         var offer = CreateOffer();
         SetupOffersDbSet(offer);
 
-        var command = CreateValidCommand();
+        await _handler.Handle(CreateValidCommand(), CancellationToken.None);
 
-        // Act
-        await _handler.Handle(command, CancellationToken.None);
-
-        // Assert — Application stage should remain "Offered", NOT "Rejected"
-        offer.Application.Stage.Should().Be(ApplicationStage.Offered);
+        offer.Application.Stage.Should().Be(ApplicationStage.Rejected);
+        offer.Application.RejectedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        offer.Application.RejectedById.Should().Be(_userId);
     }
 
     [Fact]
     public async Task Handle_ShouldPersistCandidateNote()
     {
-        // Arrange
         SetupAuthenticatedCandidate();
         SetupCandidatesDbSet(CreateCandidateEntity());
 
         var offer = CreateOffer();
         SetupOffersDbSet(offer);
 
-        var command = CreateValidCommand("I found a better opportunity.");
+        await _handler.Handle(CreateValidCommand("I found a better opportunity."), CancellationToken.None);
 
-        // Act
-        await _handler.Handle(command, CancellationToken.None);
-
-        // Assert
         offer.CandidateNote.Should().Be("I found a better opportunity.");
+        offer.Application.RejectionReason.Should().Be("I found a better opportunity.");
+    }
+
+    [Fact]
+    public async Task Handle_ShouldTrimCandidateNote()
+    {
+        SetupAuthenticatedCandidate();
+        SetupCandidatesDbSet(CreateCandidateEntity());
+
+        var offer = CreateOffer();
+        SetupOffersDbSet(offer);
+
+        await _handler.Handle(CreateValidCommand("  Salary does not align.  "), CancellationToken.None);
+
+        offer.CandidateNote.Should().Be("Salary does not align.");
+        offer.Application.RejectionReason.Should().Be("Salary does not align.");
     }
 
     [Fact]
     public async Task Handle_ShouldSaveChangesToDatabase()
     {
-        // Arrange
         SetupAuthenticatedCandidate();
         SetupCandidatesDbSet(CreateCandidateEntity());
 
         var offer = CreateOffer();
         SetupOffersDbSet(offer);
 
-        var command = CreateValidCommand();
+        await _handler.Handle(CreateValidCommand(), CancellationToken.None);
 
-        // Act
-        await _handler.Handle(command, CancellationToken.None);
-
-        // Assert
         _contextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 

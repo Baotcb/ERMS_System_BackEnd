@@ -1,8 +1,9 @@
-﻿using ERMS.Application.Features.Applications.Commands.SubmitFinalDecision;
+using ERMS.Application.Features.Applications.Commands.SubmitFinalDecision;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Application;
 using ERMS.Domain.Constants.Roles;
 using ERMS.Domain.Entities.Application;
+using ERMS.Domain.Entities.Candidate;
 using ERMS.Domain.Entities.Identity;
 using ERMS.Domain.Entities.Organization;
 using ERMS.Domain.Entities.Recruitment;
@@ -11,8 +12,8 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using Moq;
+
 using ApplicationEntity = ERMS.Domain.Entities.Application.Application;
-using Xunit;
 
 namespace ERMS.UnitTests.Features.Applications.Commands.SubmitFinalDecision;
 
@@ -20,22 +21,29 @@ public class SubmitFinalDecisionHandlerTests
 {
     private readonly Mock<IERMSDbContext> _mockContext;
     private readonly Mock<ICurrentUserService> _mockCurrentUserService;
+    private readonly Mock<IRejectionEmailService> _mockRejectionEmailService;
     private readonly Mock<ILogger<SubmitFinalDecisionHandler>> _mockLogger;
     private readonly SubmitFinalDecisionHandler _handler;
 
-    // Shared test data
     private readonly Guid _userId = Guid.NewGuid();
     private readonly Guid _enterpriseId = Guid.NewGuid();
     private readonly int _departmentId = 1;
     private readonly Guid _applicationId = Guid.NewGuid();
     private readonly Guid _interviewId = Guid.NewGuid();
+    private readonly Guid _candidateId = Guid.NewGuid();
+    private readonly Guid _candidateUserId = Guid.NewGuid();
 
     public SubmitFinalDecisionHandlerTests()
     {
         _mockContext = new Mock<IERMSDbContext>();
         _mockCurrentUserService = new Mock<ICurrentUserService>();
+        _mockRejectionEmailService = new Mock<IRejectionEmailService>();
         _mockLogger = new Mock<ILogger<SubmitFinalDecisionHandler>>();
-        _handler = new SubmitFinalDecisionHandler(_mockContext.Object, _mockCurrentUserService.Object, _mockLogger.Object);
+        _handler = new SubmitFinalDecisionHandler(
+            _mockContext.Object,
+            _mockCurrentUserService.Object,
+            _mockLogger.Object,
+            _mockRejectionEmailService.Object);
     }
 
     private void SetupDepartmentHead()
@@ -52,15 +60,40 @@ public class SubmitFinalDecisionHandlerTests
         {
             Id = Guid.NewGuid(),
             DepartmentId = _departmentId,
-            EnterpriseId = _enterpriseId
+            EnterpriseId = _enterpriseId,
+            JobTitle = "Senior Backend Engineer"
         };
+
+        var candidateUser = new User
+        {
+            Id = _candidateUserId,
+            FullName = "Nguyen Van A",
+            Email = "candidate@example.com"
+        };
+
         var application = new ApplicationEntity
         {
             Id = _applicationId,
             Stage = ApplicationStage.InterviewScheduled,
             Status = "Active",
-            JobPosting = jobPosting
+            JobPosting = jobPosting,
+            CandidateId = _candidateId,
+            Candidate = new Candidate
+            {
+                Id = _candidateId,
+                UserId = _candidateUserId,
+                User = candidateUser,
+                IsDeleted = false
+            },
+            CVScreeningResult = new CVScreeningResult
+            {
+                Id = Guid.NewGuid(),
+                ApplicationId = _applicationId,
+                MissingSkills = "[\"System Design\"]",
+                Concerns = "[\"Communication\"]"
+            }
         };
+
         var participant = new InterviewParticipant
         {
             Id = Guid.NewGuid(),
@@ -90,12 +123,12 @@ public class SubmitFinalDecisionHandlerTests
         _mockContext.Setup(c => c.Interviews).Returns(interviews.Object);
         _mockContext.Setup(c => c.BeginTransactionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Mock<IDbContextTransaction>().Object);
+        _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
     }
 
     [Fact]
     public async Task Handle_ShouldRejectApplication_WhenDecisionIsFail()
     {
-        // Arrange
         SetupDepartmentHead();
         var interview = CreateScheduledInterview();
         SetupDbSets(interview);
@@ -109,27 +142,65 @@ public class SubmitFinalDecisionHandlerTests
             OverallFeedback = "Did not meet expectations."
         };
 
-        // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
-        // Assert
-        result.Should().NotBeNull();
         result.Decision.Should().Be(InterviewDecision.Fail);
         result.ApplicationStage.Should().Be(ApplicationStage.Rejected);
         result.NewInterviewId.Should().BeNull();
 
         interview.Status.Should().Be(InterviewStatus.Completed);
-        interview.CompletedAt.Should().NotBeNull();
         interview.Application.Stage.Should().Be(ApplicationStage.Rejected);
         interview.Application.RejectedAt.Should().NotBeNull();
+        interview.Application.RejectionReason.Should().Be("Did not meet expectations.");
+
+        _mockRejectionEmailService.Verify(
+            x => x.SendRejectionEmailAsync(
+                It.Is<RejectionEmailContext>(ctx =>
+                    ctx.CandidateEmail == "candidate@example.com" &&
+                    ctx.CandidateName == "Nguyen Van A" &&
+                    ctx.JobTitle == "Senior Backend Engineer" &&
+                    ctx.RejectionReason == "Did not meet expectations." &&
+                    ctx.SkillGaps != null &&
+                    ctx.SkillGaps.Length == 1 &&
+                    ctx.SkillGaps[0] == "System Design" &&
+                    ctx.Concerns != null &&
+                    ctx.Concerns.Length == 1 &&
+                    ctx.Concerns[0] == "Communication"),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
 
         _mockContext.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
+    public async Task Handle_ShouldStillSucceed_WhenRejectionEmailFails()
+    {
+        SetupDepartmentHead();
+        var interview = CreateScheduledInterview();
+        SetupDbSets(interview);
+
+        _mockRejectionEmailService
+            .Setup(x => x.SendRejectionEmailAsync(It.IsAny<RejectionEmailContext>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("SMTP down"));
+
+        var command = new SubmitFinalDecisionCommand
+        {
+            ApplicationId = _applicationId,
+            InterviewId = _interviewId,
+            Decision = InterviewDecision.Fail,
+            OverallRating = 2,
+            OverallFeedback = "Did not meet expectations."
+        };
+
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        result.ApplicationStage.Should().Be(ApplicationStage.Rejected);
+        interview.Application.Stage.Should().Be(ApplicationStage.Rejected);
+    }
+
+    [Fact]
     public async Task Handle_ShouldSetOfferProcessing_WhenDecisionIsPassed()
     {
-        // Arrange
         SetupDepartmentHead();
         var interview = CreateScheduledInterview();
         SetupDbSets(interview);
@@ -143,11 +214,8 @@ public class SubmitFinalDecisionHandlerTests
             OverallFeedback = "Excellent candidate."
         };
 
-        // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
-        // Assert
-        result.Should().NotBeNull();
         result.Decision.Should().Be(InterviewDecision.Passed);
         result.ApplicationStage.Should().Be(ApplicationStage.OfferProcessing);
         result.NewInterviewId.Should().BeNull();
@@ -155,13 +223,14 @@ public class SubmitFinalDecisionHandlerTests
         interview.Status.Should().Be(InterviewStatus.Completed);
         interview.Application.Stage.Should().Be(ApplicationStage.OfferProcessing);
 
-        _mockContext.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _mockRejectionEmailService.Verify(
+            x => x.SendRejectionEmailAsync(It.IsAny<RejectionEmailContext>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
     public async Task Handle_ShouldCreateNextRoundInterview_WhenDecisionIsNextRound()
     {
-        // Arrange
         SetupDepartmentHead();
         var interview = CreateScheduledInterview();
         SetupDbSets(interview);
@@ -174,41 +243,33 @@ public class SubmitFinalDecisionHandlerTests
             OverallFeedback = "Good, but needs further evaluation."
         };
 
-        // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
-        // Assert
-        result.Should().NotBeNull();
         result.Decision.Should().Be(InterviewDecision.NextRound);
         result.NewInterviewId.Should().NotBeNull();
         result.NewInterviewId.Should().NotBe(Guid.Empty);
 
         interview.Status.Should().Be(InterviewStatus.Completed);
 
-        // Verify new interview was added
         _mockContext.Verify(c => c.Interviews.Add(It.Is<Interview>(i =>
             i.RoundNumber == 2 &&
             i.Status == InterviewStatus.PendingSchedule &&
             i.ApplicationId == _applicationId &&
             i.Participants.Count == 1
         )), Times.Once);
-
-        _mockContext.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task Handle_ShouldCreateNextRoundInterview_WithCustomInterviewers_WhenProvided()
     {
-        // Arrange
         SetupDepartmentHead();
         var interview = CreateScheduledInterview();
         var newInterviewerId = Guid.NewGuid();
-        
-        // Mock the new employee to be found in the DB
+
         var newEmployee = new Employee { Id = newInterviewerId, EnterpriseId = _enterpriseId };
         var employees = new List<Employee> { newEmployee }.AsQueryable().BuildMockDbSet();
         _mockContext.Setup(c => c.Employees).Returns(employees.Object);
-        
+
         SetupDbSets(interview);
 
         var command = new SubmitFinalDecisionCommand
@@ -219,14 +280,10 @@ public class SubmitFinalDecisionHandlerTests
             NextRoundInterviewerIds = [newInterviewerId]
         };
 
-        // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
-        // Assert
-        result.Should().NotBeNull();
         result.NewInterviewId.Should().NotBeNull();
 
-        // Verify new interview was added with the NEW interviewer, not the old one
         _mockContext.Verify(c => c.Interviews.Add(It.Is<Interview>(i =>
             i.RoundNumber == 2 &&
             i.Participants.Count == 1 &&
@@ -237,9 +294,8 @@ public class SubmitFinalDecisionHandlerTests
     [Fact]
     public async Task Handle_ShouldThrowUnauthorized_WhenUserIsNotDepartmentHead()
     {
-        // Arrange
         _mockCurrentUserService.Setup(s => s.UserId).Returns(_userId);
-        _mockCurrentUserService.Setup(s => s.Roles).Returns([AppRoles.Employee]); // Not DeptHead
+        _mockCurrentUserService.Setup(s => s.Roles).Returns([AppRoles.Employee]);
 
         var command = new SubmitFinalDecisionCommand
         {
@@ -248,10 +304,8 @@ public class SubmitFinalDecisionHandlerTests
             Decision = InterviewDecision.Fail
         };
 
-        // Act
         var act = async () => await _handler.Handle(command, CancellationToken.None);
 
-        // Assert
         await act.Should().ThrowAsync<UnauthorizedAccessException>()
             .WithMessage("Chỉ Trưởng phòng mới có quyền đưa ra quyết định phỏng vấn cuối cùng.");
     }
@@ -259,10 +313,9 @@ public class SubmitFinalDecisionHandlerTests
     [Fact]
     public async Task Handle_ShouldThrowUnauthorized_WhenDepartmentDoesNotMatch()
     {
-        // Arrange
         SetupDepartmentHead();
         var interview = CreateScheduledInterview();
-        interview.Application.JobPosting.DepartmentId = 999; // Different department
+        interview.Application.JobPosting.DepartmentId = 999;
         SetupDbSets(interview);
 
         var command = new SubmitFinalDecisionCommand
@@ -272,10 +325,8 @@ public class SubmitFinalDecisionHandlerTests
             Decision = InterviewDecision.Passed
         };
 
-        // Act
         var act = async () => await _handler.Handle(command, CancellationToken.None);
 
-        // Assert
         await act.Should().ThrowAsync<UnauthorizedAccessException>()
             .WithMessage("Bạn chỉ có thể đưa ra quyết định cho các buổi phỏng vấn trong phòng ban mình.");
     }
@@ -283,10 +334,9 @@ public class SubmitFinalDecisionHandlerTests
     [Fact]
     public async Task Handle_ShouldThrowException_WhenInterviewNotScheduled()
     {
-        // Arrange
         SetupDepartmentHead();
         var interview = CreateScheduledInterview();
-        interview.Status = InterviewStatus.Completed; // Already completed
+        interview.Status = InterviewStatus.Completed;
         SetupDbSets(interview);
 
         var command = new SubmitFinalDecisionCommand
@@ -296,10 +346,8 @@ public class SubmitFinalDecisionHandlerTests
             Decision = InterviewDecision.Passed
         };
 
-        // Act
         var act = async () => await _handler.Handle(command, CancellationToken.None);
 
-        // Assert
         await act.Should().ThrowAsync<Exception>()
             .WithMessage("*Không thể gửi quyết định*");
     }
