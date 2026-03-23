@@ -2,15 +2,12 @@
 using ERMS.Domain.Entities.Training;
 using MediatR;
 using OfficeOpenXml;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Text.Json;
 
 namespace ERMS.Application.Features.Quizzes.Commands.ImportQuizQuestions
 {
     public class ImportQuizQuestionsCommandHandler
-    : IRequestHandler<ImportQuizQuestionsCommand, int>
+        : IRequestHandler<ImportQuizQuestionsCommand, int>
     {
         private readonly IERMSDbContext _context;
 
@@ -27,6 +24,37 @@ namespace ERMS.Application.Features.Quizzes.Commands.ImportQuizQuestions
 
             using var stream = new MemoryStream();
             await request.File.CopyToAsync(stream);
+            stream.Position = 0;
+
+            var fileName = request.File.FileName.ToLower();
+
+            if (fileName.EndsWith(".xlsx"))
+            {
+                questions = ImportFromExcel(stream, request.QuizId);
+            }
+            else if (fileName.EndsWith(".csv"))
+            {
+                questions = ImportFromCsv(stream, request.QuizId);
+            }
+            else
+            {
+                throw new Exception("Unsupported file format. Please upload .xlsx or .csv file.");
+            }
+
+            if (!questions.Any())
+                return 0;
+
+            _context.QuizQuestions.AddRange(questions);
+            await _context.SaveChangesAsync(cancellationToken);
+
+            return questions.Count;
+        }
+
+        private List<QuizQuestion> ImportFromExcel(Stream stream, Guid quizId)
+        {
+            var questions = new List<QuizQuestion>();
+
+            ExcelPackage.License.SetNonCommercialPersonal("ERMS");
 
             using var package = new ExcelPackage(stream);
             var worksheet = package.Workbook.Worksheets[0];
@@ -35,35 +63,92 @@ namespace ERMS.Application.Features.Quizzes.Commands.ImportQuizQuestions
 
             for (int row = 2; row <= rowCount; row++)
             {
+                var questionText = worksheet.Cells[row, 1].Text;
+
+                if (string.IsNullOrWhiteSpace(questionText))
+                    continue;
+
                 var options = new Dictionary<string, string>
-            {
-                { "A", worksheet.Cells[row,2].Text },
-                { "B", worksheet.Cells[row,3].Text },
-                { "C", worksheet.Cells[row,4].Text },
-                { "D", worksheet.Cells[row,5].Text }
-            };
+                {
+                    { "A", worksheet.Cells[row,2].Text },
+                    { "B", worksheet.Cells[row,3].Text },
+                    { "C", worksheet.Cells[row,4].Text },
+                    { "D", worksheet.Cells[row,5].Text }
+                };
 
                 var question = new QuizQuestion
                 {
                     Id = Guid.NewGuid(),
-                    QuizId = request.QuizId,
-                    QuestionText = worksheet.Cells[row, 1].Text,
+                    QuizId = quizId,
+                    QuestionText = questionText,
                     Options = JsonSerializer.Serialize(options),
                     CorrectAnswer = worksheet.Cells[row, 6].Text,
                     Explanation = worksheet.Cells[row, 7].Text,
-                    Points = int.Parse(worksheet.Cells[row, 8].Text),
-                    OrderIndex = int.Parse(worksheet.Cells[row, 9].Text),
+                    Points = ParseInt(worksheet.Cells[row, 8].Text),
+                    OrderIndex = ParseInt(worksheet.Cells[row, 9].Text),
                     IsActive = true
                 };
 
                 questions.Add(question);
             }
 
-            _context.QuizQuestions.AddRange(questions);
+            return questions;
+        }
 
-            await _context.SaveChangesAsync(cancellationToken);
+        private List<QuizQuestion> ImportFromCsv(Stream stream, Guid quizId)
+        {
+            var questions = new List<QuizQuestion>();
 
-            return questions.Count;
+            using var reader = new StreamReader(stream);
+
+            var header = reader.ReadLine();
+
+            int rowIndex = 1;
+
+            while (!reader.EndOfStream)
+            {
+                rowIndex++;
+
+                var line = reader.ReadLine();
+
+                if (string.IsNullOrWhiteSpace(line))
+                    continue;
+
+                var columns = line.Split(',');
+
+                if (columns.Length < 9)
+                    continue;
+
+                var options = new Dictionary<string, string>
+                {
+                    { "A", columns[1] },
+                    { "B", columns[2] },
+                    { "C", columns[3] },
+                    { "D", columns[4] }
+                };
+
+                var question = new QuizQuestion
+                {
+                    Id = Guid.NewGuid(),
+                    QuizId = quizId,
+                    QuestionText = columns[0],
+                    Options = JsonSerializer.Serialize(options),
+                    CorrectAnswer = columns[5],
+                    Explanation = columns[6],
+                    Points = ParseInt(columns[7]),
+                    OrderIndex = ParseInt(columns[8]),
+                    IsActive = true
+                };
+
+                questions.Add(question);
+            }
+
+            return questions;
+        }
+
+        private int ParseInt(string value)
+        {
+            return int.TryParse(value, out var result) ? result : 0;
         }
     }
 }

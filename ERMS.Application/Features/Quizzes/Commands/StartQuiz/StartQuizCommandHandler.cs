@@ -24,34 +24,31 @@ public sealed class StartQuizCommandHandler
         var userId = _currentUserService.UserId;
         if (userId == null)
             throw new UnauthorizedAccessException("Người dùng chưa được xác thực");
-
         var employee = await _context.Employees
             .FirstOrDefaultAsync(x => x.UserId == userId, cancellationToken);
 
-        if (employee == null)
-            throw new Exception("Tài khoản chưa được liên kết với hồ sơ nhân viên. Vui lòng liên hệ HR/Admin.");
-
-        var quiz = await _context.Quizzes
-            .Include(x => x.Questions)
-            .FirstOrDefaultAsync(x =>
-                ((request.QuizId.HasValue && x.Id == request.QuizId.Value) ||
-                 (request.CourseId.HasValue && x.CourseId == request.CourseId.Value)) &&
-                x.IsActive &&
-                !x.IsDeleted,
-                cancellationToken);
-
-        if (quiz == null)
-            throw new Exception("Không tìm thấy bài kiểm tra");
-
         var enrollment = await _context.Enrollments
-            .FirstOrDefaultAsync(x =>
-                x.EmployeeId == employee.Id &&
-                x.CourseId == quiz.CourseId &&
-                !x.IsDeleted,
-                cancellationToken);
+    .FirstOrDefaultAsync(x => x.EmployeeId == employee.Id && !x.IsDeleted, cancellationToken);
 
         if (enrollment == null)
             throw new Exception("Người dùng chưa đăng ký khóa học");
+
+        // CHECK COURSE COMPLETION
+        if (enrollment.Status != "Completed")
+        {
+            throw new Exception("Bạn phải hoàn thành khóa học trước khi làm bài kiểm tra.");
+        }
+
+        var quiz = await _context.Quizzes
+    .Include(x => x.Questions)
+    .FirstOrDefaultAsync(x =>
+        x.Id == request.QuizId &&
+        x.IsActive &&
+        !x.IsDeleted,
+        cancellationToken);
+
+        if (quiz == null)
+            throw new Exception("Không tìm thấy bài kiểm tra");
 
         // CHECK LESSON COMPLETION
 
@@ -79,7 +76,7 @@ public sealed class StartQuizCommandHandler
         if (completedLessons < totalLessons)
         {
             throw new Exception(
-                $"You must complete all lessons before starting the quiz ({completedLessons}/{totalLessons})");
+                $"Bạn phải hoàn thành tất cả các bài học trong khóa học trước khi làm bài kiểm tra");
         }
 
         var attemptCount = await _context.QuizAttempts
