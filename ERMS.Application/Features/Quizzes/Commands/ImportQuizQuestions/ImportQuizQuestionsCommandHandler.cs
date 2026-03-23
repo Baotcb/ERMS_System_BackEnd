@@ -54,7 +54,7 @@ namespace ERMS.Application.Features.Quizzes.Commands.ImportQuizQuestions
         {
             var questions = new List<QuizQuestion>();
 
-            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+            ExcelPackage.License.SetNonCommercialPersonal("ERMS");
 
             using var package = new ExcelPackage(stream);
             var worksheet = package.Workbook.Worksheets[0];

@@ -76,7 +76,7 @@ public sealed class StartQuizCommandHandler
         if (completedLessons < totalLessons)
         {
             throw new Exception(
-                $"You must complete all lessons before starting the quiz ({completedLessons}/{totalLessons})");
+                $"Bạn phải hoàn thành tất cả các bài học trong khóa học trước khi làm bài kiểm tra");
         }
 
         var attemptCount = await _context.QuizAttempts
