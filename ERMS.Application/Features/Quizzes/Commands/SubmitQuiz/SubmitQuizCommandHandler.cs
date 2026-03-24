@@ -32,7 +32,10 @@ public sealed class SubmitQuizCommandHandler
         foreach (var answer in attempt.QuizAnswers)
         {
             var question = attempt.Quiz.Questions
-                .First(x => x.Id == answer.QuizQuestionId);
+                .FirstOrDefault(x => x.Id == answer.QuizQuestionId);
+
+            if (question == null)
+                continue; // Question deleted after quiz started — skip safely
 
             if (answer.SelectedAnswer == question.CorrectAnswer)
             {

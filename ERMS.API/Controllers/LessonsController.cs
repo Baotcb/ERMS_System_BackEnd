@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Features.Lessons.Commands.CreateLesson;
+using ERMS.Application.Features.Lessons.Commands.CreateLesson;
 using ERMS.Application.Features.Lessons.Commands.UpdateLessonProgress;
 using ERMS.Application.Features.Lessons.Queries.GetLessonProgress;
 using ERMS.Application.Features.Lessons.Queries.GetLessonsByCourse;
@@ -57,6 +57,17 @@ namespace ERMS.API.Controllers
             var result = await _mediator.Send(new GetLessonProgressByEnrollmentQuery
             {
                 EnrollmentId = enrollmentId
+            });
+
+            return Ok(result);
+        }
+
+        [HttpGet("lesson-progress/course/{courseId}")]
+        public async Task<IActionResult> GetLessonProgressByCourse(Guid courseId)
+        {
+            var result = await _mediator.Send(new GetLessonProgressByCourseQuery
+            {
+                CourseId = courseId
             });
 
             return Ok(result);
