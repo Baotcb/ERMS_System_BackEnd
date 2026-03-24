@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Interface;
+using ERMS.Application.Interface;
 using ERMS.Domain.Entities.Training;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -27,25 +27,35 @@ public sealed class StartQuizCommandHandler
         var employee = await _context.Employees
             .FirstOrDefaultAsync(x => x.UserId == userId, cancellationToken);
 
+        if (employee == null)
+            throw new Exception("Tài khoản chưa được liên kết với hồ sơ nhân viên. Vui lòng liên hệ HR/Admin.");
+
+        var courseId = request.CourseId
+            ?? throw new Exception("Thiếu thông tin khóa học.");
+
         var enrollment = await _context.Enrollments
-    .FirstOrDefaultAsync(x => x.EmployeeId == employee.Id && !x.IsDeleted, cancellationToken);
+            .FirstOrDefaultAsync(x => x.EmployeeId == employee.Id
+                && x.CourseId == courseId
+                && !x.IsDeleted, cancellationToken);
 
         if (enrollment == null)
             throw new Exception("Người dùng chưa đăng ký khóa học");
 
-        // CHECK COURSE COMPLETION
-        if (enrollment.Status != "Completed")
-        {
-            throw new Exception("Bạn phải hoàn thành khóa học trước khi làm bài kiểm tra.");
-        }
-
-        var quiz = await _context.Quizzes
-    .Include(x => x.Questions)
-    .FirstOrDefaultAsync(x =>
-        x.Id == request.QuizId &&
-        x.IsActive &&
-        !x.IsDeleted,
-        cancellationToken);
+        var quiz = request.QuizId.HasValue
+            ? await _context.Quizzes
+                .Include(x => x.Questions)
+                .FirstOrDefaultAsync(x =>
+                    x.Id == request.QuizId.Value &&
+                    x.IsActive &&
+                    !x.IsDeleted,
+                    cancellationToken)
+            : await _context.Quizzes
+                .Include(x => x.Questions)
+                .FirstOrDefaultAsync(x =>
+                    x.CourseId == courseId &&
+                    x.IsActive &&
+                    !x.IsDeleted,
+                    cancellationToken);
 
         if (quiz == null)
             throw new Exception("Không tìm thấy bài kiểm tra");
