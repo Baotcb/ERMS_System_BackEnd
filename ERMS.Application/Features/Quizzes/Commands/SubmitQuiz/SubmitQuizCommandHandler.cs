@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Interface;
+using ERMS.Application.Interface;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -49,6 +49,19 @@ public sealed class SubmitQuizCommandHandler
         attempt.CompletedAt = DateTime.UtcNow;
         attempt.IsPassed = score >= attempt.Quiz.PassingScore;
         attempt.Status = "Completed";
+
+        // Update enrollment status when quiz is passed
+        if (attempt.IsPassed == true)
+        {
+            var enrollment = await _context.Enrollments
+                .FirstOrDefaultAsync(x => x.Id == attempt.EnrollmentId, cancellationToken);
+
+            if (enrollment != null && enrollment.Status != "Completed")
+            {
+                enrollment.Status = "Completed";
+                enrollment.CompletedAt = DateTime.UtcNow;
+            }
+        }
 
         await _context.SaveChangesAsync(cancellationToken);
 

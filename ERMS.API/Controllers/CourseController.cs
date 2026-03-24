@@ -10,6 +10,7 @@ using ERMS.Application.Features.CourseSkills.Commands.CreateCourseSkill;
 using ERMS.Application.Features.Enrollments.Commands.AssignEmployeesToCourse;
 using ERMS.Application.Features.Quizzes.Commands.CreateQuiz;
 using ERMS.Application.Features.Quizzes.Commands.StartQuiz;
+using ERMS.Application.Features.Quizzes.Queries.GetQuizResult;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -150,12 +151,23 @@ namespace ERMS.API.Controllers
         [HttpPost("{courseId}/quizzes/start")]
         public async Task<IActionResult> StartCourseQuiz(Guid courseId)
         {
-            var result = await _mediator.Send(new StartQuizCommand
+            try
             {
-                CourseId = courseId
-            });
+                var result = await _mediator.Send(new StartQuizCommand
+                {
+                    CourseId = courseId
+                });
 
-            return Ok(result);
+                return Ok(result);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpPost("course-skill")]
@@ -223,6 +235,18 @@ namespace ERMS.API.Controllers
             var result = await _mediator.Send(
                 new GetMyCertificationsByCourseQuery { CourseId = courseId });
 
+            return Ok(result);
+        }
+
+        [HttpGet("{courseId}/quiz-result")]
+        public async Task<IActionResult> GetQuizResult(Guid courseId)
+        {
+            var result = await _mediator.Send(new GetQuizResultQuery
+            {
+                CourseId = courseId
+            });
+
+            if (result == null) return NoContent();
             return Ok(result);
         }
     }
