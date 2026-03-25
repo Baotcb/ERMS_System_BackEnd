@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Interface;
+using ERMS.Application.Interface;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -61,6 +61,7 @@ namespace ERMS.Application.Features.Courses.Commands.UpdateCourse
            
 
             // Cập nhật khóa học
+            var oldTrainerEmail = course.TrainerEmail; // lưu trước khi ghi đè
             course.TrainingPlanId = request.TrainingPlanId;
             course.CourseName = request.CourseName;
             course.CourseCode = request.CourseCode;
@@ -76,6 +77,21 @@ namespace ERMS.Application.Features.Courses.Commands.UpdateCourse
             course.MaxEnrollments = request.MaxEnrollments;
             course.EnrollmentDeadline = request.EnrollmentDeadline;
             course.CompletionCriteria = request.CompletionCriteria;
+
+            // ✅ Bảo toàn ContentManagerEmail: nếu TrainerEmail thay đổi → re-detect
+            if (!string.Equals(oldTrainerEmail, request.TrainerEmail, StringComparison.OrdinalIgnoreCase))
+            {
+                var isInternalTrainer = await _context.Employees
+                    .AnyAsync(e => e.User.Email == request.TrainerEmail, cancellationToken);
+                course.ContentManagerEmail = isInternalTrainer
+                    ? request.TrainerEmail
+                    : _currentUserService.Email;
+            }
+            // Nếu ContentManagerEmail đang null (legacy data) → gán mặc định
+            else if (string.IsNullOrEmpty(course.ContentManagerEmail))
+            {
+                course.ContentManagerEmail = course.TrainerEmail;
+            }
 
             course.UpdatedAt = DateTime.UtcNow;
 

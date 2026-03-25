@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Interface;
+using ERMS.Application.Interface;
 using ERMS.Domain.Entities.Training;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -78,6 +78,24 @@ namespace ERMS.Application.Features.Courses.Commands.CreateCourse
                 CreatedAt = DateTime.UtcNow,
                 IsDeleted = false
             };
+
+            // ✅ Auto-detect: trainer nội bộ hay bên ngoài?
+            var isInternalTrainer = await _context.Employees
+                .AnyAsync(e => e.User.Email == request.TrainerEmail, cancellationToken);
+
+            if (isInternalTrainer)
+            {
+                course.ContentManagerEmail = request.TrainerEmail;
+            }
+            else
+            {
+                // Trainer ngoài enterprise → HR (người tạo) sẽ quản lý nội dung
+                var currentUserEmail = _currentUserService.Email;
+                course.ContentManagerEmail = currentUserEmail;
+                _logger.LogInformation(
+                    "External trainer detected ({TrainerEmail}). Content manager assigned to HR: {ContentManager}",
+                    request.TrainerEmail, currentUserEmail);
+            }
 
             _context.Courses.Add(course);
 

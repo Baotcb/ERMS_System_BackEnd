@@ -1,9 +1,10 @@
-﻿using ERMS.Application.Features.Quizzes.Commands.CreateQuizQuestion;
+using ERMS.Application.Features.Quizzes.Commands.CreateQuizQuestion;
 using ERMS.Application.Features.Quizzes.Commands.ImportQuizQuestions;
 using ERMS.Application.Features.Quizzes.Commands.StartQuiz;
 using ERMS.Application.Features.Quizzes.Commands.SubmitAnswer;
 using ERMS.Application.Features.Quizzes.Commands.SubmitQuiz;
 using ERMS.Application.Features.Quizzes.Queries.GetQuizQuestions;
+using ERMS.Application.Features.Quizzes.Queries.GetQuizReview;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -50,6 +51,17 @@ namespace ERMS.API.Controllers
         public async Task<IActionResult> SubmitQuiz(Guid attemptId)
         {
             var result = await _mediator.Send(new SubmitQuizCommand
+            {
+                AttemptId = attemptId
+            });
+
+            return Ok(result);
+        }
+
+        [HttpGet("attempts/{attemptId}/review")]
+        public async Task<IActionResult> GetQuizReview(Guid attemptId)
+        {
+            var result = await _mediator.Send(new GetQuizReviewQuery
             {
                 AttemptId = attemptId
             });
