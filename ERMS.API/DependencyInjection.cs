@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
@@ -116,8 +116,8 @@ namespace ERMS.API
 
                 options.AddFixedWindowLimiter("fixed", limiterOptions =>
                 {
-                    limiterOptions.PermitLimit = 1;
-                    limiterOptions.Window = TimeSpan.FromSeconds(5);
+                    limiterOptions.PermitLimit = 5;
+                    limiterOptions.Window = TimeSpan.FromSeconds(10);
                     limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
                     limiterOptions.QueueLimit = 0;
                 });
