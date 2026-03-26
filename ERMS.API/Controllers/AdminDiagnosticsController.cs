@@ -1,4 +1,4 @@
-using ERMS.Application.Features.Diagnostics.Queries.GetBackendEgressIp;
+using ERMS.Application.Features.Diagnostics.Queries.GetGeminiProbe;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Roles;
 using Microsoft.AspNetCore.Authorization;
@@ -15,32 +15,25 @@ namespace ERMS.API.Controllers;
 [EnableRateLimiting("fixed")]
 public sealed class AdminDiagnosticsController : ControllerBase
 {
-    private readonly IBackendEgressIpService _backendEgressIpService;
+    private readonly IGeminiProbeService _geminiProbeService;
 
-    public AdminDiagnosticsController(IBackendEgressIpService backendEgressIpService)
+    public AdminDiagnosticsController(IGeminiProbeService geminiProbeService)
     {
-        _backendEgressIpService = backendEgressIpService;
+        _geminiProbeService = geminiProbeService;
     }
 
     /// <summary>
-    /// Returns the current public egress IP that the backend uses for outbound HTTP requests.
+    /// Calls Gemini directly from the backend and returns the raw connectivity result.
     /// </summary>
-    [HttpGet("backend-egress-ip")]
+    [HttpGet("gemini-probe")]
     [Authorize(Roles = AppRoles.Admin)]
-    [ProducesResponseType(typeof(GetBackendEgressIpResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(GetGeminiProbeResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> GetBackendEgressIp(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetGeminiProbe(CancellationToken cancellationToken)
     {
-        try
-        {
-            var result = await _backendEgressIpService.GetPublicEgressIpAsync(cancellationToken);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _geminiProbeService.ProbeAsync(cancellationToken);
+        return Ok(result);
     }
 }

@@ -47,13 +47,12 @@ namespace ERMS.Infrastructure
             services.AddScoped<ITokenService, TokenService>();
             services.AddTransient<IEmailService, EmailService>();
             services.AddTransient<IRejectionEmailService, RejectionEmailService>();
-            services.AddHttpClient<IBackendEgressIpService, BackendEgressIpService>(client =>
-            {
-                client.BaseAddress = new Uri("https://api.ipify.org/");
-                client.Timeout = TimeSpan.FromSeconds(5);
-            });
             services.AddScoped<IExcelParserService, ExcelParserService>();
             services.AddScoped<IGoogleAuthService, GoogleAuthService>();
+            services.AddHttpClient<IGeminiProbeService, GeminiProbeService>(client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(10);
+            });
 
             // CV Processing Services
             services.AddScoped<ICloudinaryService, CloudinaryService>();
