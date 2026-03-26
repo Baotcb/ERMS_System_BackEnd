@@ -1,4 +1,3 @@
-using ERMS.Application.Features.Employees.Commands.BulkCreateEmployees;
 using ERMS.Application.Features.Employees.Commands.CreateEmployee;
 using ERMS.Application.Features.Employees.Commands.DeleteEmployee;
 using ERMS.Application.Features.Employees.Commands.ImportEmployeesFromFile;
@@ -154,27 +153,6 @@ namespace ERMS.API.Controllers
             {
                 await _mediator.Send(command);
                 return Ok(new { message = "Xóa nhân viên thành công" });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
-
-        /// <summary>
-        /// Import nhân viên hàng loạt (từ Excel - JSON input)
-        /// </summary>
-        [HttpPost("bulk")]
-        [Authorize(Roles = "HRManager,Director")]
-        public async Task<IActionResult> BulkCreate([FromBody] BulkCreateEmployeesCommand command)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            try
-            {
-                var result = await _mediator.Send(command);
-                return Ok(result);
             }
             catch (Exception ex)
             {
