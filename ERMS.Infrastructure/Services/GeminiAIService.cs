@@ -77,6 +77,9 @@ public class GeminiAIService : IGeminiAIService
 
             var responseContent = await response.Content.ReadAsStringAsync();
             _logger.LogDebug("Gemini API response: {Response}", responseContent);
+            Console.WriteLine("===== RAW GEMINI RESPONSE =====");
+            Console.WriteLine(responseContent);
+            Console.WriteLine("===============================");
 
             var geminiResponse = JsonSerializer.Deserialize<GeminiResponse>(responseContent);
             var jsonText = geminiResponse?.Candidates?.FirstOrDefault()?.Content?.Parts?.FirstOrDefault()?.Text;
