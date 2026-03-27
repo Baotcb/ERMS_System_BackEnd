@@ -36,7 +36,7 @@ public sealed class GeminiProbeService : IGeminiProbeService
         }
 
         var model = string.IsNullOrWhiteSpace(_settings.Model) ? "gemini-2.5-flash" : _settings.Model;
-        var requestUrl = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={_settings.ApiKey}";
+        var requestUrl = $"https://erms-gemini-proxy.baotcq1511.workers.dev/v1beta/models/{model}:generateContent?key={_settings.ApiKey}";
 
         var requestBody = new
         {
