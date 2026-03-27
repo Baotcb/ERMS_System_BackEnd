@@ -8,6 +8,7 @@ using ERMS.Application.Features.Courses.Queries.GetCourseDetails;
 using ERMS.Application.Features.Courses.Queries.GetCourseProgress;
 using ERMS.Application.Features.CourseSkills.Commands.CreateCourseSkill;
 using ERMS.Application.Features.Enrollments.Commands.AssignEmployeesToCourse;
+using ERMS.Application.Features.Enrollments.Commands.UpdateCertificate;
 using ERMS.Application.Features.Quizzes.Commands.CreateQuiz;
 using ERMS.Application.Features.Quizzes.Commands.StartQuiz;
 using ERMS.Application.Features.Quizzes.Queries.GetQuizResult;
@@ -119,6 +120,25 @@ namespace ERMS.API.Controllers
             {
                 return BadRequest(new { message = ex.Message });
             }
+        }
+
+        [HttpPut("certificate")]
+        public async Task<IActionResult> UpdateCertificate([FromBody] UpdateCertificateCommand
+            request)
+        {
+            var command = new UpdateCertificateCommand
+            {
+                EnrollmentId = request.EnrollmentId,
+                CertificateUrl = request.CertificateUrl
+            };
+
+            var result = await _mediator.Send(command);
+
+            return Ok(new
+            {
+                success = result,
+                message = "Cấp chứng chỉ thành công"
+            });
         }
 
         [HttpPost("{id}/publish")]
