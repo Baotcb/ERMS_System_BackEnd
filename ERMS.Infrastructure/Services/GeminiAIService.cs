@@ -29,7 +29,7 @@ public class GeminiAIService : IGeminiAIService
             throw new InvalidOperationException("Gemini ApiKey is not configured in appsettings.");
             
         var model = string.IsNullOrWhiteSpace(_settings.Model) ? "gemini-2.5-flash" : _settings.Model;
-        _geminiApiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent";
+        _geminiApiUrl = $"https://erms-gemini-proxy.baotcq1511.workers.dev/v1beta/models/{model}:generateContent";
     }
 
     public async Task<CVScreeningResultDto> AnalyzeResumeAsync(
