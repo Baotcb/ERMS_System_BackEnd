@@ -51,6 +51,7 @@ namespace ERMS.Application.Features.Enrollments.Queries.GetDepartmentTrainingRes
                 .Include(e => e.Employee).ThenInclude(emp => emp.User)
                 .Include(e => e.Employee).ThenInclude(emp => emp.Department)
                 .Include(e => e.QuizAttempts)
+                .Include(e => e.LessonProgresses)
                 .Where(e => !e.IsDeleted && e.Course.EnterpriseId == enterpriseId);
 
             // Dept-Head scoping: only show own department's results
@@ -74,6 +75,13 @@ namespace ERMS.Application.Features.Enrollments.Queries.GetDepartmentTrainingRes
                 var hasFailed = e.QuizAttempts?.Any(q => q.IsPassed == false) ?? false;
                 var attempts = e.QuizAttempts?.Count ?? 0;
 
+                // Count from actual LessonProgress records (not stale Enrollment.Progress)
+                var totalLessons = e.Course?.Lessons?.Count(l => !l.IsDeleted) ?? 0;
+                var completedLessons = e.LessonProgresses?.Count(lp => lp.Status == "Completed") ?? 0;
+                var progressPct = totalLessons > 0
+                    ? (int)Math.Round(((double)completedLessons / totalLessons) * 100)
+                    : 0;
+
                 return new DepartmentTrainingResultDto
                 {
                     Id = e.Id.ToString(),
@@ -84,9 +92,9 @@ namespace ERMS.Application.Features.Enrollments.Queries.GetDepartmentTrainingRes
                     CourseCode = e.Course?.CourseCode ?? "",
                     AssignedAt = e.EnrolledAt,
                     CompletedAt = latestAttempt?.CompletedAt,
-                    ProgressPercentage = e.Progress,
-                    TotalLessons = e.Course?.Lessons?.Count ?? 0,
-                    CompletedLessons = (int)Math.Round((e.Progress / 100.0) * (e.Course?.Lessons?.Count ?? 0)),
+                    ProgressPercentage = progressPct,
+                    TotalLessons = totalLessons,
+                    CompletedLessons = completedLessons,
                     QuizScore = latestAttempt != null ? (double?)latestAttempt.Score : null,
                     AttemptCount = attempts,
                     LearningStatus = e.Status,

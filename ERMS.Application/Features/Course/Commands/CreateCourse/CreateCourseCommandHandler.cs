@@ -80,12 +80,24 @@ namespace ERMS.Application.Features.Courses.Commands.CreateCourse
             };
 
             // ✅ Auto-detect: trainer nội bộ hay bên ngoài?
-            var isInternalTrainer = await _context.Employees
-                .AnyAsync(e => e.User.Email == request.TrainerEmail, cancellationToken);
+            var trainerEmail = request.TrainerEmail?.Trim().ToLower() ?? "";
+            var internalEmployee = await _context.Employees
+                .FirstOrDefaultAsync(e => 
+                    e.EnterpriseId == enterpriseId && 
+                    !e.IsDeleted && 
+                    e.User.Email.ToLower() == trainerEmail, 
+                    cancellationToken);
 
-            if (isInternalTrainer)
+            if (internalEmployee != null)
             {
                 course.ContentManagerEmail = request.TrainerEmail;
+                
+                // Trở thành Trainer thì bật cờ IsTrainer = true để họ thấy tab Giảng dạy bên FE
+                if (!internalEmployee.IsTrainer)
+                {
+                    internalEmployee.IsTrainer = true;
+                    _context.Employees.Update(internalEmployee);
+                }
             }
             else
             {

@@ -29,7 +29,13 @@ public sealed class SubmitQuizCommandHandler
 
         int correct = 0;
 
-        foreach (var answer in attempt.QuizAnswers)
+        // Deduplicate: chỉ lấy câu trả lời mới nhất cho mỗi câu hỏi (phòng trường hợp data cũ bị trùng)
+        var uniqueAnswers = attempt.QuizAnswers
+            .GroupBy(a => a.QuizQuestionId)
+            .Select(g => g.OrderByDescending(a => a.AnsweredAt).First())
+            .ToList();
+
+        foreach (var answer in uniqueAnswers)
         {
             var question = attempt.Quiz.Questions
                 .FirstOrDefault(x => x.Id == answer.QuizQuestionId);
@@ -43,9 +49,15 @@ public sealed class SubmitQuizCommandHandler
                 answer.PointsEarned = question.Points;
                 correct++;
             }
+            else
+            {
+                answer.IsCorrect = false;
+                answer.PointsEarned = 0;
+            }
         }
 
-        var score = (decimal)correct * 100 / attempt.TotalQuestions;
+        var totalQ = attempt.TotalQuestions > 0 ? attempt.TotalQuestions : uniqueAnswers.Count;
+        var score = totalQ > 0 ? (decimal)correct * 100 / totalQ : 0;
 
         attempt.Score = score;
         attempt.CorrectAnswers = correct;

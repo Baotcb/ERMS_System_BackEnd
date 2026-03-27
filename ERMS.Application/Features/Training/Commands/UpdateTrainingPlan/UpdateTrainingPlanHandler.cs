@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Interface;
+using ERMS.Application.Interface;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -70,6 +70,13 @@ namespace ERMS.Application.Features.Training.Commands.UpdateTrainingPlan
             {
                 bool isUpdated = false;
 
+                if (plan.Status == "NeedRevision" || plan.Status == "Rejected")
+                {
+                    plan.Status = "Pending";
+                    plan.ReviewNote = null;
+                    isUpdated = true;
+                }
+
                 if (plan.PlanName != request.PlanName)
                 {
                     plan.PlanName = request.PlanName;
@@ -106,11 +113,8 @@ namespace ERMS.Application.Features.Training.Commands.UpdateTrainingPlan
                     isUpdated = true;
                 }
 
-                if (plan.ReviewNote != request.ReviewNote)
-                {
-                    plan.ReviewNote = request.ReviewNote;
-                    isUpdated = true;
-                }
+                // Bỏ qua ReviewNote từ request update bởi vì user HR không được phép tự tạo ReviewNote khi update Plan
+                // ReviewNote sẽ tự reset khi submit lại ở logic bên trên
 
                 if (isUpdated)
                 {
