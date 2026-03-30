@@ -72,6 +72,7 @@ namespace ERMS.Application.Interface
         DbSet<QuizAttempt> QuizAttempts { get; set; }
         DbSet<QuizAnswer> QuizAnswers { get; set; }
         DbSet<CourseFeedback> CourseFeedbacks { get; set; }
+        DbSet<CourseFeedbackReply> CourseFeedbackReplies { get; set; }
         DbSet<WorkshopConfirmation> WorkshopConfirmations { get; set; }
 
 

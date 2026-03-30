@@ -19,5 +19,6 @@ namespace ERMS.Domain.Entities.Training
 
         public virtual Course Course { get; set; } = null!;
         public virtual Employee Employee { get; set; } = null!;
+        public ICollection<CourseFeedbackReply> Replies { get; set; } = new List<CourseFeedbackReply>();
     }
 }
