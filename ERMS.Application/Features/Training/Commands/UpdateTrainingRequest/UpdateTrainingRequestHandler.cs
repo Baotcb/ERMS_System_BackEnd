@@ -40,11 +40,11 @@ namespace ERMS.Application.Features.Training.Commands.UpdateTrainingRequest
             if (trainingRequest == null)
                 throw new Exception("Không tìm thấy yêu cầu đào tạo");
 
-            // ✅ chỉ owner được sửa
+            // chỉ owner được sửa
             if (trainingRequest.RequestedById != userId)
                 throw new Exception("Bạn không có quyền cập nhật yêu cầu này");
 
-            // ✅ CHỈ cho sửa khi chưa được phân bổ, tức là Pending, Rejected, hoặc NeedRevision
+            // CHỈ cho sửa khi chưa được phân bổ, tức là Pending, Rejected, hoặc NeedRevision
             var editableStatuses = new[] { "Pending", "Rejected", "NeedRevision" };
 
             if (!editableStatuses.Contains(trainingRequest.Status))
@@ -53,7 +53,7 @@ namespace ERMS.Application.Features.Training.Commands.UpdateTrainingRequest
                     "Chỉ có thể cập nhật các yêu cầu đang chờ duyệt, đã bị từ chối hoặc cần chỉnh sửa.");
             }
 
-            // ✅ Update fields
+            // Update fields
             trainingRequest.Subject = request.Subject ?? trainingRequest.Subject;
             trainingRequest.Urgency = request.Urgency ?? trainingRequest.Urgency;
             trainingRequest.Description = request.Description ?? trainingRequest.Description;
@@ -63,10 +63,10 @@ namespace ERMS.Application.Features.Training.Commands.UpdateTrainingRequest
             trainingRequest.EstimatedBudget =
                 request.EstimatedBudget ?? trainingRequest.EstimatedBudget;
 
-            // ✅ Reset review info
+            // Reset review info
             trainingRequest.ReviewNote = null;
 
-            // ✅ quay lại Pending để HR duyệt lại
+            // quay lại Pending để HR duyệt lại
             trainingRequest.Status = "Pending";
             trainingRequest.UpdatedAt = DateTime.UtcNow;
 
