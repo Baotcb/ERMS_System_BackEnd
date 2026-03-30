@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Features.Quizzes.Commands.StartQuiz;
+using ERMS.Application.Features.Quizzes.Commands.StartQuiz;
 using ERMS.Application.Interface;
 using ERMS.Domain.Entities.Organization;
 using ERMS.Domain.Entities.Training;
@@ -310,7 +310,8 @@ namespace ERMS.UnitTests.Features.Quizzes.Commands.StartQuiz
 
             var result = await _handler.Handle(command, CancellationToken.None);
 
-            result.Should().NotBeEmpty();
+            result.Should().NotBeNull();
+            result.AttemptId.Should().NotBeEmpty();
             attempts.Should().HaveCount(1);
             attempts[0].Status.Should().Be("InProgress");
         }
