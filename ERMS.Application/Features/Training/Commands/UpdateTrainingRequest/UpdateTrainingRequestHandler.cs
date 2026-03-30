@@ -46,9 +46,12 @@ namespace ERMS.Application.Features.Training.Commands.UpdateTrainingRequest
 
             // ✅ CHỈ cho sửa khi chưa được phân bổ, tức là Pending, Rejected, hoặc NeedRevision
             var editableStatuses = new[] { "Pending", "Rejected", "NeedRevision" };
+
             if (!editableStatuses.Contains(trainingRequest.Status))
+            {
                 throw new Exception(
-                    "Only requests requiring revision or pending approval can be updated");
+                    "Chỉ có thể cập nhật các yêu cầu đang chờ duyệt, đã bị từ chối hoặc cần chỉnh sửa.");
+            }
 
             // ✅ Update fields
             trainingRequest.Subject = request.Subject ?? trainingRequest.Subject;

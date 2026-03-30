@@ -290,7 +290,7 @@ namespace ERMS.UnitTests.Features.Quizzes.Commands.StartQuiz
 
             var result = await _handler.Handle(command, CancellationToken.None);
 
-            result.Should().NotBeEmpty();
+            result.Should().NotBe(Guid.Empty);
             attempts.Should().HaveCount(1);
             attempts[0].Status.Should().Be("InProgress");
         }
