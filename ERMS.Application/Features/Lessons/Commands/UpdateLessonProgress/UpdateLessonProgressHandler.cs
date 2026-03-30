@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Features.Lessons.Commands.UpdateLessonProgress;
+using ERMS.Application.Features.Lessons.Commands.UpdateLessonProgress;
 using ERMS.Application.Interface;
 using ERMS.Domain.Entities.Training;
 using MediatR;
@@ -27,6 +27,8 @@ namespace ERMS.Application.Features.Lessons.Commands.UpdateLessonProgress
             var userId = _currentUserService.UserId;
             if (userId == null)
                 throw new UnauthorizedAccessException("Người dùng chưa được xác thực");
+
+            await using var transaction = await _context.BeginTransactionAsync(cancellationToken);
 
             var employee = await _context.Employees
                 .FirstOrDefaultAsync(x => x.UserId == userId, cancellationToken);
@@ -117,6 +119,7 @@ namespace ERMS.Application.Features.Lessons.Commands.UpdateLessonProgress
             }
 
             await _context.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
 
             return true;
         }

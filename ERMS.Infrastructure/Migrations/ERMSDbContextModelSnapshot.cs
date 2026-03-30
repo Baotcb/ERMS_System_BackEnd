@@ -106,7 +106,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("ResumeId");
 
-                    b.ToTable("Applications");
+                    b.ToTable("Applications", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Application.CVScreeningResult", b =>
@@ -173,7 +173,7 @@ namespace ERMS.Infrastructure.Migrations
                     b.HasIndex("ApplicationId")
                         .IsUnique();
 
-                    b.ToTable("CVScreeningResults");
+                    b.ToTable("CVScreeningResults", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Application.Interview", b =>
@@ -251,7 +251,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("ScheduledById");
 
-                    b.ToTable("Interviews");
+                    b.ToTable("Interviews", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Application.InterviewParticipant", b =>
@@ -301,7 +301,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("InterviewId");
 
-                    b.ToTable("InterviewParticipants");
+                    b.ToTable("InterviewParticipants", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Application.Offer", b =>
@@ -396,7 +396,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("SentById");
 
-                    b.ToTable("Offers");
+                    b.ToTable("Offers", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Candidate.Candidate", b =>
@@ -462,7 +462,7 @@ namespace ERMS.Infrastructure.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("Candidates");
+                    b.ToTable("Candidates", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Candidate.CandidateSkill", b =>
@@ -495,7 +495,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("SkillId");
 
-                    b.ToTable("CandidateSkills");
+                    b.ToTable("CandidateSkills", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Candidate.Education", b =>
@@ -543,7 +543,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("CandidateId");
 
-                    b.ToTable("Educations");
+                    b.ToTable("Educations", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Candidate.Resume", b =>
@@ -594,7 +594,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("CandidateId");
 
-                    b.ToTable("Resumes");
+                    b.ToTable("Resumes", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Candidate.SavedJob", b =>
@@ -627,7 +627,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("JobPostingId");
 
-                    b.ToTable("SavedJobs");
+                    b.ToTable("SavedJobs", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Candidate.WorkExperience", b =>
@@ -675,7 +675,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("CandidateId");
 
-                    b.ToTable("WorkExperiences");
+                    b.ToTable("WorkExperiences", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Enterprise.Enterprise", b =>
@@ -751,7 +751,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("SubscriptionPlanId");
 
-                    b.ToTable("Enterprises");
+                    b.ToTable("Enterprises", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Enterprise.OwnershipTransfer", b =>
@@ -797,7 +797,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("ToUserId");
 
-                    b.ToTable("OwnershipTransfers");
+                    b.ToTable("OwnershipTransfers", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Enterprise.SubscriptionHistory", b =>
@@ -859,7 +859,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("SubscriptionPlanId");
 
-                    b.ToTable("SubscriptionHistories");
+                    b.ToTable("SubscriptionHistories", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Enterprise.SubscriptionPlan", b =>
@@ -919,7 +919,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("SubscriptionPlans");
+                    b.ToTable("SubscriptionPlans", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Identity.User", b =>
@@ -1062,7 +1062,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("ParentDepartmentId");
 
-                    b.ToTable("Departments");
+                    b.ToTable("Departments", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Organization.Employee", b =>
@@ -1078,6 +1078,9 @@ namespace ERMS.Infrastructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<int?>("DepartmentId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("DepartmentId1")
                         .HasColumnType("int");
 
                     b.Property<string>("EmployeeCode")
@@ -1130,6 +1133,8 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("DepartmentId");
 
+                    b.HasIndex("DepartmentId1");
+
                     b.HasIndex("EnterpriseId");
 
                     b.HasIndex("JobPositionId");
@@ -1139,7 +1144,7 @@ namespace ERMS.Infrastructure.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("Employees");
+                    b.ToTable("Employees", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Organization.JobPosition", b =>
@@ -1171,7 +1176,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("EnterpriseId");
 
-                    b.ToTable("JobPositions");
+                    b.ToTable("JobPositions", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.ApprovalHistory", b =>
@@ -1214,7 +1219,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("PerformedById");
 
-                    b.ToTable("ApprovalHistories");
+                    b.ToTable("ApprovalHistories", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.JobPosting", b =>
@@ -1328,7 +1333,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("PublishedById");
 
-                    b.ToTable("JobPostings");
+                    b.ToTable("JobPostings", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.JobSkill", b =>
@@ -1361,7 +1366,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("SkillId");
 
-                    b.ToTable("JobSkills");
+                    b.ToTable("JobSkills", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.PlanDetail", b =>
@@ -1446,7 +1451,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("ReviewerId");
 
-                    b.ToTable("PlanDetails");
+                    b.ToTable("PlanDetails", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.RecruitmentCampaign", b =>
@@ -1526,7 +1531,7 @@ namespace ERMS.Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("UQ_RC_Enterprise_Code");
 
-                    b.ToTable("RecruitmentCampaigns");
+                    b.ToTable("RecruitmentCampaigns", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.RecruitmentPlan", b =>
@@ -1612,7 +1617,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("EnterpriseId");
 
-                    b.ToTable("RecruitmentPlans");
+                    b.ToTable("RecruitmentPlans", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Skill.JobCompetency", b =>
@@ -1646,7 +1651,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("SkillId");
 
-                    b.ToTable("JobCompetencies");
+                    b.ToTable("JobCompetencies", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Skill.Skill", b =>
@@ -1687,7 +1692,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("EnterpriseId");
 
-                    b.ToTable("Skills");
+                    b.ToTable("Skills", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.System.Notification", b =>
@@ -1742,7 +1747,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Notifications");
+                    b.ToTable("Notifications", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.Course", b =>
@@ -1832,7 +1837,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("TrainingPlanId");
 
-                    b.ToTable("Courses");
+                    b.ToTable("Courses", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.CourseFeedback", b =>
@@ -1876,7 +1881,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("EmployeeId");
 
-                    b.ToTable("CourseFeedbacks");
+                    b.ToTable("CourseFeedbacks", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.CourseSkill", b =>
@@ -1906,7 +1911,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("SkillId");
 
-                    b.ToTable("CourseSkills");
+                    b.ToTable("CourseSkills", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.Enrollment", b =>
@@ -1972,7 +1977,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("EnrolledById");
 
-                    b.ToTable("Enrollments");
+                    b.ToTable("Enrollments", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.Lesson", b =>
@@ -2035,7 +2040,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("CourseId");
 
-                    b.ToTable("Lessons");
+                    b.ToTable("Lessons", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.LessonProgress", b =>
@@ -2081,7 +2086,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("LessonId");
 
-                    b.ToTable("LessonProgresses");
+                    b.ToTable("LessonProgresses", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.Quiz", b =>
@@ -2138,7 +2143,7 @@ namespace ERMS.Infrastructure.Migrations
                     b.HasIndex("CourseId")
                         .IsUnique();
 
-                    b.ToTable("Quizzes");
+                    b.ToTable("Quizzes", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.QuizAnswer", b =>
@@ -2177,7 +2182,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("QuizQuestionId");
 
-                    b.ToTable("QuizAnswers");
+                    b.ToTable("QuizAnswers", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.QuizAttempt", b =>
@@ -2233,7 +2238,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("QuizId");
 
-                    b.ToTable("QuizAttempts");
+                    b.ToTable("QuizAttempts", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.QuizQuestion", b =>
@@ -2286,7 +2291,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("QuizId");
 
-                    b.ToTable("QuizQuestions");
+                    b.ToTable("QuizQuestions", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.TrainingPlan", b =>
@@ -2355,7 +2360,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("EnterpriseId");
 
-                    b.ToTable("TrainingPlans");
+                    b.ToTable("TrainingPlans", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.TrainingRequest", b =>
@@ -2426,7 +2431,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("TrainingPlanId");
 
-                    b.ToTable("TrainingRequests");
+                    b.ToTable("TrainingRequests", (string)null);
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.WorkshopConfirmation", b =>
@@ -2471,7 +2476,7 @@ namespace ERMS.Infrastructure.Migrations
                     b.HasIndex("CourseId")
                         .IsUnique();
 
-                    b.ToTable("WorkshopConfirmations");
+                    b.ToTable("WorkshopConfirmations", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", b =>
@@ -2926,9 +2931,13 @@ namespace ERMS.Infrastructure.Migrations
             modelBuilder.Entity("ERMS.Domain.Entities.Organization.Employee", b =>
                 {
                     b.HasOne("ERMS.Domain.Entities.Organization.Department", "Department")
-                        .WithMany("Employees")
+                        .WithMany()
                         .HasForeignKey("DepartmentId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERMS.Domain.Entities.Organization.Department", null)
+                        .WithMany("Employees")
+                        .HasForeignKey("DepartmentId1");
 
                     b.HasOne("ERMS.Domain.Entities.Enterprise.Enterprise", "Enterprise")
                         .WithMany()

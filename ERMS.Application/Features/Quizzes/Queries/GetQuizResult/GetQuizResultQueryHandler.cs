@@ -63,6 +63,7 @@ public sealed class GetQuizResultQueryHandler
 
         return new GetQuizResultResponse
         {
+            AttemptId = latestAttempt.Id,
             Score = latestAttempt.Score ?? 0,
             IsPassed = latestAttempt.IsPassed ?? false,
             CorrectAnswers = latestAttempt.CorrectAnswers ?? 0,

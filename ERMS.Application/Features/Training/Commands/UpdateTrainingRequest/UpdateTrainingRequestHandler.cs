@@ -1,8 +1,9 @@
-﻿using ERMS.Application.Interface;
+using ERMS.Application.Interface;
 using ERMS.Domain.Entities.Training;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Linq;
 
 namespace ERMS.Application.Features.Training.Commands.UpdateTrainingRequest
 {
@@ -43,10 +44,11 @@ namespace ERMS.Application.Features.Training.Commands.UpdateTrainingRequest
             if (trainingRequest.RequestedById != userId)
                 throw new Exception("Bạn không có quyền cập nhật yêu cầu này");
 
-            // ✅ CHỈ cho sửa khi NeedRevision
-            if (trainingRequest.Status != "NeedRevision")
+            // ✅ CHỈ cho sửa khi chưa được phân bổ, tức là Pending, Rejected, hoặc NeedRevision
+            var editableStatuses = new[] { "Pending", "Rejected", "NeedRevision" };
+            if (!editableStatuses.Contains(trainingRequest.Status))
                 throw new Exception(
-                    "Only requests requiring revision can be updated");
+                    "Only requests requiring revision or pending approval can be updated");
 
             // ✅ Update fields
             trainingRequest.Subject = request.Subject ?? trainingRequest.Subject;

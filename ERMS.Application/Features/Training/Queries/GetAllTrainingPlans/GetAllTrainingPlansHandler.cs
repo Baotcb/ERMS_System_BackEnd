@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Interface;
+using ERMS.Application.Interface;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -69,12 +69,16 @@ namespace ERMS.Application.Features.Training.Queries.GetAllTrainingPlans
                     Id = p.Id,
                     PlanName = p.PlanName,
                     PlanCode = p.PlanCode,
+                    Description = p.Description,
                     StartDate = p.StartDate,
                     EndDate = p.EndDate,
                     TotalBudget = p.TotalBudget,
                     Status = p.Status,
                     CreatedBy = p.CreatedBy.FullName,
-                    CreatedAt = p.CreatedAt
+                    CreatedAt = p.CreatedAt,
+                    ReviewNote = p.ReviewNote,
+                    Year = p.StartDate.Year,
+                    TotalCourses = p.Courses.Count
                 })
                 .ToListAsync(cancellationToken);
 
