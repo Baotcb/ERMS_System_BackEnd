@@ -32,14 +32,14 @@ namespace ERMS.Application.Features.Courses.Commands.CreateCourse
             if (userId == null)
                 throw new UnauthorizedAccessException("Người dùng chưa được xác thực");
 
-            // ✅ Lấy EnterpriseId tự động
+            // Lấy EnterpriseId tự động
             var enterpriseId =
                 await _currentUserService.GetEnterpriseIdAsync();
 
             if (enterpriseId == null)
                 throw new Exception("Người dùng không thuộc doanh nghiệp nào");
 
-            // ✅ Check duplicate CourseCode
+            // Check duplicate CourseCode
             var existedCode = await _context.Courses
                 .AnyAsync(c =>
                     c.CourseCode == request.CourseCode &&
@@ -50,9 +50,17 @@ namespace ERMS.Application.Features.Courses.Commands.CreateCourse
             if (existedCode)
                 throw new Exception("Mã khóa học đã tồn tại");
 
-            
+            var existedTime = await _context.Courses
+                .AnyAsync(c =>
+                    c.StartTime == request.StartTime &&
+                    c.EnterpriseId == enterpriseId &&
+                    !c.IsDeleted,
+                    cancellationToken);
 
-            // ✅ Create Course
+            if (existedTime)
+                throw new Exception("Thời gian học bị trùng");
+
+            // Create Course
             var course = new Course
             {
                 Id = Guid.CreateVersion7(),
@@ -79,7 +87,7 @@ namespace ERMS.Application.Features.Courses.Commands.CreateCourse
                 IsDeleted = false
             };
 
-            // ✅ Auto-detect: trainer nội bộ hay bên ngoài?
+            // Auto-detect: trainer nội bộ hay bên ngoài?
             var trainerEmail = request.TrainerEmail?.Trim().ToLower() ?? "";
             var internalEmployee = await _context.Employees
                 .FirstOrDefaultAsync(e => 

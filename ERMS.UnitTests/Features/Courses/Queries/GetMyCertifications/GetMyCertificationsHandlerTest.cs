@@ -36,7 +36,7 @@ namespace ERMS.UnitTests.Features.Certifications.Queries
                 Mock.Of<Microsoft.Extensions.Logging.ILogger<GetMyCertificationsQueryHandler>>());
         }
 
-        // ✅ Helper chuẩn để tránh lỗi Required fields
+        //   Helper chuẩn để tránh lỗi Required fields
         private Employee CreateEmployee(Guid userId, string fullName = "Test User")
         {
             var user = new User

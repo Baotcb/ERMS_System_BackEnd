@@ -6,7 +6,7 @@ using System.Text;
 
 namespace ERMS.Domain.Entities.Training
 {
-    public class CourseFeedback : BaseEntity
+    public class CourseFeedback : BaseEntityInt
     {
         public Guid CourseId { get; set; }
         public Guid EmployeeId { get; set; }
@@ -19,5 +19,6 @@ namespace ERMS.Domain.Entities.Training
 
         public virtual Course Course { get; set; } = null!;
         public virtual Employee Employee { get; set; } = null!;
+        public ICollection<CourseFeedbackReply> Replies { get; set; } = new List<CourseFeedbackReply>();
     }
 }

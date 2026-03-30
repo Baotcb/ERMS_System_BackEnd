@@ -1,4 +1,4 @@
-using ERMS.Application.Features.Quizzes.Commands.StartQuiz;
+﻿using ERMS.Application.Features.Quizzes.Commands.StartQuiz;
 using ERMS.Application.Interface;
 using ERMS.Domain.Entities.Organization;
 using ERMS.Domain.Entities.Training;
@@ -19,7 +19,6 @@ namespace ERMS.UnitTests.Features.Quizzes.Commands.StartQuiz
     {
         private readonly Mock<IERMSDbContext> _contextMock = new();
         private readonly Mock<ICurrentUserService> _currentUserServiceMock = new();
-
         private readonly StartQuizCommandHandler _handler;
 
         public StartQuizCommandHandlerTests()
@@ -34,10 +33,13 @@ namespace ERMS.UnitTests.Features.Quizzes.Commands.StartQuiz
         {
             _currentUserServiceMock.Setup(x => x.UserId).Returns((Guid?)null);
 
-            var command = new StartQuizCommand { QuizId = Guid.NewGuid() };
+            var command = new StartQuizCommand
+            {
+                QuizId = Guid.NewGuid(),
+                CourseId = Guid.NewGuid()
+            };
 
-            Func<Task> act = async () =>
-                await _handler.Handle(command, CancellationToken.None);
+            Func<Task> act = () => _handler.Handle(command, CancellationToken.None);
 
             await act.Should().ThrowAsync<UnauthorizedAccessException>();
         }
@@ -46,6 +48,7 @@ namespace ERMS.UnitTests.Features.Quizzes.Commands.StartQuiz
         public async Task Handle_ShouldThrow_WhenEnrollmentNotFound()
         {
             var userId = Guid.NewGuid();
+            var courseId = Guid.NewGuid();
 
             _currentUserServiceMock.Setup(x => x.UserId).Returns(userId);
 
@@ -61,52 +64,16 @@ namespace ERMS.UnitTests.Features.Quizzes.Commands.StartQuiz
                 .Returns(new List<Enrollment>()
                 .AsQueryable().BuildMockDbSet().Object);
 
-            var command = new StartQuizCommand { QuizId = Guid.NewGuid() };
+            var command = new StartQuizCommand
+            {
+                QuizId = Guid.NewGuid(),
+                CourseId = courseId
+            };
 
-            Func<Task> act = async () =>
-                await _handler.Handle(command, CancellationToken.None);
+            Func<Task> act = () => _handler.Handle(command, CancellationToken.None);
 
             await act.Should().ThrowAsync<Exception>()
                 .WithMessage("Người dùng chưa đăng ký khóa học");
-        }
-
-        [Fact]
-        public async Task Handle_ShouldThrow_WhenCourseNotCompleted()
-        {
-            var userId = Guid.NewGuid();
-            var employeeId = Guid.NewGuid();
-            var enrollmentId = Guid.NewGuid();
-
-            _currentUserServiceMock.Setup(x => x.UserId).Returns(userId);
-
-            var employees = new List<Employee>
-            {
-                new Employee { Id = employeeId, UserId = userId }
-            };
-
-            var enrollments = new List<Enrollment>
-            {
-                new Enrollment
-                {
-                    Id = enrollmentId,
-                    EmployeeId = employeeId,
-                    Status = "InProgress" // ❌ chưa hoàn thành
-                }
-            };
-
-            _contextMock.Setup(x => x.Employees)
-                .Returns(employees.AsQueryable().BuildMockDbSet().Object);
-
-            _contextMock.Setup(x => x.Enrollments)
-                .Returns(enrollments.AsQueryable().BuildMockDbSet().Object);
-
-            var command = new StartQuizCommand { QuizId = Guid.NewGuid() };
-
-            Func<Task> act = async () =>
-                await _handler.Handle(command, CancellationToken.None);
-
-            await act.Should().ThrowAsync<Exception>()
-                .WithMessage("Bạn phải hoàn thành khóa học trước khi làm bài kiểm tra.");
         }
 
         [Fact]
@@ -114,51 +81,6 @@ namespace ERMS.UnitTests.Features.Quizzes.Commands.StartQuiz
         {
             var userId = Guid.NewGuid();
             var employeeId = Guid.NewGuid();
-            var enrollmentId = Guid.NewGuid();
-
-            _currentUserServiceMock.Setup(x => x.UserId).Returns(userId);
-
-            var employees = new List<Employee>
-            {
-                new Employee { Id = employeeId, UserId = userId }
-            };
-
-            var enrollments = new List<Enrollment>
-            {
-                new Enrollment
-                {
-                    Id = enrollmentId,
-                    EmployeeId = employeeId,
-                    Status = "Completed"
-                }
-            };
-
-            _contextMock.Setup(x => x.Employees)
-                .Returns(employees.AsQueryable().BuildMockDbSet().Object);
-
-            _contextMock.Setup(x => x.Enrollments)
-                .Returns(enrollments.AsQueryable().BuildMockDbSet().Object);
-
-            _contextMock.Setup(x => x.Quizzes)
-                .Returns(new List<Quiz>()
-                .AsQueryable().BuildMockDbSet().Object);
-
-            var command = new StartQuizCommand { QuizId = Guid.NewGuid() };
-
-            Func<Task> act = async () =>
-                await _handler.Handle(command, CancellationToken.None);
-
-            await act.Should().ThrowAsync<Exception>()
-                .WithMessage("Không tìm thấy bài kiểm tra");
-        }
-
-        [Fact]
-        public async Task Handle_ShouldThrow_WhenLessonsNotCompleted()
-        {
-            var userId = Guid.NewGuid();
-            var employeeId = Guid.NewGuid();
-            var enrollmentId = Guid.NewGuid();
-            var quizId = Guid.NewGuid();
             var courseId = Guid.NewGuid();
 
             _currentUserServiceMock.Setup(x => x.UserId).Returns(userId);
@@ -172,9 +94,59 @@ namespace ERMS.UnitTests.Features.Quizzes.Commands.StartQuiz
             {
                 new Enrollment
                 {
+                    Id = Guid.NewGuid(),
+                    EmployeeId = employeeId,
+                    CourseId = courseId,
+                    IsDeleted = false
+                }
+            };
+
+            _contextMock.Setup(x => x.Employees)
+                .Returns(employees.AsQueryable().BuildMockDbSet().Object);
+
+            _contextMock.Setup(x => x.Enrollments)
+                .Returns(enrollments.AsQueryable().BuildMockDbSet().Object);
+
+            _contextMock.Setup(x => x.Quizzes)
+                .Returns(new List<Quiz>()
+                .AsQueryable().BuildMockDbSet().Object);
+
+            var command = new StartQuizCommand
+            {
+                QuizId = Guid.NewGuid(),
+                CourseId = courseId
+            };
+
+            Func<Task> act = () => _handler.Handle(command, CancellationToken.None);
+
+            await act.Should().ThrowAsync<Exception>()
+                .WithMessage("Không tìm thấy bài kiểm tra");
+        }
+
+        [Fact]
+        public async Task Handle_ShouldThrow_WhenLessonsNotCompleted()
+        {
+            var userId = Guid.NewGuid();
+            var employeeId = Guid.NewGuid();
+            var enrollmentId = Guid.NewGuid();
+            var courseId = Guid.NewGuid();
+            var quizId = Guid.NewGuid();
+
+            _currentUserServiceMock.Setup(x => x.UserId).Returns(userId);
+
+            var employees = new List<Employee>
+            {
+                new Employee { Id = employeeId, UserId = userId }
+            };
+
+            var enrollments = new List<Enrollment>
+            {
+                new Enrollment
+                {
                     Id = enrollmentId,
                     EmployeeId = employeeId,
-                    Status = "Completed"
+                    CourseId = courseId,
+                    IsDeleted = false
                 }
             };
 
@@ -192,8 +164,8 @@ namespace ERMS.UnitTests.Features.Quizzes.Commands.StartQuiz
 
             var lessons = new List<Lesson>
             {
-                new Lesson { Id = Guid.NewGuid(), CourseId = courseId },
-                new Lesson { Id = Guid.NewGuid(), CourseId = courseId }
+                new Lesson { Id = Guid.NewGuid(), CourseId = courseId, IsDeleted = false },
+                new Lesson { Id = Guid.NewGuid(), CourseId = courseId, IsDeleted = false }
             };
 
             _contextMock.Setup(x => x.Employees)
@@ -212,10 +184,13 @@ namespace ERMS.UnitTests.Features.Quizzes.Commands.StartQuiz
                 .Returns(new List<LessonProgress>()
                 .AsQueryable().BuildMockDbSet().Object);
 
-            var command = new StartQuizCommand { QuizId = quizId };
+            var command = new StartQuizCommand
+            {
+                QuizId = quizId,
+                CourseId = courseId
+            };
 
-            Func<Task> act = async () =>
-                await _handler.Handle(command, CancellationToken.None);
+            Func<Task> act = () => _handler.Handle(command, CancellationToken.None);
 
             await act.Should().ThrowAsync<Exception>()
                 .WithMessage("Bạn phải hoàn thành tất cả các bài học trong khóa học trước khi làm bài kiểm tra");
@@ -227,8 +202,8 @@ namespace ERMS.UnitTests.Features.Quizzes.Commands.StartQuiz
             var userId = Guid.NewGuid();
             var employeeId = Guid.NewGuid();
             var enrollmentId = Guid.NewGuid();
-            var quizId = Guid.NewGuid();
             var courseId = Guid.NewGuid();
+            var quizId = Guid.NewGuid();
 
             _currentUserServiceMock.Setup(x => x.UserId).Returns(userId);
 
@@ -243,13 +218,14 @@ namespace ERMS.UnitTests.Features.Quizzes.Commands.StartQuiz
                 {
                     Id = enrollmentId,
                     EmployeeId = employeeId,
-                    Status = "Completed"
+                    CourseId = courseId,
+                    IsDeleted = false
                 }
             };
 
             var lessons = new List<Lesson>
             {
-                new Lesson { Id = Guid.NewGuid(), CourseId = courseId }
+                new Lesson { Id = Guid.NewGuid(), CourseId = courseId, IsDeleted = false }
             };
 
             var quizzes = new List<Quiz>
@@ -306,12 +282,15 @@ namespace ERMS.UnitTests.Features.Quizzes.Commands.StartQuiz
             _contextMock.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(1);
 
-            var command = new StartQuizCommand { QuizId = quizId };
+            var command = new StartQuizCommand
+            {
+                QuizId = quizId,
+                CourseId = courseId
+            };
 
             var result = await _handler.Handle(command, CancellationToken.None);
 
-            result.Should().NotBeNull();
-            result.AttemptId.Should().NotBeEmpty();
+            result.Should().NotBe(Guid.Empty);
             attempts.Should().HaveCount(1);
             attempts[0].Status.Should().Be("InProgress");
         }

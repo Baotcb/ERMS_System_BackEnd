@@ -42,7 +42,7 @@ namespace ERMS.Application.Features.Training.Commands.CreateTrainingPlan
             if (!request.TrainingRequestIds.Any())
                 throw new Exception("Cần có ít nhất một yêu cầu đào tạo");
 
-            // ✅ Check duplicate PlanCode
+            //   Check duplicate PlanCode
             var existedCode = await _context.TrainingPlans
                 .AnyAsync(p =>
                     p.PlanCode == request.PlanCode &&
@@ -53,7 +53,7 @@ namespace ERMS.Application.Features.Training.Commands.CreateTrainingPlan
             if (existedCode)
                 throw new Exception("Mã kế hoạch đã tồn tại");
 
-            // ✅ Get Requests
+            //   Get Requests
             var requests = await _context.TrainingRequests
                 .Where(r =>
                     request.TrainingRequestIds.Contains(r.Id)
@@ -65,7 +65,7 @@ namespace ERMS.Application.Features.Training.Commands.CreateTrainingPlan
             if (requests.Count != request.TrainingRequestIds.Count)
                 throw new Exception("Một số yêu cầu đào tạo không hợp lệ");
 
-            // ✅ Transaction
+            //   Transaction
             using var transaction =
                 await _context.BeginTransactionAsync(cancellationToken);
 
@@ -90,7 +90,7 @@ namespace ERMS.Application.Features.Training.Commands.CreateTrainingPlan
 
                 _context.TrainingPlans.Add(trainingPlan);
 
-                // ✅ Assign requests → plan
+                //   Assign requests → plan
                 foreach (var req in requests)
                 {
                     req.TrainingPlanId = trainingPlan.Id;

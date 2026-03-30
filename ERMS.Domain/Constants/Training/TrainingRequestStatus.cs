@@ -9,8 +9,8 @@ namespace ERMS.Domain.Constants.Training
         public const string Pending = "Pending";
         public const string Approved = "Approved";
 
-        public const string NeedRevision = "NeedRevision";  // ✅ cần chỉnh sửa
-        public const string Rejected = "Rejected";      // ✅ từ chối hẳn
+        public const string NeedRevision = "NeedRevision";  //   cần chỉnh sửa
+        public const string Rejected = "Rejected";      //   từ chối hẳn
 
         public const string AddedToPlan = "AddedToPlan";
     }

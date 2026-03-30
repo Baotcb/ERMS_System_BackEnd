@@ -73,6 +73,7 @@ namespace ERMS.Infrastructure.Data
         public DbSet<QuizAttempt> QuizAttempts { get; set; }
         public DbSet<QuizAnswer> QuizAnswers { get; set; }
         public DbSet<CourseFeedback> CourseFeedbacks { get; set; }
+        public DbSet<CourseFeedbackReply> CourseFeedbackReplies { get; set; }
         public DbSet<WorkshopConfirmation> WorkshopConfirmations { get; set; }
 
     
@@ -417,6 +418,17 @@ namespace ERMS.Infrastructure.Data
             builder.Entity<CourseFeedback>()
                 .Property(x => x.IsDeleted)
                 .HasDefaultValue(false);
+
+            builder.Entity<CourseFeedbackReply>()
+        .HasOne(x => x.Feedback)
+        .WithMany(x => x.Replies)
+        .HasForeignKey(x => x.FeedbackId);
+
+            builder.Entity<CourseFeedbackReply>()
+                .HasOne(x => x.ParentReply)
+                .WithMany(x => x.ChildReplies)
+                .HasForeignKey(x => x.ParentReplyId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             builder.Entity<WorkshopConfirmation>()
                 .HasOne(x => x.Course)
