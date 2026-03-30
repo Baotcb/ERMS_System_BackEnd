@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using System;
 using System.Collections.Generic;
 
@@ -37,7 +37,9 @@ namespace ERMS.Application.Features.Training.Queries.GetAllTrainingPlans
 
         public string CreatedBy { get; set; } = null!;
         public DateTime CreatedAt { get; set; }
-
         public string? ReviewNote { get; set; }
+        public string? Description { get; set; }
+        public int Year { get; set; }
+        public int TotalCourses { get; set; }
     }
 }

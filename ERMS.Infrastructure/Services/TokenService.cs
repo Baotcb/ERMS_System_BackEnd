@@ -1,4 +1,5 @@
-﻿using ERMS.Application.Interface;
+using ERMS.Application.Interface;
+using Microsoft.EntityFrameworkCore;
 using ERMS.Domain.Entities;
 using ERMS.Domain.Entities.Identity;
 using Microsoft.AspNetCore.Identity;
@@ -15,20 +16,27 @@ namespace ERMS.Infrastructure.Services
     {
         private readonly IConfiguration _configuration;
         private readonly UserManager<User> _userManager;
-        public TokenService(IConfiguration configuration, UserManager<User> userManager)
+        private readonly IERMSDbContext _context;
+
+        public TokenService(IConfiguration configuration, UserManager<User> userManager, IERMSDbContext context)
         {
             _configuration = configuration;
             _userManager = userManager;
+            _context = context;
         }
         public async Task<string> CreateToken(User user)
         {
+            var isTrainer = await _context.Employees
+                .AnyAsync(e => e.UserId == user.Id && e.IsTrainer && !e.IsDeleted);
+
             var roles = await  _userManager.GetRolesAsync(user);
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Name, user.UserName),
                 new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.GivenName, user.FullName ?? string.Empty)
+                new Claim(ClaimTypes.GivenName, user.FullName ?? string.Empty),
+                new Claim("isTrainer", isTrainer.ToString().ToLower())
             };
 
             foreach (var role in roles)

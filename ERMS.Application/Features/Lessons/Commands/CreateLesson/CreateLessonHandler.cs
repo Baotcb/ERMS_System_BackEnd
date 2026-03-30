@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Interface;
+using ERMS.Application.Interface;
 using ERMS.Domain.Entities.Training;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -22,6 +22,8 @@ namespace ERMS.Application.Features.Lessons.Commands.CreateLesson
 
         public async Task<Guid> Handle(CreateLessonCommand request, CancellationToken cancellationToken)
         {
+            await using var transaction = await _context.BeginTransactionAsync(cancellationToken);
+
             var course = await _context.Courses
                 .FirstOrDefaultAsync(c => c.Id == request.CourseId && !c.IsDeleted, cancellationToken);
 
@@ -58,6 +60,7 @@ namespace ERMS.Application.Features.Lessons.Commands.CreateLesson
             _context.Lessons.Add(lesson);
 
             await _context.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
 
             return lesson.Id;
         }

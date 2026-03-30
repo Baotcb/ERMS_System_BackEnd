@@ -1,4 +1,4 @@
-﻿using ERMS.Domain.Common;
+using ERMS.Domain.Common;
 using ERMS.Domain.Entities.Identity;
 using System;
 using System.Collections.Generic;
@@ -6,7 +6,7 @@ using System.Text;
 
 namespace ERMS.Domain.Entities.Training
 {
-    public class WorkshopConfirmation : BaseEntityInt
+    public class WorkshopConfirmation : BaseEntity
     {
         public Guid CourseId { get; set; }
         public Guid ConfirmedByUserId { get; set; }

@@ -101,6 +101,17 @@ namespace ERMS.API.Controllers
             return Ok(result);
         }
 
+        [HttpGet("{courseId}/enrolled-employees")]
+        public async Task<IActionResult> GetEnrolledEmployees(Guid courseId)
+        {
+            var result = await _mediator.Send(new Application.Features.Enrollments.Queries.GetEnrolledEmployeeIds.GetEnrolledEmployeeIdsQuery
+            {
+                CourseId = courseId
+            });
+            return Ok(result);
+        }
+
+
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(Guid id, UpdateCourseCommand command)
         {

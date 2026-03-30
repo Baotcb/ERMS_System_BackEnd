@@ -67,6 +67,7 @@ namespace ERMS.Application.Features.Courses.Queries.GetAllCourses
                     Description = c.Description,
                     ThumbnailUrl = c.ThumbnailUrl,
                     TrainerEmail = c.TrainerEmail,
+                    ContentManagerEmail = c.ContentManagerEmail,
                     DurationMinutes = c.DurationMinutes,
                     Level = c.Level,
                     Status = c.Status,
