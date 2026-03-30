@@ -1,9 +1,8 @@
 ﻿using ERMS.Application.Features.Quizzes.Commands.SubmitQuiz;
-using ERMS.Application.Interface;
 using ERMS.Domain.Entities.Training;
-using ERMS.UnitTests.Helpers;
+using ERMS.Infrastructure.Data;
 using FluentAssertions;
-using Moq;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -12,30 +11,24 @@ using Xunit;
 
 namespace ERMS.UnitTests.Features.Quizzes.Commands.SubmitQuiz
 {
-    public class SubmitQuizCommandHandlerTests
+    public class SubmitQuizCommandHandlerTests : IDisposable
     {
-        private readonly Mock<IERMSDbContext> _contextMock;
+        private readonly ERMSDbContext _context;
         private readonly SubmitQuizCommandHandler _handler;
 
         public SubmitQuizCommandHandlerTests()
         {
-            _contextMock = new Mock<IERMSDbContext>();
-            _handler = new SubmitQuizCommandHandler(_contextMock.Object);
-        }
+            var options = new DbContextOptionsBuilder<ERMSDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
 
-        private void SetupQuizAttempts(List<QuizAttempt> attempts)
-        {
-            var dbSet = attempts.AsQueryable().BuildMockDbSet();
-
-            _contextMock.Setup(x => x.QuizAttempts)
-                .Returns(dbSet.Object);
+            _context = new ERMSDbContext(options);
+            _handler = new SubmitQuizCommandHandler(_context);
         }
 
         [Fact]
         public async Task Handle_AttemptNotFound_ShouldThrowException()
         {
-            SetupQuizAttempts(new List<QuizAttempt>());
-
             var command = new SubmitQuizCommand
             {
                 AttemptId = Guid.NewGuid()
@@ -53,56 +46,34 @@ namespace ERMS.UnitTests.Features.Quizzes.Commands.SubmitQuiz
         {
             var attemptId = Guid.NewGuid();
 
-            var question1 = new QuizQuestion
-            {
-                Id = Guid.NewGuid(),
-                CorrectAnswer = "A",
-                Points = 1
-            };
-
-            var question2 = new QuizQuestion
-            {
-                Id = Guid.NewGuid(),
-                CorrectAnswer = "B",
-                Points = 1
-            };
+            var q1 = new QuizQuestion { Id = Guid.NewGuid(), CorrectAnswer = "A", Points = 1, QuestionText = "1", Options = "1" };
+            var q2 = new QuizQuestion { Id = Guid.NewGuid(), CorrectAnswer = "B", Points = 1, QuestionText = "2", Options = "2" };
 
             var attempt = new QuizAttempt
             {
                 Id = attemptId,
+                EnrollmentId = Guid.NewGuid(),
                 TotalQuestions = 2,
                 Quiz = new Quiz
                 {
                     PassingScore = 50,
-                    Questions = new List<QuizQuestion> { question1, question2 }
+                    Questions = new List<QuizQuestion> { q1, q2 },
+                    QuizTitle = "Sample Quiz",
+
                 },
                 QuizAnswers = new List<QuizAnswer>
                 {
-                    new QuizAnswer
-                    {
-                        QuizQuestionId = question1.Id,
-                        SelectedAnswer = "A"
-                    },
-                    new QuizAnswer
-                    {
-                        QuizQuestionId = question2.Id,
-                        SelectedAnswer = "B"
-                    }
+                    new QuizAnswer { QuizQuestionId = q1.Id, SelectedAnswer = "A" },
+                    new QuizAnswer { QuizQuestionId = q2.Id, SelectedAnswer = "B" }
                 }
             };
 
-            SetupQuizAttempts(new List<QuizAttempt> { attempt });
+            _context.QuizAttempts.Add(attempt);
+            await _context.SaveChangesAsync();
 
-            _contextMock.Setup(x =>
-                x.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(1);
-
-            var command = new SubmitQuizCommand
-            {
-                AttemptId = attemptId
-            };
-
-            var result = await _handler.Handle(command, CancellationToken.None);
+            var result = await _handler.Handle(
+                new SubmitQuizCommand { AttemptId = attemptId },
+                CancellationToken.None);
 
             result.Score.Should().Be(100);
             result.CorrectAnswers.Should().Be(2);
@@ -115,56 +86,34 @@ namespace ERMS.UnitTests.Features.Quizzes.Commands.SubmitQuiz
         {
             var attemptId = Guid.NewGuid();
 
-            var question1 = new QuizQuestion
-            {
-                Id = Guid.NewGuid(),
-                CorrectAnswer = "A",
-                Points = 1
-            };
+            var q1 = new QuizQuestion { Id = Guid.NewGuid(), CorrectAnswer = "A", Points = 1, QuestionText = "1", Options = "1" };
+            var q2 = new QuizQuestion { Id = Guid.NewGuid(), CorrectAnswer = "B", Points = 1, QuestionText = "2", Options = "2" };
 
-            var question2 = new QuizQuestion
-            {
-                Id = Guid.NewGuid(),
-                CorrectAnswer = "B",
-                Points = 1
-            };
 
             var attempt = new QuizAttempt
             {
                 Id = attemptId,
+                EnrollmentId = Guid.NewGuid(),
                 TotalQuestions = 2,
                 Quiz = new Quiz
                 {
                     PassingScore = 70,
-                    Questions = new List<QuizQuestion> { question1, question2 }
+                    Questions = new List<QuizQuestion> { q1, q2 },
+                    QuizTitle = "Sample Quiz"
                 },
                 QuizAnswers = new List<QuizAnswer>
                 {
-                    new QuizAnswer
-                    {
-                        QuizQuestionId = question1.Id,
-                        SelectedAnswer = "A"
-                    },
-                    new QuizAnswer
-                    {
-                        QuizQuestionId = question2.Id,
-                        SelectedAnswer = "C"
-                    }
+                    new QuizAnswer { QuizQuestionId = q1.Id, SelectedAnswer = "A" },
+                    new QuizAnswer { QuizQuestionId = q2.Id, SelectedAnswer = "C" }
                 }
             };
 
-            SetupQuizAttempts(new List<QuizAttempt> { attempt });
+            _context.QuizAttempts.Add(attempt);
+            await _context.SaveChangesAsync();
 
-            _contextMock.Setup(x =>
-                x.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(1);
-
-            var command = new SubmitQuizCommand
-            {
-                AttemptId = attemptId
-            };
-
-            var result = await _handler.Handle(command, CancellationToken.None);
+            var result = await _handler.Handle(
+                new SubmitQuizCommand { AttemptId = attemptId },
+                CancellationToken.None);
 
             result.Score.Should().Be(50);
             result.CorrectAnswers.Should().Be(1);
@@ -172,25 +121,36 @@ namespace ERMS.UnitTests.Features.Quizzes.Commands.SubmitQuiz
         }
 
         [Fact]
-        public async Task Handle_ShouldUpdateAttemptAndSaveChanges()
+        public async Task Handle_ShouldUpdateEnrollment_WhenPassed()
         {
             var attemptId = Guid.NewGuid();
+            var enrollmentId = Guid.NewGuid();
 
             var question = new QuizQuestion
             {
                 Id = Guid.NewGuid(),
                 CorrectAnswer = "A",
-                Points = 1
+                Points = 1,
+                Options = "A",
+                QuestionText = "Sample Question"
+            };
+
+            var enrollment = new Enrollment
+            {
+                Id = enrollmentId,
+                Status = "InProgress"
             };
 
             var attempt = new QuizAttempt
             {
                 Id = attemptId,
+                EnrollmentId = enrollmentId,
                 TotalQuestions = 1,
                 Quiz = new Quiz
                 {
                     PassingScore = 50,
-                    Questions = new List<QuizQuestion> { question }
+                    Questions = new List<QuizQuestion> { question },
+                    QuizTitle = "Sample Quiz"
                 },
                 QuizAnswers = new List<QuizAnswer>
                 {
@@ -202,22 +162,68 @@ namespace ERMS.UnitTests.Features.Quizzes.Commands.SubmitQuiz
                 }
             };
 
-            SetupQuizAttempts(new List<QuizAttempt> { attempt });
+            _context.Enrollments.Add(enrollment);
+            _context.QuizAttempts.Add(attempt);
+            await _context.SaveChangesAsync();
 
-            _contextMock.Setup(x =>
-                x.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(1);
+            await _handler.Handle(
+                new SubmitQuizCommand { AttemptId = attemptId },
+                CancellationToken.None);
 
-            var command = new SubmitQuizCommand
+            enrollment.Status.Should().Be("Completed");
+            enrollment.CompletedAt.Should().NotBeNull();
+        }
+
+        [Fact]
+        public async Task Handle_ShouldSaveChanges()
+        {
+            var attemptId = Guid.NewGuid();
+
+            var question = new QuizQuestion
             {
-                AttemptId = attemptId
+                Id = Guid.NewGuid(),
+                CorrectAnswer = "A",
+                Points = 1,
+                Options = "A",
+                QuestionText = "Sample Question"
             };
 
-            await _handler.Handle(command, CancellationToken.None);
+            var attempt = new QuizAttempt
+            {
+                Id = attemptId,
+                EnrollmentId = Guid.NewGuid(),
+                TotalQuestions = 1,
+                Quiz = new Quiz
+                {
+                    PassingScore = 50,
+                    Questions = new List<QuizQuestion> { question },
+                    QuizTitle = "Sample Quiz"
+                },
+                QuizAnswers = new List<QuizAnswer>
+                {
+                    new QuizAnswer
+                    {
+                        QuizQuestionId = question.Id,
+                        SelectedAnswer = "A"
+                    }
+                }
+            };
 
-            _contextMock.Verify(x =>
-                x.SaveChangesAsync(It.IsAny<CancellationToken>()),
-                Times.Once);
+            _context.QuizAttempts.Add(attempt);
+            await _context.SaveChangesAsync();
+
+            await _handler.Handle(
+                new SubmitQuizCommand { AttemptId = attemptId },
+                CancellationToken.None);
+
+            var updated = await _context.QuizAttempts.FindAsync(attemptId);
+            updated!.Status.Should().Be("Completed");
+        }
+
+        public void Dispose()
+        {
+            _context.Database.EnsureDeleted();
+            _context.Dispose();
         }
     }
 }

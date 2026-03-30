@@ -50,7 +50,15 @@ namespace ERMS.Application.Features.Courses.Commands.CreateCourse
             if (existedCode)
                 throw new Exception("Mã khóa học đã tồn tại");
 
-            
+            var existedTime = await _context.Courses
+                .AnyAsync(c =>
+                    c.StartTime == request.StartTime &&
+                    c.EnterpriseId == enterpriseId &&
+                    !c.IsDeleted,
+                    cancellationToken);
+
+            if (existedTime)
+                throw new Exception("Thời gian học bị trùng");
 
             // ✅ Create Course
             var course = new Course
