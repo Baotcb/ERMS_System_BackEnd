@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace ERMS.Application.Features.Quizzes.Commands.StartQuiz;
 
 public sealed class StartQuizCommandHandler
-    : IRequestHandler<StartQuizCommand, Guid>
+    : IRequestHandler<StartQuizCommand, StartQuizResult>
 {
     private readonly IERMSDbContext _context;
     private readonly ICurrentUserService _currentUserService;
@@ -19,7 +19,7 @@ public sealed class StartQuizCommandHandler
         _currentUserService = currentUserService;
     }
 
-    public async Task<Guid> Handle(StartQuizCommand request, CancellationToken cancellationToken)
+    public async Task<StartQuizResult> Handle(StartQuizCommand request, CancellationToken cancellationToken)
     {
         var userId = _currentUserService.UserId;
         if (userId == null)
@@ -110,6 +110,13 @@ public sealed class StartQuizCommandHandler
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        return attempt.Id;
+        return new StartQuizResult
+        {
+            AttemptId = attempt.Id,
+            TimeLimitMinutes = quiz.TimeLimitMinutes,
+            MaxAttempts = quiz.MaxAttempts,
+            PassingScore = quiz.PassingScore,
+            TotalQuestions = quiz.Questions.Count
+        };
     }
 }
