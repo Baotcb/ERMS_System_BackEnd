@@ -1,4 +1,5 @@
 using ERMS.Application.Features.Lessons.Commands.CreateLesson;
+using ERMS.Application.Features.Lessons.Commands.UpdateLesson;
 using ERMS.Application.Features.Lessons.Commands.UpdateLessonProgress;
 using ERMS.Application.Features.Lessons.Queries.GetLessonProgress;
 using ERMS.Application.Features.Lessons.Queries.GetLessonsByCourse;
@@ -143,10 +144,20 @@ namespace ERMS.API.Controllers
 
             return Ok(new { message = "Đã cập nhật tài liệu thành công." });
         }
-    }
 
-    public class UpdateDocumentUrlRequest
-    {
-        public string? DocumentUrl { get; set; }
+        [HttpPut("{lessonId}")]
+        public async Task<IActionResult> Update(Guid lessonId, UpdateLessonCommand command)
+        {
+            if (lessonId != command.Id)
+                return BadRequest("LessonId mismatch");
+
+            var result = await _mediator.Send(command);
+            return Ok(result);
+        }
+
+        public class UpdateDocumentUrlRequest
+        {
+            public string? DocumentUrl { get; set; }
+        }
     }
 }
