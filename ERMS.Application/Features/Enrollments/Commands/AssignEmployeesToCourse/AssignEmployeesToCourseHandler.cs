@@ -39,6 +39,9 @@ namespace ERMS.Application.Features.Enrollments.Commands.AssignEmployeesToCourse
 
             if (course == null) throw new KeyNotFoundException("Khóa học không tồn tại hoặc đã bị xóa.");
 
+            if (course.Status != "Public")
+                throw new InvalidOperationException("Khóa học không ở trạng thái Public.");
+
             // 2. Xử lý ghi danh (Enrollment) - Tránh trùng lặp
             var existingEmployeeIds = await _context.Enrollments
                 .Where(e => e.CourseId == request.CourseId)

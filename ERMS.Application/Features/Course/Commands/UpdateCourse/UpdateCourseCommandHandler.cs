@@ -78,7 +78,7 @@ namespace ERMS.Application.Features.Courses.Commands.UpdateCourse
             course.EnrollmentDeadline = request.EnrollmentDeadline;
             course.CompletionCriteria = request.CompletionCriteria;
 
-            // ✅ Bảo toàn ContentManagerEmail: nếu TrainerEmail thay đổi → re-detect
+            //  Bảo toàn ContentManagerEmail: nếu TrainerEmail thay đổi → re-detect
             if (!string.Equals(oldTrainerEmail, request.TrainerEmail, StringComparison.OrdinalIgnoreCase))
             {
                 var isInternalTrainer = await _context.Employees

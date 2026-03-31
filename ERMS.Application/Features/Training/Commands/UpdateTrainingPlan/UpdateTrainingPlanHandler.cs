@@ -150,9 +150,33 @@ namespace ERMS.Application.Features.Training.Commands.UpdateTrainingPlan
                 if (toAdd.Any())
                 {
                     var addRequests = await _context.TrainingRequests
-                        .Where(r => toAdd.Contains(r.Id) && !r.IsDeleted)
+                        .Where(r => toAdd.Contains(r.Id)
+                            && !r.IsDeleted
+                            && r.EnterpriseId == enterpriseId)
                         .ToListAsync(cancellationToken);
 
+                    // chỉ cho phép request chưa có plan hoặc đang thuộc plan hiện tại
+                    var invalidRequests = addRequests
+                        .Where(r => r.TrainingPlanId != null && r.TrainingPlanId != plan.Id)
+                        .ToList();
+
+                    if (invalidRequests.Any())
+                    {
+                        var invalidIds = string.Join(", ", invalidRequests.Select(r => r.Id));
+                        throw new Exception($"Các request [{invalidIds}] đã thuộc kế hoạch khác");
+                    }
+
+                    // (Optional) Check status
+                    var invalidStatus = addRequests
+                        .Where(r => r.Status != "Pending")
+                        .ToList();
+
+                    if (invalidStatus.Any())
+                    {
+                        throw new Exception("Chỉ được thêm request ở trạng thái Pending");
+                    }
+
+                    // Assign
                     foreach (var r in addRequests)
                     {
                         r.TrainingPlanId = plan.Id;
