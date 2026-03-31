@@ -9,6 +9,7 @@ namespace ERMS.Application.Features.Feedback.Commands.ReplyFeedback
     {
         public int FeedbackId { get; set; }
         public string ReplyContent { get; set; } = null!;
+        public bool IsAnonymous { get; set; }
         public int? ParentReplyId { get; set; }
     }
 }

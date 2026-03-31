@@ -11,7 +11,9 @@ namespace ERMS.Domain.Entities.Training
 
         public Guid ReplyBy { get; set; }
         public string ReplyContent { get; set; } = null!;
-
+        public bool IsAnonymous { get; set; }
+        public string? ReplyByName { get; set; }
+        public string? ReplyByAvatarUrl { get; set; }
         public int? ParentReplyId { get; set; } 
 
         public bool IsDeleted { get; set; }

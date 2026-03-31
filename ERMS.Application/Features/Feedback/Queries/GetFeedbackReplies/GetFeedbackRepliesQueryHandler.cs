@@ -42,6 +42,9 @@ namespace ERMS.Application.Features.Feedback.Queries.GetFeedbackReplies
                         ParentReplyId = x.ParentReplyId,
                         ReplyContent = x.ReplyContent,
                         ReplyBy = x.ReplyBy,
+                        IsAnonymous = x.IsAnonymous,
+                        ReplyByName = x.ReplyByName,
+                        ReplyByAvatarUrl = x.ReplyByAvatarUrl,
                         CreatedAt = x.CreatedAt,
                         Children = Build(x.Id)
                     }).ToList();
