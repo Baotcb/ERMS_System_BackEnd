@@ -148,8 +148,8 @@ namespace ERMS.API.Controllers
         [HttpPut("{lessonId}")]
         public async Task<IActionResult> Update(Guid lessonId, UpdateLessonCommand command)
         {
-            if (lessonId != command.Id)
-                return BadRequest("LessonId mismatch");
+            
+            command.Id = lessonId;
 
             var result = await _mediator.Send(command);
             return Ok(result);
