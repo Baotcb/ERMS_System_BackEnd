@@ -13,5 +13,6 @@ namespace ERMS.Domain.Constants.Training
         public const string Rejected = "Rejected";      //   từ chối hẳn
 
         public const string AddedToPlan = "AddedToPlan";
+        public const string Completed = "Completed";
     }
 }
