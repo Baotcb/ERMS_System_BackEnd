@@ -26,16 +26,17 @@ public sealed class GetApplicationsByJobHandler : IRequestHandler<GetApplication
         var userId = _currentUserService.UserId
             ?? throw new UnauthorizedAccessException("Người dùng chưa được xác thực.");
 
-        // 2. Role check: HRManager or Director only
+
+        var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
+            ?? throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
+        
         var userRoles = _currentUserService.Roles;
         if (userRoles == null || (!userRoles.Contains(AppRoles.HRManager) && !userRoles.Contains(AppRoles.Director)))
         {
             throw new UnauthorizedAccessException("Chỉ HR Manager hoặc Giám đốc mới có quyền xem hồ sơ ứng tuyển.");
         }
 
-        // 3. Enterprise scoping
-        var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
-            ?? throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
+
 
         // 4. Validate job posting exists and belongs to enterprise
         var jobPosting = await _context.JobPostings
