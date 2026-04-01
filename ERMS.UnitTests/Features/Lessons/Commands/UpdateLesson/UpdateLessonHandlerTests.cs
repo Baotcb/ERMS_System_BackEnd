@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Features.Lessons.Commands.UpdateLesson;
+using ERMS.Application.Features.Lessons.Commands.UpdateLesson;
 using ERMS.Application.Interface;
 using ERMS.Domain.Entities.Training;
 using ERMS.Infrastructure.Data;
@@ -39,7 +39,6 @@ namespace ERMS.UnitTests.Features.Lessons.Commands.UpdateLesson
                 CourseCode = "COURSE-001",
                 CourseName = "Test Course",
                 TrainerEmail = "trainer@test.com",
-                ContentManagerEmail = "admin@test.com",
                 StartTime = DateTime.UtcNow.AddDays(1),
                 CompletionCriteria = "Quiz",
                 Status = "Draft",

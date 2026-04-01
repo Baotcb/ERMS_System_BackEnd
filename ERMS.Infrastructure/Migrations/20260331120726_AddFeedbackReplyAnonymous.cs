@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -13,12 +13,6 @@ namespace ERMS.Infrastructure.Migrations
         {
             migrationBuilder.DropTable(
     name: "WorkshopConfirmations");
-
-            migrationBuilder.AddColumn<string>(
-                name: "ContentManagerEmail",
-                table: "Courses",
-                type: "nvarchar(max)",
-                nullable: true);
 
             migrationBuilder.AddColumn<bool>(
                 name: "IsAnonymous",
@@ -43,10 +37,6 @@ namespace ERMS.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "ContentManagerEmail",
-                table: "Courses");
-
             migrationBuilder.DropColumn(
                 name: "IsAnonymous",
                 table: "CourseFeedbackReplies");

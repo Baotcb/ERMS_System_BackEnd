@@ -37,7 +37,6 @@ namespace ERMS.Application.Features.Courses.Queries.GetCourseDetails
                     Description = c.Description,
                     ThumbnailUrl = c.ThumbnailUrl,
                     TrainerEmail = c.TrainerEmail,
-                    ContentManagerEmail = c.ContentManagerEmail,
                     DurationMinutes = c.DurationMinutes,
                     StartTime = c.StartTime,
                     IsOnline = c.IsOnline,

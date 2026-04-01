@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Interface;
+using ERMS.Application.Interface;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -56,9 +56,9 @@ namespace ERMS.Application.Features.Lessons.Commands.UpdateLesson
             // 4. Check quyền
             var isHR = roles.Contains("HR");
             var isSameEnterprise = enterpriseId == course.EnterpriseId;
-            var isContentManager = course.ContentManagerEmail == email;
+            var isTrainer = course.TrainerEmail == email;
 
-            if (!isHR && !isSameEnterprise && !isContentManager)
+            if (!isHR && !isSameEnterprise && !isTrainer)
             {
                 throw new UnauthorizedAccessException("Bạn không có quyền chỉnh sửa bài học này");
             }

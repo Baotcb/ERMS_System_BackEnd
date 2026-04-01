@@ -78,21 +78,6 @@ namespace ERMS.Application.Features.Courses.Commands.UpdateCourse
             course.EnrollmentDeadline = request.EnrollmentDeadline;
             course.CompletionCriteria = request.CompletionCriteria;
 
-            //  Bảo toàn ContentManagerEmail: nếu TrainerEmail thay đổi → re-detect
-            if (!string.Equals(oldTrainerEmail, request.TrainerEmail, StringComparison.OrdinalIgnoreCase))
-            {
-                var isInternalTrainer = await _context.Employees
-                    .AnyAsync(e => e.User.Email == request.TrainerEmail, cancellationToken);
-                course.ContentManagerEmail = isInternalTrainer
-                    ? request.TrainerEmail
-                    : _currentUserService.Email;
-            }
-            // Nếu ContentManagerEmail đang null (legacy data) → gán mặc định
-            else if (string.IsNullOrEmpty(course.ContentManagerEmail))
-            {
-                course.ContentManagerEmail = course.TrainerEmail;
-            }
-
             course.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync(cancellationToken);

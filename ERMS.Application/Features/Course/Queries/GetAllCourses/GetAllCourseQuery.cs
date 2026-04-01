@@ -41,8 +41,6 @@ namespace ERMS.Application.Features.Courses.Queries.GetAllCourses
 
         public string TrainerEmail { get; set; } 
 
-        public string? ContentManagerEmail { get; set; }
-
         public int? DurationMinutes { get; set; }
 
         public string? Level { get; set; }

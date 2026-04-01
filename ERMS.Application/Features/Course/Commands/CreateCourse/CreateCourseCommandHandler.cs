@@ -87,7 +87,7 @@ namespace ERMS.Application.Features.Courses.Commands.CreateCourse
                 IsDeleted = false
             };
 
-            // Auto-detect: trainer nội bộ hay bên ngoài?
+            // Auto-detect: trainer nội bộ → bật cờ IsTrainer
             var trainerEmail = request.TrainerEmail?.Trim().ToLower() ?? "";
             var internalEmployee = await _context.Employees
                 .FirstOrDefaultAsync(e => 
@@ -98,23 +98,12 @@ namespace ERMS.Application.Features.Courses.Commands.CreateCourse
 
             if (internalEmployee != null)
             {
-                course.ContentManagerEmail = request.TrainerEmail;
-                
                 // Trở thành Trainer thì bật cờ IsTrainer = true để họ thấy tab Giảng dạy bên FE
                 if (!internalEmployee.IsTrainer)
                 {
                     internalEmployee.IsTrainer = true;
                     _context.Employees.Update(internalEmployee);
                 }
-            }
-            else
-            {
-                // Trainer ngoài enterprise → HR (người tạo) sẽ quản lý nội dung
-                var currentUserEmail = _currentUserService.Email;
-                course.ContentManagerEmail = currentUserEmail;
-                _logger.LogInformation(
-                    "External trainer detected ({TrainerEmail}). Content manager assigned to HR: {ContentManager}",
-                    request.TrainerEmail, currentUserEmail);
             }
 
             _context.Courses.Add(course);

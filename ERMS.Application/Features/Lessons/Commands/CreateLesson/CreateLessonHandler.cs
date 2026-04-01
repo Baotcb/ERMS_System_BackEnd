@@ -34,7 +34,7 @@ namespace ERMS.Application.Features.Lessons.Commands.CreateLesson
             var role = _currentUserService.Roles;
             var userEmail = _currentUserService.Email;
 
-            if (!role.Contains("HR") && !enterpriseId.Equals(course.EnterpriseId) && course.ContentManagerEmail != userEmail)
+            if (!role.Contains("HR") && !enterpriseId.Equals(course.EnterpriseId) && course.TrainerEmail != userEmail)
             {
                throw new UnauthorizedAccessException("Bạn không có quyền thêm bài học vào khóa học này");
 

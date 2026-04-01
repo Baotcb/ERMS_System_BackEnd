@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Features.Lessons.Commands.CreateLesson;
+using ERMS.Application.Features.Lessons.Commands.CreateLesson;
 using ERMS.Application.Interface;
 using ERMS.Domain.Entities.Training;
 using ERMS.Infrastructure.Data;
@@ -41,7 +41,6 @@ namespace ERMS.UnitTests.Features.Lessons.Commands.CreateLesson
                 CourseCode = "COURSE-001",
                 CourseName = "Test Course",
                 TrainerEmail = "trainer@test.com",
-                ContentManagerEmail = "admin@test.com",
                 StartTime = DateTime.UtcNow.AddDays(1),
                 CompletionCriteria = "Quiz",
                 Status = "Draft",
