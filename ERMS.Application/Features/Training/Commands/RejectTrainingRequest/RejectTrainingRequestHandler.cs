@@ -53,7 +53,7 @@ namespace ERMS.Application.Features.Training.Commands.ConfirmTrainingRequest
             if (trainingRequest.Status != "Pending")
                 throw new Exception("Yêu cầu đã bị từ chối");
 
-            // ✅ Confirm request
+            //   Confirm request
             trainingRequest.Status = request.Status;
             trainingRequest.ReviewNote = request.ReviewNote;
 

@@ -18,7 +18,7 @@ namespace ERMS.Domain.Constants.Recruitment
         public const string Pending = "Pending";
 
         /// <summary>
-        /// ✅ Approved: Director đã phê duyệt, có thể tạo JobPosting
+        ///   Approved: Director đã phê duyệt, có thể tạo JobPosting
         /// </summary>
         public const string Approved = "Approved";
 

@@ -53,7 +53,8 @@ namespace ERMS.UnitTests.Features.Enrollments.Commands
                     EnterpriseId = enterpriseId,
                     CourseName = "Test Course",
                     TrainerEmail = trainerEmail,
-                    IsOnline = true
+                    IsOnline = true,
+                    Status = "Public"
                 }
             }.AsQueryable().BuildMockDbSet();
             _contextMock.Setup(x => x.Courses).Returns(courses.Object);
@@ -122,7 +123,7 @@ namespace ERMS.UnitTests.Features.Enrollments.Commands
 
             _currentUserServiceMock.Setup(x => x.GetEnterpriseIdAsync()).ReturnsAsync(enterpriseId);
 
-            var courses = new List<Course> { new Course { Id = courseId, EnterpriseId = enterpriseId } }.AsQueryable().BuildMockDbSet();
+            var courses = new List<Course> { new Course { Id = courseId, EnterpriseId = enterpriseId, Status="Public" } }.AsQueryable().BuildMockDbSet();
             _contextMock.Setup(x => x.Courses).Returns(courses.Object);
 
             // Đã tồn tại enrollment này rồi

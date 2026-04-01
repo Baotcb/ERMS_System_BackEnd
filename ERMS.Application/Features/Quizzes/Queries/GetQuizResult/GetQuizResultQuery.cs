@@ -9,6 +9,7 @@ public sealed class GetQuizResultQuery : IRequest<GetQuizResultResponse?>
 
 public sealed class GetQuizResultResponse
 {
+    public Guid AttemptId { get; set; }
     public decimal Score { get; set; }
     public bool IsPassed { get; set; }
     public int CorrectAnswers { get; set; }

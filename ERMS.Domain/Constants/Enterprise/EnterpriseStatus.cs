@@ -6,7 +6,7 @@ namespace ERMS.Domain.Constants.Enterprise
 {
     public static class EnterpriseStatus
     {
-        public const string Active = "Active"; //•	✅ Active: Doanh nghiệp đang hoạt động bình thường
+        public const string Active = "Active"; //•	  Active: Doanh nghiệp đang hoạt động bình thường
         public const string Locked = "Locked"; //•	🔒 Locked: Doanh nghiệp bị khóa bởi Admin
         public const string Suspended = "Suspended"; // •	⏸️ Suspended: Doanh nghiệp bị tạm ngưng khi vừa khởi tạo để chờ admin duyệt 
         public const string Inactive = "Inactive";// •	❌ Inactive: Doanh nghiệp không hoạt động

@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Interface;
+using ERMS.Application.Interface;
 using ERMS.Domain.Entities.Training;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -32,14 +32,14 @@ namespace ERMS.Application.Features.Courses.Commands.CreateCourse
             if (userId == null)
                 throw new UnauthorizedAccessException("Người dùng chưa được xác thực");
 
-            // ✅ Lấy EnterpriseId tự động
+            // Lấy EnterpriseId tự động
             var enterpriseId =
                 await _currentUserService.GetEnterpriseIdAsync();
 
             if (enterpriseId == null)
                 throw new Exception("Người dùng không thuộc doanh nghiệp nào");
 
-            // ✅ Check duplicate CourseCode
+            // Check duplicate CourseCode
             var existedCode = await _context.Courses
                 .AnyAsync(c =>
                     c.CourseCode == request.CourseCode &&
@@ -50,9 +50,17 @@ namespace ERMS.Application.Features.Courses.Commands.CreateCourse
             if (existedCode)
                 throw new Exception("Mã khóa học đã tồn tại");
 
-            
+            var existedTime = await _context.Courses
+                .AnyAsync(c =>
+                    c.StartTime == request.StartTime &&
+                    c.EnterpriseId == enterpriseId &&
+                    !c.IsDeleted,
+                    cancellationToken);
 
-            // ✅ Create Course
+            if (existedTime)
+                throw new Exception("Thời gian học bị trùng");
+
+            // Create Course
             var course = new Course
             {
                 Id = Guid.CreateVersion7(),
@@ -78,6 +86,36 @@ namespace ERMS.Application.Features.Courses.Commands.CreateCourse
                 CreatedAt = DateTime.UtcNow,
                 IsDeleted = false
             };
+
+            // Auto-detect: trainer nội bộ hay bên ngoài?
+            var trainerEmail = request.TrainerEmail?.Trim().ToLower() ?? "";
+            var internalEmployee = await _context.Employees
+                .FirstOrDefaultAsync(e => 
+                    e.EnterpriseId == enterpriseId && 
+                    !e.IsDeleted && 
+                    e.User.Email.ToLower() == trainerEmail, 
+                    cancellationToken);
+
+            if (internalEmployee != null)
+            {
+                course.ContentManagerEmail = request.TrainerEmail;
+                
+                // Trở thành Trainer thì bật cờ IsTrainer = true để họ thấy tab Giảng dạy bên FE
+                if (!internalEmployee.IsTrainer)
+                {
+                    internalEmployee.IsTrainer = true;
+                    _context.Employees.Update(internalEmployee);
+                }
+            }
+            else
+            {
+                // Trainer ngoài enterprise → HR (người tạo) sẽ quản lý nội dung
+                var currentUserEmail = _currentUserService.Email;
+                course.ContentManagerEmail = currentUserEmail;
+                _logger.LogInformation(
+                    "External trainer detected ({TrainerEmail}). Content manager assigned to HR: {ContentManager}",
+                    request.TrainerEmail, currentUserEmail);
+            }
 
             _context.Courses.Add(course);
 

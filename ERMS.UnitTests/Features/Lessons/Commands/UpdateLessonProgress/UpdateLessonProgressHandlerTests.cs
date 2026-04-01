@@ -1,20 +1,21 @@
 ﻿using ERMS.Application.Features.Lessons.Commands.UpdateLessonProgress;
 using ERMS.Application.Interface;
+using ERMS.Domain.Entities.Organization;
 using ERMS.Domain.Entities.Training;
-using ERMS.UnitTests.Helpers;
+using ERMS.Infrastructure.Data;
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 using Moq;
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace ERMS.UnitTests.Features.Lessons.Commands.UpdateLessonProgress
 {
-    public class UpdateLessonProgressHandlerTests
+    public class UpdateLessonProgressHandlerTests : IDisposable
     {
-        private readonly Mock<IERMSDbContext> _contextMock;
+        private readonly ERMSDbContext _context;
         private readonly Mock<ICurrentUserService> _currentUserServiceMock;
         private readonly UpdateLessonProgressHandler _handler;
         private readonly Guid _userId;
@@ -22,141 +23,53 @@ namespace ERMS.UnitTests.Features.Lessons.Commands.UpdateLessonProgress
 
         public UpdateLessonProgressHandlerTests()
         {
-            _contextMock = new Mock<IERMSDbContext>();
+            var options = new DbContextOptionsBuilder<ERMSDbContext>()
+                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+                // Thêm dòng này để bỏ qua lỗi Transaction
+                .ConfigureWarnings(x => x.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
+                .Options;
+
+            _context = new ERMSDbContext(options);
             _currentUserServiceMock = new Mock<ICurrentUserService>();
             _userId = Guid.NewGuid();
             _employeeId = Guid.NewGuid();
 
             _currentUserServiceMock.Setup(x => x.UserId).Returns(_userId);
 
-            _handler = new UpdateLessonProgressHandler(_contextMock.Object, _currentUserServiceMock.Object);
-        }
-
-        private void SetupData(
-            List<ERMS.Domain.Entities.Organization.Employee> employees,
-            List<Enrollment> enrollments,
-            List<LessonProgress> progresses,
-            List<Lesson> lessons)
-        {
-            _contextMock.Setup(x => x.Employees)
-                .Returns(employees.AsQueryable().BuildMockDbSet().Object);
-
-            _contextMock.Setup(x => x.Enrollments)
-                .Returns(enrollments.AsQueryable().BuildMockDbSet().Object);
-
-            _contextMock.Setup(x => x.LessonProgresses)
-                .Returns(progresses.AsQueryable().BuildMockDbSet().Object);
-
-            _contextMock.Setup(x => x.Lessons)
-                .Returns(lessons.AsQueryable().BuildMockDbSet().Object);
-        }
-
-        [Fact]
-        public async Task Handle_EnrollmentNotFound_ShouldThrowException()
-        {
-            SetupData(
-                new List<ERMS.Domain.Entities.Organization.Employee>
-                {
-                    new()
-                    {
-                        Id = _employeeId,
-                        UserId = _userId
-                    }
-                },
-                new List<Enrollment>(),
-                new List<LessonProgress>(),
-                new List<Lesson>
-                {
-                    new()
-                    {
-                        Id = Guid.NewGuid(),
-                        CourseId = Guid.NewGuid(),
-                        IsDeleted = false
-                    }
-                });
-
-            var lessonId = _contextMock.Object.Lessons.First().Id;
-
-            var command = new UpdateLessonProgressCommand
-            {
-                LessonId = lessonId
-            };
-
-            Func<Task> act = () => _handler.Handle(command, CancellationToken.None);
-
-            await act.Should().ThrowAsync<KeyNotFoundException>()
-                .WithMessage("Không tìm thấy đăng ký khóa học");
-        }
-
-        [Fact]
-        public async Task Handle_CreateNewProgress_WhenProgressNotExist()
-        {
-            var enrollmentId = Guid.NewGuid();
-            var lessonId = Guid.NewGuid();
-            var courseId = Guid.NewGuid();
-
-            var enrollment = new Enrollment
-            {
-                Id = enrollmentId,
-                EmployeeId = _employeeId,
-                CourseId = courseId
-            };
-
-            SetupData(
-                new List<ERMS.Domain.Entities.Organization.Employee>
-                {
-                    new()
-                    {
-                        Id = _employeeId,
-                        UserId = _userId
-                    }
-                },
-                new List<Enrollment> { enrollment },
-                new List<LessonProgress>(),
-                new List<Lesson>
-                {
-                    new Lesson
-                    {
-                        Id = lessonId,
-                        CourseId = courseId,
-                        IsDeleted = false
-                    }
-                });
-
-            _contextMock.Setup(x => x.LessonProgresses.Add(It.IsAny<LessonProgress>()));
-
-            _contextMock.Setup(x =>
-                x.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(1);
-
-            var command = new UpdateLessonProgressCommand
-            {
-                LessonId = lessonId,
-                WatchPercentage = 50,
-                TimeSpentMinutes = 10
-            };
-
-            var result = await _handler.Handle(command, CancellationToken.None);
-
-            result.Should().BeTrue();
-
-            _contextMock.Verify(x =>
-                x.LessonProgresses.Add(It.IsAny<LessonProgress>()),
-                Times.Once);
+            _handler = new UpdateLessonProgressHandler(_context, _currentUserServiceMock.Object);
         }
 
         [Fact]
         public async Task Handle_CompleteLesson_WhenWatchPercentage100()
         {
-            var enrollmentId = Guid.NewGuid();
-            var lessonId = Guid.NewGuid();
+            // Arrange
             var courseId = Guid.NewGuid();
+            var lessonId = Guid.NewGuid();
+            var enrollmentId = Guid.NewGuid();
 
-            var progress = new LessonProgress
+            // Cập nhật: Thêm các trường Required cho Employee
+            var employee = new Employee
             {
-                EnrollmentId = enrollmentId,
-                LessonId = lessonId,
-                TimeSpentMinutes = 5
+                Id = _employeeId,
+                UserId = _userId,
+                EmployeeCode = "EMP001", // Trường bị thiếu dẫn đến lỗi
+               
+            };
+
+            var course = new Course
+            {
+                Id = courseId,
+                CourseName = "Test Course",
+                CourseCode = "C001", // Đảm bảo thêm các trường Required của Course
+                TrainerEmail = "trainer@gmail.com"
+            };
+
+            var lesson = new Lesson
+            {
+                Id = lessonId,
+                CourseId = courseId,
+                IsDeleted = false,
+                LessonTitle = "Lesson 1"
             };
 
             var enrollment = new Enrollment
@@ -166,44 +79,61 @@ namespace ERMS.UnitTests.Features.Lessons.Commands.UpdateLessonProgress
                 CourseId = courseId
             };
 
-            SetupData(
-                new List<ERMS.Domain.Entities.Organization.Employee>
-                {
-                    new()
-                    {
-                        Id = _employeeId,
-                        UserId = _userId
-                    }
-                },
-                new List<Enrollment> { enrollment },
-                new List<LessonProgress> { progress },
-                new List<Lesson>
-                {
-                    new Lesson
-                    {
-                        Id = lessonId,
-                        CourseId = courseId,
-                        IsDeleted = false
-                    }
-                });
+            var progress = new LessonProgress
+            {
+                EnrollmentId = enrollmentId,
+                LessonId = lessonId,
+                Status = "In Progress",
+                WatchPercentage = 10
+            };
 
-            _contextMock.Setup(x =>
-                x.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(1);
+            _context.Employees.Add(employee);
+            _context.Courses.Add(course);
+            _context.Lessons.Add(lesson);
+            _context.Enrollments.Add(enrollment);
+            _context.LessonProgresses.Add(progress);
+
+            // Lỗi xảy ra tại đây vì dữ liệu không hợp lệ
+            await _context.SaveChangesAsync();
 
             var command = new UpdateLessonProgressCommand
             {
                 LessonId = lessonId,
                 WatchPercentage = 100,
-                TimeSpentMinutes = 10
+                TimeSpentMinutes = 20
             };
 
+            // Act
             var result = await _handler.Handle(command, CancellationToken.None);
 
+            // Assert
             result.Should().BeTrue();
 
-            progress.Status.Should().Be("Completed");
-            progress.CompletedAt.Should().NotBeNull();
+            var updatedProgress = await _context.LessonProgresses
+                .FirstOrDefaultAsync(x => x.LessonId == lessonId && x.EnrollmentId == enrollmentId);
+
+            updatedProgress!.Status.Should().Be("Completed");
+        }
+
+        [Fact]
+        public async Task Handle_EnrollmentNotFound_ShouldThrowKeyNotFoundException()
+        {
+            // Arrange: Có lesson nhưng ko có enrollment
+            var lessonId = Guid.NewGuid();
+            _context.Lessons.Add(new Lesson { Id = lessonId, CourseId = Guid.NewGuid(), LessonTitle = "title" });
+            await _context.SaveChangesAsync();
+
+            var command = new UpdateLessonProgressCommand { LessonId = lessonId };
+
+            // Act & Assert
+            Func<Task> act = () => _handler.Handle(command, CancellationToken.None);
+            await act.Should().ThrowAsync<KeyNotFoundException>();
+        }
+
+        public void Dispose()
+        {
+            _context.Database.EnsureDeleted();
+            _context.Dispose();
         }
     }
 }

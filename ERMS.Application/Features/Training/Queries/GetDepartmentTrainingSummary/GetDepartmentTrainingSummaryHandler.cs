@@ -59,7 +59,7 @@ namespace ERMS.Application.Features.Training.Queries.GetDepartmentTrainingSummar
                 .Distinct()
                 .CountAsync(cancellationToken);
 
-            // ✅ Passed Employees
+            //   Passed Employees
             var passedEmployees = await _context.QuizAttempts
                 .AsNoTracking()
                 .Where(q =>

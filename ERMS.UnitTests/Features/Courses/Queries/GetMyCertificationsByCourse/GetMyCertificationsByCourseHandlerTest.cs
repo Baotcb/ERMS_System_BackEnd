@@ -35,14 +35,14 @@ namespace ERMS.UnitTests.Features.Certifications.Queries
                 Mock.Of<Microsoft.Extensions.Logging.ILogger<GetMyCertificationsByCourseQueryHandler>>());
         }
 
-        // ✅ Helper tạo Employee chuẩn (tránh lỗi thiếu field)
+        //   Helper tạo Employee chuẩn (tránh lỗi thiếu field)
         private Employee CreateEmployee(Guid userId, string name = "User A")
         {
             return new Employee
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,
-                EmployeeCode = "EMP-" + Guid.NewGuid().ToString("N").Substring(0, 6), // ✅ FIX
+                EmployeeCode = "EMP-" + Guid.NewGuid().ToString("N").Substring(0, 6), //   FIX
                 User = new User
                 {
                     Id = userId,

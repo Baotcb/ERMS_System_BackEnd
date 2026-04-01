@@ -1,13 +1,16 @@
-﻿using ERMS.Application.Features.Quizzes.Commands.CreateQuizQuestion;
+using ERMS.Application.Features.Quizzes.Commands.CreateQuizQuestion;
 using ERMS.Application.Features.Quizzes.Commands.ImportQuizQuestions;
 using ERMS.Application.Features.Quizzes.Commands.StartQuiz;
 using ERMS.Application.Features.Quizzes.Commands.SubmitAnswer;
 using ERMS.Application.Features.Quizzes.Commands.SubmitQuiz;
 using ERMS.Application.Features.Quizzes.Queries.GetQuizQuestions;
+using ERMS.Application.Features.Quizzes.Queries.GetQuizReview;
+using ERMS.Application.Interface;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERMS.API.Controllers
 {
@@ -17,10 +20,43 @@ namespace ERMS.API.Controllers
     public class QuizController : ControllerBase
     {
         private readonly IMediator _mediator;
+        private readonly IERMSDbContext _context;
 
-        public QuizController(IMediator mediator)
+        public QuizController(IMediator mediator, IERMSDbContext context)
         {
             _mediator = mediator;
+            _context = context;
+        }
+
+        /// <summary>
+        /// Lấy thông tin quiz (thời gian, điểm đạt, số lượt làm, số câu hỏi)
+        /// </summary>
+        [HttpGet("{quizId}")]
+        public async Task<IActionResult> GetQuizById(Guid quizId)
+        {
+            var quiz = await _context.Quizzes
+                .Where(q => q.Id == quizId && !q.IsDeleted)
+                .Select(q => new
+                {
+                    q.Id,
+                    q.CourseId,
+                    q.QuizTitle,
+                    q.Description,
+                    q.TimeLimitMinutes,
+                    q.PassingScore,
+                    q.MaxAttempts,
+                    q.ShuffleQuestions,
+                    q.ShuffleAnswers,
+                    q.ShowCorrectAnswers,
+                    q.IsActive,
+                    TotalQuestions = q.Questions.Count
+                })
+                .FirstOrDefaultAsync();
+
+            if (quiz == null)
+                return NotFound(new { message = "Không tìm thấy bài thi." });
+
+            return Ok(quiz);
         }
 
         [HttpPost("{quizId}/start")]
@@ -50,6 +86,17 @@ namespace ERMS.API.Controllers
         public async Task<IActionResult> SubmitQuiz(Guid attemptId)
         {
             var result = await _mediator.Send(new SubmitQuizCommand
+            {
+                AttemptId = attemptId
+            });
+
+            return Ok(result);
+        }
+
+        [HttpGet("attempts/{attemptId}/review")]
+        public async Task<IActionResult> GetQuizReview(Guid attemptId)
+        {
+            var result = await _mediator.Send(new GetQuizReviewQuery
             {
                 AttemptId = attemptId
             });

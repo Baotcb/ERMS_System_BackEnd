@@ -164,6 +164,47 @@ namespace ERMS.UnitTests.Features.Courses.Commands.CreateCourse
             courseInDb!.Location.Should().BeNull();
         }
 
+        [Fact]
+        public async Task Handle_ShouldThrowException_WhenStartTimeAlreadyExistsInSameEnterprise()
+        {
+            // Arrange
+            var enterpriseId = Guid.NewGuid();
+            var startTime = DateTime.UtcNow.AddDays(5);
+
+            _currentUserServiceMock.Setup(x => x.UserId).Returns(Guid.NewGuid());
+            _currentUserServiceMock.Setup(x => x.GetEnterpriseIdAsync()).ReturnsAsync(enterpriseId);
+
+            // Seed course có cùng StartTime
+            _context.Courses.Add(new Course
+            {
+                Id = Guid.NewGuid(),
+                EnterpriseId = enterpriseId,
+                CourseCode = "COURSE-001",
+                CourseName = "Existing Course",
+                TrainerEmail = "test@test.com",
+                StartTime = startTime,
+                Status = "Published",
+                IsDeleted = false
+            });
+
+            await _context.SaveChangesAsync();
+
+            var command = new CreateCourseCommand
+            {
+                CourseCode = "NEW-001",
+                CourseName = "New Course",
+                TrainerEmail = "new@test.com",
+                StartTime = startTime // ❌ trùng thời gian
+            };
+
+            // Act
+            var act = () => _handler.Handle(command, CancellationToken.None);
+
+            // Assert
+            await act.Should().ThrowAsync<Exception>()
+                .WithMessage("Thời gian học bị trùng");
+        }
+
         public void Dispose()
         {
             _context.Database.EnsureDeleted();
