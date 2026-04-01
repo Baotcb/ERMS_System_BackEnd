@@ -6,6 +6,7 @@ using ERMS.Application.Features.Admin.Queries.GetEnterpriseAdminDetail;
 using ERMS.Application.Features.Admin.Queries.GetEnterpriseList;
 using ERMS.Application.Features.Admin.Queries.GetGlobalPaymentHistory;
 using ERMS.Application.Features.Admin.Queries.GetPlatformStats;
+using ERMS.Application.Features.Admin.Queries.GetSystemIntegrations;
 using ERMS.Domain.Constants.Roles;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -104,7 +105,7 @@ namespace ERMS.API.Controllers
         [HttpGet("integrations")]
         public async Task<IActionResult> GetSystemIntegrations()
         {
-            var result = await _sender.Send(new GetAiServiceOverviewQuery());
+            var result = await _sender.Send(new GetSystemIntegrationsQuery());
             return Ok(result);
         }
     }

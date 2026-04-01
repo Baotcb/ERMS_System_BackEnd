@@ -528,4 +528,156 @@ public class GetEnterpriseAdminDetailHandlerTests
 
         result.CreatedByName.Should().BeNull();
     }
+
+    [Fact]
+    public async Task Handle_ShouldIgnoreNonEnterpriseApprovalHistory_WhenBuildingStatusHistory()
+    {
+        var enterpriseId = Guid.NewGuid();
+        var planId = Guid.NewGuid();
+        var enterprise = new Enterprise
+        {
+            Id = enterpriseId,
+            EnterpriseName = "History Filter Corp",
+            EnterpriseCode = "HF001",
+            Status = EnterpriseStatus.Active,
+            SubscriptionPlanId = planId,
+            SubscriptionPlan = new SubscriptionPlan { Id = planId, PlanName = "Pro", PlanCode = "PRO" },
+            SubscriptionStartDate = new DateTime(2026, 1, 1),
+            SubscriptionEndDate = DateTime.UtcNow.AddDays(45),
+            SubscriptionStatus = "Active",
+            IsDeleted = false
+        };
+
+        var approvalHistories = new List<ApprovalHistory>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                EntityType = "Enterprise",
+                EntityId = enterpriseId,
+                Action = "Suspend",
+                PreviousStatus = EnterpriseStatus.Active,
+                NewStatus = EnterpriseStatus.Suspended,
+                CreatedAt = new DateTime(2026, 3, 5)
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                EntityType = "JobPosting",
+                EntityId = enterpriseId,
+                Action = "Archive",
+                CreatedAt = new DateTime(2026, 3, 6)
+            }
+        };
+
+        _mockContext.Setup(x => x.Enterprises).Returns(new List<Enterprise> { enterprise }.AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.Departments).Returns(new List<Department>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.Employees).Returns(new List<Employee>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.SubscriptionHistories).Returns(new List<SubscriptionHistory>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.JobPostings).Returns(new List<JobPosting>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.Courses).Returns(new List<Course>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.ApprovalHistories).Returns(approvalHistories.AsQueryable().BuildMockDbSet().Object);
+
+        var result = await _handler.Handle(new GetEnterpriseAdminDetailQuery { EnterpriseId = enterpriseId }, CancellationToken.None);
+
+        result.StatusHistory.Should().ContainSingle();
+        result.StatusHistory[0].Action.Should().Be("Suspend");
+    }
+
+    [Fact]
+    public async Task Handle_ShouldIncludeRemainingDays_WhenSubscriptionExpiresWithinThirtyDays()
+    {
+        var enterpriseId = Guid.NewGuid();
+        var planId = Guid.NewGuid();
+        var now = DateTime.UtcNow;
+        var enterprise = new Enterprise
+        {
+            Id = enterpriseId,
+            EnterpriseName = "Expiring Detail Corp",
+            EnterpriseCode = "ED001",
+            Status = EnterpriseStatus.Active,
+            SubscriptionPlanId = planId,
+            SubscriptionPlan = new SubscriptionPlan { Id = planId, PlanName = "Pro", PlanCode = "PRO" },
+            SubscriptionStartDate = new DateTime(2026, 1, 1),
+            SubscriptionEndDate = now.AddDays(7),
+            SubscriptionStatus = "Active",
+            IsDeleted = false
+        };
+
+        _mockContext.Setup(x => x.Enterprises).Returns(new List<Enterprise> { enterprise }.AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.Departments).Returns(new List<Department>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.Employees).Returns(new List<Employee>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.SubscriptionHistories).Returns(new List<SubscriptionHistory>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.JobPostings).Returns(new List<JobPosting>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.Courses).Returns(new List<Course>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.ApprovalHistories).Returns(new List<ApprovalHistory>().AsQueryable().BuildMockDbSet().Object);
+
+        var result = await _handler.Handle(new GetEnterpriseAdminDetailQuery { EnterpriseId = enterpriseId }, CancellationToken.None);
+
+        result.RiskFlags.Should().Contain(flag => flag.Contains("Subscription sap het han trong"));
+    }
+
+    [Fact]
+    public async Task Handle_ShouldAddSuspendedRiskFlag_WhenEnterpriseStatusIsSuspended()
+    {
+        var enterpriseId = Guid.NewGuid();
+        var planId = Guid.NewGuid();
+        var enterprise = new Enterprise
+        {
+            Id = enterpriseId,
+            EnterpriseName = "Suspended Detail Corp",
+            EnterpriseCode = "SD001",
+            Status = EnterpriseStatus.Suspended,
+            SubscriptionPlanId = planId,
+            SubscriptionPlan = new SubscriptionPlan { Id = planId, PlanName = "Pro", PlanCode = "PRO" },
+            SubscriptionStartDate = new DateTime(2026, 1, 1),
+            SubscriptionEndDate = DateTime.UtcNow.AddDays(60),
+            SubscriptionStatus = "Suspended",
+            IsDeleted = false
+        };
+
+        _mockContext.Setup(x => x.Enterprises).Returns(new List<Enterprise> { enterprise }.AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.Departments).Returns(new List<Department>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.Employees).Returns(new List<Employee>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.SubscriptionHistories).Returns(new List<SubscriptionHistory>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.JobPostings).Returns(new List<JobPosting>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.Courses).Returns(new List<Course>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.ApprovalHistories).Returns(new List<ApprovalHistory>().AsQueryable().BuildMockDbSet().Object);
+
+        var result = await _handler.Handle(new GetEnterpriseAdminDetailQuery { EnterpriseId = enterpriseId }, CancellationToken.None);
+
+        result.RiskFlags.Should().Contain(flag => flag.Contains("tam dung"));
+    }
+
+    [Fact]
+    public async Task Handle_ShouldAddInactiveRiskFlag_WhenEnterpriseStatusIsInactive()
+    {
+        var enterpriseId = Guid.NewGuid();
+        var planId = Guid.NewGuid();
+        var enterprise = new Enterprise
+        {
+            Id = enterpriseId,
+            EnterpriseName = "Inactive Detail Corp",
+            EnterpriseCode = "ID001",
+            Status = EnterpriseStatus.Inactive,
+            SubscriptionPlanId = planId,
+            SubscriptionPlan = new SubscriptionPlan { Id = planId, PlanName = "Free", PlanCode = "FREE" },
+            SubscriptionStartDate = new DateTime(2026, 1, 1),
+            SubscriptionEndDate = DateTime.UtcNow.AddDays(60),
+            SubscriptionStatus = "Inactive",
+            IsDeleted = false
+        };
+
+        _mockContext.Setup(x => x.Enterprises).Returns(new List<Enterprise> { enterprise }.AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.Departments).Returns(new List<Department>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.Employees).Returns(new List<Employee>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.SubscriptionHistories).Returns(new List<SubscriptionHistory>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.JobPostings).Returns(new List<JobPosting>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.Courses).Returns(new List<Course>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.ApprovalHistories).Returns(new List<ApprovalHistory>().AsQueryable().BuildMockDbSet().Object);
+
+        var result = await _handler.Handle(new GetEnterpriseAdminDetailQuery { EnterpriseId = enterpriseId }, CancellationToken.None);
+
+        result.RiskFlags.Should().Contain(flag => flag.Contains("ngung hoat dong"));
+    }
 }

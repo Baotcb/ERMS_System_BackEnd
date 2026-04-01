@@ -38,24 +38,8 @@ public sealed class GetSystemIntegrationsHandler : IRequestHandler<GetSystemInte
             },
             new()
             {
-                Name = "Zoom",
-                Category = "Meeting",
-                Status = "Configured",
-                EnvironmentScope = "System",
-                LastChecked = null
-            },
-            new()
-            {
                 Name = "Gemini",
                 Category = "AI",
-                Status = "Configured",
-                EnvironmentScope = "System",
-                LastChecked = null
-            },
-            new()
-            {
-                Name = "Geolocation",
-                Category = "Location",
                 Status = "Configured",
                 EnvironmentScope = "System",
                 LastChecked = null

@@ -451,4 +451,42 @@ public class GetAdminDashboardHandlerTests
         result.RecentActivities[0].Action.Should().Be("Action 1");
         result.RecentActivities[^1].Action.Should().Be("Action 6");
     }
+
+    [Fact]
+    public async Task Handle_ShouldReturnExpectedAttentionReason_ForSuspendedAndExpiredEnterprises()
+    {
+        var now = DateTime.UtcNow;
+        var suspendedId = Guid.NewGuid();
+        var expiredId = Guid.NewGuid();
+        var enterprises = new List<Enterprise>
+        {
+            new()
+            {
+                Id = suspendedId,
+                EnterpriseName = "Suspended Corp",
+                EnterpriseCode = "SC001",
+                Status = EnterpriseStatus.Suspended,
+                SubscriptionEndDate = now.AddDays(60),
+                IsDeleted = false
+            },
+            new()
+            {
+                Id = expiredId,
+                EnterpriseName = "Expired Corp",
+                EnterpriseCode = "EC001",
+                Status = EnterpriseStatus.Active,
+                SubscriptionEndDate = now.AddDays(-1),
+                IsDeleted = false
+            }
+        };
+
+        _mockContext.Setup(x => x.Enterprises).Returns(enterprises.AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.ApprovalHistories).Returns(new List<ApprovalHistory>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.SubscriptionHistories).Returns(new List<SubscriptionHistory>().AsQueryable().BuildMockDbSet().Object);
+
+        var result = await _handler.Handle(new GetAdminDashboardQuery(), CancellationToken.None);
+
+        result.AttentionItems.Should().Contain(item => item.EnterpriseId == suspendedId && item.AttentionReason == "Doanh nghiep dang tam dung");
+        result.AttentionItems.Should().Contain(item => item.EnterpriseId == expiredId && item.AttentionReason == "Subscription da het han");
+    }
 }

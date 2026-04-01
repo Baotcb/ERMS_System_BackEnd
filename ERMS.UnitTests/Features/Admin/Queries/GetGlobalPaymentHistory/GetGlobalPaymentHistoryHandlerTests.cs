@@ -404,4 +404,81 @@ public class GetGlobalPaymentHistoryHandlerTests
         result.Items.Should().ContainSingle();
         result.Items[0].EnterpriseName.Should().Be("Tech Corp");
     }
+
+    [Fact]
+    public async Task Handle_ShouldCombineAllFilters_AndComputeTotalPagesFromFilteredCount()
+    {
+        var plan = new SubscriptionPlan { Id = Guid.NewGuid(), PlanName = "Pro", PlanCode = "PRO" };
+        var histories = new List<SubscriptionHistory>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                EnterpriseId = Guid.NewGuid(),
+                Enterprise = new Enterprise { EnterpriseName = "Tech Corp", EnterpriseCode = "TC001" },
+                SubscriptionPlanId = plan.Id,
+                SubscriptionPlan = plan,
+                ActionType = "Renew",
+                Amount = 1000000,
+                Currency = "VND",
+                PaymentMethod = "BankTransfer",
+                PaymentReference = "PAY-001",
+                PeriodStartDate = new DateTime(2026, 2, 1),
+                PeriodEndDate = new DateTime(2026, 3, 1),
+                CreatedAt = new DateTime(2026, 2, 20)
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                EnterpriseId = Guid.NewGuid(),
+                Enterprise = new Enterprise { EnterpriseName = "Tech Corp", EnterpriseCode = "TC001" },
+                SubscriptionPlanId = plan.Id,
+                SubscriptionPlan = plan,
+                ActionType = "Renew",
+                Amount = 1200000,
+                Currency = "VND",
+                PaymentMethod = "Cash",
+                PaymentReference = "PAY-002",
+                PeriodStartDate = new DateTime(2026, 2, 1),
+                PeriodEndDate = new DateTime(2026, 3, 1),
+                CreatedAt = new DateTime(2026, 2, 21)
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                EnterpriseId = Guid.NewGuid(),
+                Enterprise = new Enterprise { EnterpriseName = "Retail Hub", EnterpriseCode = "RH001" },
+                SubscriptionPlanId = plan.Id,
+                SubscriptionPlan = plan,
+                ActionType = "Upgrade",
+                Amount = 1300000,
+                Currency = "VND",
+                PaymentMethod = "BankTransfer",
+                PaymentReference = "PAY-003",
+                PeriodStartDate = new DateTime(2026, 2, 1),
+                PeriodEndDate = new DateTime(2026, 3, 1),
+                CreatedAt = new DateTime(2026, 2, 22)
+            }
+        };
+
+        _mockContext.Setup(x => x.SubscriptionHistories).Returns(histories.AsQueryable().BuildMockDbSet().Object);
+
+        var result = await _handler.Handle(
+            new GetGlobalPaymentHistoryQuery
+            {
+                EnterpriseSearch = "tech",
+                ActionType = "Renew",
+                PaymentMethod = "BankTransfer",
+                DateFrom = new DateTime(2026, 2, 20),
+                DateTo = new DateTime(2026, 2, 20),
+                PageNumber = 1,
+                PageSize = 1
+            },
+            CancellationToken.None);
+
+        result.TotalCount.Should().Be(1);
+        result.TotalPages.Should().Be(1);
+        result.Items.Should().ContainSingle();
+        result.Items[0].PaymentReference.Should().Be("PAY-001");
+    }
 }

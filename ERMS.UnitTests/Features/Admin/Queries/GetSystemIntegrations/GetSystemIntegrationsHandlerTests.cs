@@ -50,24 +50,8 @@ public class GetSystemIntegrationsHandlerTests
                 },
                 new
                 {
-                    Name = "Zoom",
-                    Category = "Meeting",
-                    Status = "Configured",
-                    EnvironmentScope = "System",
-                    LastChecked = (DateTime?)null
-                },
-                new
-                {
                     Name = "Gemini",
                     Category = "AI",
-                    Status = "Configured",
-                    EnvironmentScope = "System",
-                    LastChecked = (DateTime?)null
-                },
-                new
-                {
-                    Name = "Geolocation",
-                    Category = "Location",
                     Status = "Configured",
                     EnvironmentScope = "System",
                     LastChecked = (DateTime?)null
@@ -95,11 +79,11 @@ public class GetSystemIntegrationsHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ShouldReturnExactlySixUniqueIntegrations()
+    public async Task Handle_ShouldReturnExactlyFourUniqueIntegrations()
     {
         var result = await _handler.Handle(new GetSystemIntegrationsQuery(), CancellationToken.None);
 
-        result.Should().HaveCount(6);
+        result.Should().HaveCount(4);
         result.Select(integration => integration.Name).Should().OnlyHaveUniqueItems();
     }
 
@@ -112,5 +96,41 @@ public class GetSystemIntegrationsHandlerTests
             integration.Name == "Gemini" &&
             integration.Category == "AI" &&
             integration.EnvironmentScope == "System");
+    }
+
+    [Fact]
+    public async Task Handle_ShouldIncludeCoreSystemIntegrations_WithExpectedCategories()
+    {
+        var result = await _handler.Handle(new GetSystemIntegrationsQuery(), CancellationToken.None);
+
+        result.Should().ContainSingle(integration =>
+            integration.Name == "Google OAuth" &&
+            integration.Category == "Authentication" &&
+            integration.Status == "Configured" &&
+            integration.EnvironmentScope == "System" &&
+            integration.LastChecked == null);
+
+        result.Should().ContainSingle(integration =>
+            integration.Name == "SMTP" &&
+            integration.Category == "Communication" &&
+            integration.Status == "Configured" &&
+            integration.EnvironmentScope == "System" &&
+            integration.LastChecked == null);
+
+        result.Should().ContainSingle(integration =>
+            integration.Name == "Cloudinary" &&
+            integration.Category == "Media" &&
+            integration.Status == "Configured" &&
+            integration.EnvironmentScope == "System" &&
+            integration.LastChecked == null);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldNotIncludeZoomOrGeolocation()
+    {
+        var result = await _handler.Handle(new GetSystemIntegrationsQuery(), CancellationToken.None);
+
+        result.Should().NotContain(integration => integration.Name == "Zoom");
+        result.Should().NotContain(integration => integration.Name == "Geolocation");
     }
 }

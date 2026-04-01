@@ -709,4 +709,52 @@ public class GetEnterpriseListHandlerTests
 
         result.Items.Select(item => item.EnterpriseName).Should().Equal("Newest", "Middle");
     }
+
+    [Fact]
+    public async Task Handle_ShouldIgnoreNonPositiveExpiringWithinDaysValues()
+    {
+        var now = DateTime.UtcNow;
+        var plan = new SubscriptionPlan
+        {
+            Id = Guid.NewGuid(),
+            PlanName = "Pro",
+            PlanCode = "PRO"
+        };
+        var enterprises = new List<Enterprise>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                EnterpriseName = "Expired Enterprise",
+                EnterpriseCode = "EX001",
+                Status = EnterpriseStatus.Active,
+                SubscriptionPlanId = plan.Id,
+                SubscriptionPlan = plan,
+                SubscriptionEndDate = now.AddDays(-3),
+                CreatedAt = new DateTime(2026, 1, 1),
+                IsDeleted = false
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                EnterpriseName = "Future Enterprise",
+                EnterpriseCode = "FU001",
+                Status = EnterpriseStatus.Active,
+                SubscriptionPlanId = plan.Id,
+                SubscriptionPlan = plan,
+                SubscriptionEndDate = now.AddDays(40),
+                CreatedAt = new DateTime(2026, 1, 2),
+                IsDeleted = false
+            }
+        };
+
+        _mockContext.Setup(x => x.Enterprises).Returns(enterprises.AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.Employees).Returns(new List<Employee>().AsQueryable().BuildMockDbSet().Object);
+
+        var zeroResult = await _handler.Handle(new GetEnterpriseListQuery { ExpiringWithinDays = 0, PageNumber = 1, PageSize = 10 }, CancellationToken.None);
+        var negativeResult = await _handler.Handle(new GetEnterpriseListQuery { ExpiringWithinDays = -5, PageNumber = 1, PageSize = 10 }, CancellationToken.None);
+
+        zeroResult.TotalCount.Should().Be(2);
+        negativeResult.TotalCount.Should().Be(2);
+    }
 }

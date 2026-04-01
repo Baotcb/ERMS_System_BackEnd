@@ -548,4 +548,49 @@ public class GetPlatformStatsHandlerTests
         result.TopEnterprises[0].EnterpriseName.Should().Be("Enterprise 6");
         result.TopEnterprises[^1].EnterpriseName.Should().Be("Enterprise 2");
     }
+
+    [Fact]
+    public async Task Handle_ShouldReturnZeroEmployeeValue_ForEnterprisesWithoutEmployees()
+    {
+        var plan = new SubscriptionPlan
+        {
+            Id = Guid.NewGuid(),
+            PlanName = "Free",
+            PlanCode = "FREE",
+            PriceMonthly = 0
+        };
+
+        var enterprises = new List<Enterprise>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                EnterpriseName = "No Employees A",
+                Status = EnterpriseStatus.Active,
+                SubscriptionPlan = plan,
+                SubscriptionPlanId = plan.Id,
+                SubscriptionEndDate = DateTime.UtcNow.AddDays(20),
+                IsDeleted = false
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                EnterpriseName = "No Employees B",
+                Status = EnterpriseStatus.Active,
+                SubscriptionPlan = plan,
+                SubscriptionPlanId = plan.Id,
+                SubscriptionEndDate = DateTime.UtcNow.AddDays(25),
+                IsDeleted = false
+            }
+        };
+
+        _mockContext.Setup(x => x.Enterprises).Returns(enterprises.AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.Employees).Returns(new List<Employee>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.SubscriptionHistories).Returns(new List<SubscriptionHistory>().AsQueryable().BuildMockDbSet().Object);
+
+        var result = await _handler.Handle(new GetPlatformStatsQuery(), CancellationToken.None);
+
+        result.TopEnterprises.Should().HaveCount(2);
+        result.TopEnterprises.Should().OnlyContain(item => item.Value == 0);
+    }
 }

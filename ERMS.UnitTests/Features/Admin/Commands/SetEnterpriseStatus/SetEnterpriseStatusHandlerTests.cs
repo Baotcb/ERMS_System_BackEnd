@@ -140,6 +140,33 @@ public class SetEnterpriseStatusHandlerTests
     }
 
     [Fact]
+    public async Task Handle_ShouldThrowKeyNotFoundException_WhenEnterpriseIsSoftDeleted()
+    {
+        var enterpriseId = Guid.NewGuid();
+        _mockCurrentUserService.Setup(x => x.UserId).Returns(Guid.NewGuid());
+        _mockCurrentUserService.Setup(x => x.Roles).Returns(new[] { AppRoles.Admin });
+        _mockContext.Setup(x => x.Enterprises).Returns(new List<Enterprise>
+        {
+            new()
+            {
+                Id = enterpriseId,
+                Status = EnterpriseStatus.Active,
+                IsDeleted = true
+            }
+        }.AsQueryable().BuildMockDbSet().Object);
+
+        var act = async () => await _handler.Handle(
+            new SetEnterpriseStatusCommand
+            {
+                EnterpriseId = enterpriseId,
+                NewStatus = EnterpriseStatus.Inactive
+            },
+            CancellationToken.None);
+
+        await act.Should().ThrowAsync<KeyNotFoundException>();
+    }
+
+    [Fact]
     public async Task Handle_ShouldReturnTrue_WithoutSaving_WhenStatusIsUnchanged()
     {
         var enterprise = new Enterprise

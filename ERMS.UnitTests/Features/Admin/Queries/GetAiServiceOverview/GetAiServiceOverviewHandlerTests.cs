@@ -353,4 +353,95 @@ public class GetAiServiceOverviewHandlerTests
         result.ConfigurationStatus.Should().Be("Configured");
         result.ScoredLast30Days.Should().Be(0);
     }
+
+    [Fact]
+    public async Task Handle_ShouldTreatTodayAndSevenDayWindowBoundariesAsInclusive()
+    {
+        var now = DateTime.UtcNow;
+        var startOfToday = now.Date;
+        var startOf7Days = startOfToday.AddDays(-6);
+        var results = new List<CVScreeningResultEntity>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                OverallScore = 75,
+                ProcessedAt = startOfToday,
+                Application = new ApplicationEntity
+                {
+                    JobPosting = new JobPosting { EnterpriseId = Guid.NewGuid() }
+                }
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                OverallScore = 65,
+                ProcessedAt = startOf7Days,
+                Application = new ApplicationEntity
+                {
+                    JobPosting = new JobPosting { EnterpriseId = Guid.NewGuid() }
+                }
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                OverallScore = 55,
+                ProcessedAt = startOf7Days.AddDays(-1),
+                Application = new ApplicationEntity
+                {
+                    JobPosting = new JobPosting { EnterpriseId = Guid.NewGuid() }
+                }
+            }
+        };
+
+        _mockConfiguration.SetupGet(x => x.ProviderName).Returns("Gemini");
+        _mockConfiguration.SetupGet(x => x.ModelName).Returns("gemini-2.5-flash");
+        _mockConfiguration.SetupGet(x => x.HasApiKey).Returns(true);
+        _mockContext.Setup(x => x.CVScreeningResults).Returns(results.AsQueryable().BuildMockDbSet().Object);
+
+        var result = await _handler.Handle(new GetAiServiceOverviewQuery(), CancellationToken.None);
+
+        result.ScoredToday.Should().Be(1);
+        result.ScoredLast7Days.Should().Be(2);
+        result.ScoredLast30Days.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldReturnMostRecentProcessedTimestamp()
+    {
+        var now = DateTime.UtcNow;
+        var latestProcessedAt = now.AddHours(-1);
+        var results = new List<CVScreeningResultEntity>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                OverallScore = 80,
+                ProcessedAt = now.AddDays(-2),
+                Application = new ApplicationEntity
+                {
+                    JobPosting = new JobPosting { EnterpriseId = Guid.NewGuid() }
+                }
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                OverallScore = 81,
+                ProcessedAt = latestProcessedAt,
+                Application = new ApplicationEntity
+                {
+                    JobPosting = new JobPosting { EnterpriseId = Guid.NewGuid() }
+                }
+            }
+        };
+
+        _mockConfiguration.SetupGet(x => x.ProviderName).Returns("Gemini");
+        _mockConfiguration.SetupGet(x => x.ModelName).Returns("gemini-2.5-flash");
+        _mockConfiguration.SetupGet(x => x.HasApiKey).Returns(true);
+        _mockContext.Setup(x => x.CVScreeningResults).Returns(results.AsQueryable().BuildMockDbSet().Object);
+
+        var result = await _handler.Handle(new GetAiServiceOverviewQuery(), CancellationToken.None);
+
+        result.LastProcessedAt.Should().BeCloseTo(latestProcessedAt, TimeSpan.FromSeconds(1));
+    }
 }
