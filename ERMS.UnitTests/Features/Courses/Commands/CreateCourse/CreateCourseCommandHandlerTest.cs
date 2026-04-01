@@ -194,7 +194,7 @@ namespace ERMS.UnitTests.Features.Courses.Commands.CreateCourse
                 CourseCode = "NEW-001",
                 CourseName = "New Course",
                 TrainerEmail = "new@test.com",
-                StartTime = startTime // ❌ trùng thời gian
+                StartTime = startTime //   trùng thời gian
             };
 
             // Act

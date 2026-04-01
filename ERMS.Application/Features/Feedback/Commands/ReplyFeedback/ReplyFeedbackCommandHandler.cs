@@ -44,11 +44,17 @@ namespace ERMS.Application.Features.Feedback.Commands.ReplyFeedback
                     throw new Exception("Không tìm thấy phản hồi cha");
             }
 
+            var userId = _currentUser.UserId;
+            var user = _context.Users.FirstOrDefault(u => u.Id == userId);
+
             var reply = new CourseFeedbackReply
             {
                 FeedbackId = request.FeedbackId,
                 ReplyContent = request.ReplyContent,
                 ParentReplyId = request.ParentReplyId,
+                IsAnonymous = request.IsAnonymous,
+                ReplyByName = request.IsAnonymous ? "Ẩn danh" : user?.FullName,
+                ReplyByAvatarUrl = request.IsAnonymous ? null : user?.AvatarUrl,
                 ReplyBy = _currentUser.UserId!.Value,
                 CreatedAt = DateTime.UtcNow,
                 IsDeleted = false

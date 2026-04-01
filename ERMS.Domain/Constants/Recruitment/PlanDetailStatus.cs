@@ -18,7 +18,7 @@ namespace ERMS.Domain.Constants.Recruitment
         public const string Approved = "Approved";
 
         /// <summary>
-        /// ❌ Rejected: Plan bị reject
+        ///   Rejected: Plan bị reject
         /// </summary>
         public const string Rejected = "Rejected";
 

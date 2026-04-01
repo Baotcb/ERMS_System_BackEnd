@@ -1,4 +1,5 @@
 ﻿using ERMS.Application.Features.Training.Commands.ApproveTrainingPlan;
+using ERMS.Application.Features.Training.Commands.CloseTrainingPlan;
 using ERMS.Application.Features.Training.Commands.CreateTrainingPlan;
 using ERMS.Application.Features.Training.Commands.CreateTrainingRequest;
 using ERMS.Application.Features.Training.Commands.RejectTrainingPlan;
@@ -128,6 +129,26 @@ namespace ERMS.API.Controllers
                 message = "Training plan rejected successfully",
                 success = result
             });
+        }
+        [Authorize(Roles = AppRoles.HRManager + "," + AppRoles.Director)]
+        [HttpPut("close")]
+        public async Task<IActionResult> Close(
+    [FromBody] CloseTrainingPlanCommand command)
+        {
+            try
+            {
+                var result = await _mediator.Send(command);
+
+                return Ok(new
+                {
+                    message = "Training plan closed successfully",
+                    success = result
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [Authorize(Roles = AppRoles.DepartmentHead)]
