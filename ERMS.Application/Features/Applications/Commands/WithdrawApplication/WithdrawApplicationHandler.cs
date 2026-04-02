@@ -11,11 +11,11 @@ namespace ERMS.Application.Features.Applications.Commands.WithdrawApplication;
 /// Handler for withdrawing a candidate's own application.
 /// Only the owning Candidate can perform this action.
 /// </summary>
-public sealed class WithdrawApplicationCommandHandler : IRequestHandler<WithdrawApplicationCommand, WithdrawApplicationResult>
+public sealed class WithdrawApplicationHandler : IRequestHandler<WithdrawApplicationCommand, WithdrawApplicationResult>
 {
     private readonly IERMSDbContext _context;
     private readonly ICurrentUserService _currentUserService;
-    private readonly ILogger<WithdrawApplicationCommandHandler> _logger;
+    private readonly ILogger<WithdrawApplicationHandler> _logger;
 
     /// <summary>
     /// Terminal stages from which an application cannot be withdrawn.
@@ -23,10 +23,10 @@ public sealed class WithdrawApplicationCommandHandler : IRequestHandler<Withdraw
     private static readonly string[] TerminalStages =
         [ApplicationStage.Rejected, ApplicationStage.Hired, ApplicationStage.Withdrawn];
 
-    public WithdrawApplicationCommandHandler(
+    public WithdrawApplicationHandler(
         IERMSDbContext context,
         ICurrentUserService currentUserService,
-        ILogger<WithdrawApplicationCommandHandler> logger)
+        ILogger<WithdrawApplicationHandler> logger)
     {
         _context = context;
         _currentUserService = currentUserService;

@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Features.Applications.Commands.WithdrawApplication;
+using ERMS.Application.Features.Applications.Commands.WithdrawApplication;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Application;
 using ERMS.Domain.Constants.Roles;
@@ -15,12 +15,12 @@ using ApplicationEntity = ERMS.Domain.Entities.Application.Application;
 
 namespace ERMS.UnitTests.Features.Applications.Commands.WithdrawApplication;
 
-public class WithdrawApplicationCommandHandlerTests
+public class WithdrawApplicationHandlerTests
 {
     private readonly Mock<IERMSDbContext> _contextMock;
     private readonly Mock<ICurrentUserService> _currentUserServiceMock;
-    private readonly Mock<ILogger<WithdrawApplicationCommandHandler>> _loggerMock;
-    private readonly WithdrawApplicationCommandHandler _handler;
+    private readonly Mock<ILogger<WithdrawApplicationHandler>> _loggerMock;
+    private readonly WithdrawApplicationHandler _handler;
 
     private readonly Guid _userId = Guid.NewGuid();
     private readonly Guid _candidateId = Guid.NewGuid();
@@ -28,15 +28,15 @@ public class WithdrawApplicationCommandHandlerTests
     private readonly Guid _jobPostingId = Guid.NewGuid();
     private readonly Guid _otherCandidateId = Guid.NewGuid();
 
-    public WithdrawApplicationCommandHandlerTests()
+    public WithdrawApplicationHandlerTests()
     {
         _contextMock = new Mock<IERMSDbContext>();
         _currentUserServiceMock = new Mock<ICurrentUserService>();
-        _loggerMock = new Mock<ILogger<WithdrawApplicationCommandHandler>>();
+        _loggerMock = new Mock<ILogger<WithdrawApplicationHandler>>();
 
         _contextMock.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 
-        _handler = new WithdrawApplicationCommandHandler(
+        _handler = new WithdrawApplicationHandler(
             _contextMock.Object,
             _currentUserServiceMock.Object,
             _loggerMock.Object);
