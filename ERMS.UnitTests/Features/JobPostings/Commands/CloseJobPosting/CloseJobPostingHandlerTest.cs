@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Features.JobPostings.Commands.CloseJobPosting;
+using ERMS.Application.Features.JobPostings.Commands.CloseJobPosting;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Recruitment;
 using ERMS.Domain.Constants.Roles;
@@ -55,6 +55,7 @@ namespace ERMS.UnitTests.Features.JobPostings.Commands.CloseJobPosting
         {
             // Arrange
             _currentUserServiceMock.Setup(x => x.UserId).Returns(Guid.NewGuid());
+            _currentUserServiceMock.Setup(x => x.GetEnterpriseIdAsync()).ReturnsAsync(Guid.NewGuid());
             _currentUserServiceMock.Setup(x => x.Roles).Returns(new List<string> { AppRoles.Candidate });
             var command = new CloseJobPostingCommand { Id = Guid.NewGuid() };
 

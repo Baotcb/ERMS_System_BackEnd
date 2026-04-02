@@ -28,14 +28,14 @@ public sealed class CloseJobPostingHandler : IRequestHandler<CloseJobPostingComm
         var userId = _currentUserService.UserId
             ?? throw new UnauthorizedAccessException("Người dùng chưa được xác thực.");
 
+        var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
+            ?? throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
+
         var userRoles = _currentUserService.Roles;
         if (userRoles == null || !userRoles.Contains(AppRoles.HRManager))
         {
             throw new UnauthorizedAccessException("Chỉ HR Manager mới có quyền đóng tin tuyển dụng.");
         }
-
-        var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
-            ?? throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
 
         var jobPosting = await _context.JobPostings
             .FirstOrDefaultAsync(jp =>

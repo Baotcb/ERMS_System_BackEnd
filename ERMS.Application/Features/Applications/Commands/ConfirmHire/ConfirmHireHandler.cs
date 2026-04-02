@@ -44,16 +44,16 @@ public sealed class ConfirmHireHandler : IRequestHandler<ConfirmHireCommand, Con
         var userId = _currentUserService.UserId
             ?? throw new UnauthorizedAccessException("Người dùng chưa được xác thực.");
 
-        // 2. Role check: HRManager ONLY
+        // 2. Enterprise scoping
+        var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
+            ?? throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
+
+        // 3. Role check: HRManager ONLY
         var userRoles = _currentUserService.Roles;
         if (userRoles == null || !userRoles.Contains(AppRoles.HRManager))
         {
             throw new UnauthorizedAccessException("Chỉ HR Manager mới có thể thực hiện hành động này.");
         }
-
-        // 3. Enterprise scoping
-        var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
-            ?? throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
 
         // 4. Load Application with related entities
         var application = await _context.Applications

@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Features.Applications.Queries.GetApplicationsByJob;
+using ERMS.Application.Features.Applications.Queries.GetApplicationsByJob;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Application;
 using ERMS.Domain.Constants.Roles;
@@ -197,6 +197,7 @@ public class GetApplicationsByJobHandlerTests
     {
         // Arrange
         _currentUserServiceMock.Setup(x => x.UserId).Returns(_userId);
+        _currentUserServiceMock.Setup(x => x.GetEnterpriseIdAsync()).ReturnsAsync(_enterpriseId);
         _currentUserServiceMock.Setup(x => x.Roles).Returns([AppRoles.Candidate]); // Wrong role
 
         var query = CreateValidQuery();
@@ -212,6 +213,7 @@ public class GetApplicationsByJobHandlerTests
     {
         // Arrange
         _currentUserServiceMock.Setup(x => x.UserId).Returns(_userId);
+        _currentUserServiceMock.Setup(x => x.GetEnterpriseIdAsync()).ReturnsAsync(_enterpriseId);
         _currentUserServiceMock.Setup(x => x.Roles).Returns((List<string>?)null);
 
         var query = CreateValidQuery();
@@ -227,6 +229,7 @@ public class GetApplicationsByJobHandlerTests
     {
         // Arrange
         _currentUserServiceMock.Setup(x => x.UserId).Returns(_userId);
+        _currentUserServiceMock.Setup(x => x.GetEnterpriseIdAsync()).ReturnsAsync(_enterpriseId);
         _currentUserServiceMock.Setup(x => x.Roles).Returns([AppRoles.Employee]);
 
         var query = CreateValidQuery();

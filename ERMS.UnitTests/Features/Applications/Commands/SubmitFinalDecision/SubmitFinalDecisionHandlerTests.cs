@@ -295,6 +295,7 @@ public class SubmitFinalDecisionHandlerTests
     public async Task Handle_ShouldThrowUnauthorized_WhenUserIsNotDepartmentHead()
     {
         _mockCurrentUserService.Setup(s => s.UserId).Returns(_userId);
+        _mockCurrentUserService.Setup(s => s.GetEnterpriseIdAsync()).ReturnsAsync(_enterpriseId);
         _mockCurrentUserService.Setup(s => s.Roles).Returns([AppRoles.Employee]);
 
         var command = new SubmitFinalDecisionCommand

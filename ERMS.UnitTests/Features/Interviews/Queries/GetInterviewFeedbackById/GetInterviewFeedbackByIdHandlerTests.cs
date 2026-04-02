@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Features.Interviews.Queries.GetInterviewFeedbackById;
+using ERMS.Application.Features.Interviews.Queries.GetInterviewFeedbackById;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Application;
 using ERMS.Domain.Constants.Roles;
@@ -58,6 +58,7 @@ public class GetInterviewFeedbackByIdHandlerTests
     public async Task Handle_NotDepartmentHead_ThrowsUnauthorizedAccessException()
     {
         _mockCurrentUserService.Setup(s => s.UserId).Returns(_userId);
+        _mockCurrentUserService.Setup(s => s.GetEnterpriseIdAsync()).ReturnsAsync(_enterpriseId);
         _mockCurrentUserService.Setup(s => s.Roles).Returns(new List<string> { AppRoles.Employee });
         var act = async () => await _handler.Handle(new GetInterviewFeedbackByIdQuery { InterviewId = _interviewId }, CancellationToken.None);
         await act.Should().ThrowAsync<UnauthorizedAccessException>().WithMessage("Chỉ Trưởng phòng mới có quyền xem chi tiết đánh giá phỏng vấn.");

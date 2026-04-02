@@ -27,20 +27,20 @@ public sealed class GetInterviewFeedbackByIdHandler : IRequestHandler<GetIntervi
         var userId = _currentUserService.UserId
             ?? throw new UnauthorizedAccessException("Người dùng chưa được xác thực.");
 
-        // 2. Role check: DepartmentHead ONLY
+        // 2. Enterprise scoping
+        var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
+            ?? throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
+
+        // 3. Role check: DepartmentHead ONLY
         var userRoles = _currentUserService.Roles;
         if (userRoles == null || !userRoles.Contains(AppRoles.DepartmentHead))
         {
             throw new UnauthorizedAccessException("Chỉ Trưởng phòng mới có quyền xem chi tiết đánh giá phỏng vấn.");
         }
 
-        // 3. Department scoping
+        // 4. Department scoping
         var departmentId = await _currentUserService.GetDepartmentIdAsync()
             ?? throw new UnauthorizedAccessException("Người dùng không thuộc phòng ban nào.");
-
-        // 4. Enterprise scoping
-        var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
-            ?? throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
 
         // 5. Query the precise interview
         var interview = await _context.Interviews

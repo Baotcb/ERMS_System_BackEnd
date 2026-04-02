@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Features.Interviews.Queries.GetAllInterviews;
+using ERMS.Application.Features.Interviews.Queries.GetAllInterviews;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Roles;
 using ERMS.Domain.Entities.Application;
@@ -57,6 +57,7 @@ public class GetAllInterviewsHandlerTests
     {
         // Arrange
         _currentUserServiceMock.Setup(s => s.UserId).Returns(Guid.NewGuid());
+        _currentUserServiceMock.Setup(s => s.GetEnterpriseIdAsync()).ReturnsAsync(Guid.NewGuid());
         _currentUserServiceMock.Setup(s => s.Roles).Returns(new List<string> { AppRoles.Employee });
 
         var query = new GetAllInterviewsQuery();

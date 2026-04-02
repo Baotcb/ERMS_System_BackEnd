@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Features.Applications.Commands.ConfirmHire;
+using ERMS.Application.Features.Applications.Commands.ConfirmHire;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Application;
 using ERMS.Domain.Constants.Roles;
@@ -242,6 +242,7 @@ public class ConfirmHireCommandHandlerTests
     {
         // Arrange
         _currentUserServiceMock.Setup(x => x.UserId).Returns(_userId);
+        _currentUserServiceMock.Setup(x => x.GetEnterpriseIdAsync()).ReturnsAsync(_enterpriseId);
         _currentUserServiceMock.Setup(x => x.Roles).Returns([AppRoles.Candidate]);
         var command = CreateValidCommand();
 

@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Features.JobPostings.Commands.DeleteJobPosting;
+using ERMS.Application.Features.JobPostings.Commands.DeleteJobPosting;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Recruitment;
 using ERMS.Domain.Constants.Roles;
@@ -41,6 +41,7 @@ namespace ERMS.UnitTests.Features.JobPostings.Commands.DeleteJobPosting
         {
             // Arrange
             _currentUserServiceMock.Setup(x => x.UserId).Returns(Guid.NewGuid());
+            _currentUserServiceMock.Setup(x => x.GetEnterpriseIdAsync()).ReturnsAsync(Guid.NewGuid());
             _currentUserServiceMock.Setup(x => x.Roles).Returns(new List<string> { AppRoles.Candidate });
             var command = new DeleteJobPostingCommand { Id = Guid.NewGuid() };
 

@@ -40,14 +40,14 @@ public sealed class RejectApplicationHandler : IRequestHandler<RejectApplication
         var userId = _currentUserService.UserId
             ?? throw new UnauthorizedAccessException("Người dùng chưa được xác thực.");
 
+        var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
+            ?? throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
+
         var userRoles = _currentUserService.Roles;
         if (userRoles == null || !userRoles.Contains(AppRoles.HRManager))
         {
             throw new UnauthorizedAccessException("Chỉ HR Manager mới có quyền từ chối hồ sơ ứng tuyển.");
         }
-
-        var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
-            ?? throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
 
         var application = await _context.Applications
             .Include(a => a.JobPosting)

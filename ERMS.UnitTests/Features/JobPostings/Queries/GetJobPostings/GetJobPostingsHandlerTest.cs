@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Features.JobPostings.Queries.GetJobPostings;
+using ERMS.Application.Features.JobPostings.Queries.GetJobPostings;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Roles;
 using ERMS.Domain.Entities.Recruitment;
@@ -39,6 +39,7 @@ namespace ERMS.UnitTests.Features.JobPostings.Queries.GetJobPostings
         {
             // Arrange
             _currentUserServiceMock.Setup(x => x.UserId).Returns(Guid.NewGuid());
+            _currentUserServiceMock.Setup(x => x.GetEnterpriseIdAsync()).ReturnsAsync(Guid.NewGuid());
             _currentUserServiceMock.Setup(x => x.Roles).Returns(new List<string> { AppRoles.Candidate });
             var query = new GetJobPostingsQuery();
 
