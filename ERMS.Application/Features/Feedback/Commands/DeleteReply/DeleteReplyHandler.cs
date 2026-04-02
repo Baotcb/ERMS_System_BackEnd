@@ -1,32 +1,30 @@
 ﻿using ERMS.Application.Interface;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Microsoft.EntityFrameworkCore;
 
-namespace ERMS.Application.Features.Feedback.Commands.UpdateReply
+namespace ERMS.Application.Features.Feedback.Commands.DeleteReply
 {
-    public class UpdateReplyCommandHandler
-    : IRequestHandler<UpdateReplyCommand>
+    public class DeleteReplyHandler
+    : IRequestHandler<DeleteReplyCommand>
     {
         private readonly IERMSDbContext _context;
         private readonly ICurrentUserService _currentUser;
 
-        public UpdateReplyCommandHandler(
+        public DeleteReplyHandler(
             IERMSDbContext context,
             ICurrentUserService currentUser)
         {
             _context = context;
             _currentUser = currentUser;
         }
+
         public async Task Handle(
-            UpdateReplyCommand request,
+            DeleteReplyCommand request,
             CancellationToken cancellationToken)
         {
-            if (string.IsNullOrWhiteSpace(request.Content))
-                throw new Exception("Nội dung phản hồi không được để trống");
-
             var reply = await _context.CourseFeedbackReplies
                 .FirstOrDefaultAsync(x => x.Id == request.ReplyId && !x.IsDeleted, cancellationToken);
 
@@ -34,10 +32,20 @@ namespace ERMS.Application.Features.Feedback.Commands.UpdateReply
                 throw new Exception("Không tìm thấy phản hồi");
 
             if (reply.ReplyBy != _currentUser.UserId)
-                throw new UnauthorizedAccessException("Bạn không có quyền chỉnh sửa phản hồi này");
+                throw new UnauthorizedAccessException("Bạn không có quyền xóa phản hồi này");
 
-            reply.ReplyContent = request.Content;
+            // Soft delete
+            reply.IsDeleted = true;
             reply.UpdatedAt = DateTime.UtcNow;
+
+            var children = await _context.CourseFeedbackReplies
+    .Where(x => x.ParentReplyId == reply.Id)
+    .ToListAsync(cancellationToken);
+
+            foreach (var child in children)
+            {
+                child.IsDeleted = true;
+            }
 
             await _context.SaveChangesAsync(cancellationToken);
         }

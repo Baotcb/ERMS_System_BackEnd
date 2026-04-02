@@ -13,14 +13,14 @@ using Xunit;
 
 namespace ERMS.UnitTests.Features.Courses.Commands.UpdateCourse
 {
-    public class UpdateCourseCommandHandlerTest : IDisposable
+    public class UpdateCourseHandlerTest : IDisposable
     {
         private readonly ERMSDbContext _context;
         private readonly Mock<ICurrentUserService> _currentUserServiceMock;
-        private readonly Mock<ILogger<UpdateCourseCommandHandler>> _loggerMock;
-        private readonly UpdateCourseCommandHandler _handler;
+        private readonly Mock<ILogger<UpdateCourseHandler>> _loggerMock;
+        private readonly UpdateCourseHandler _handler;
 
-        public UpdateCourseCommandHandlerTest()
+        public UpdateCourseHandlerTest()
         {
             var options = new DbContextOptionsBuilder<ERMSDbContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
@@ -28,9 +28,9 @@ namespace ERMS.UnitTests.Features.Courses.Commands.UpdateCourse
 
             _context = new ERMSDbContext(options);
             _currentUserServiceMock = new Mock<ICurrentUserService>();
-            _loggerMock = new Mock<ILogger<UpdateCourseCommandHandler>>();
+            _loggerMock = new Mock<ILogger<UpdateCourseHandler>>();
 
-            _handler = new UpdateCourseCommandHandler(
+            _handler = new UpdateCourseHandler(
                 _context,
                 _currentUserServiceMock.Object,
                 _loggerMock.Object);

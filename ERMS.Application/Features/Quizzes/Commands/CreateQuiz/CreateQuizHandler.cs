@@ -5,12 +5,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ERMS.Application.Features.Quizzes.Commands.CreateQuiz;
 
-public sealed class CreateQuizCommandHandler
+public sealed class CreateQuizHandler
     : IRequestHandler<CreateQuizCommand, Guid>
 {
     private readonly IERMSDbContext _context;
 
-    public CreateQuizCommandHandler(IERMSDbContext context)
+    public CreateQuizHandler(IERMSDbContext context)
     {
         _context = context;
     }

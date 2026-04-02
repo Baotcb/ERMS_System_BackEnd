@@ -13,13 +13,13 @@ using Xunit;
 
 namespace ERMS.UnitTests.Features.Lessons.Commands.CreateLesson
 {
-    public class CreateLessonCommandHandlerTests : IDisposable
+    public class CreateLessonHandlerTests : IDisposable
     {
         private readonly ERMSDbContext _context;
         private readonly Mock<ICurrentUserService> _currentUserMock;
         private readonly CreateLessonHandler _handler;
 
-        public CreateLessonCommandHandlerTests()
+        public CreateLessonHandlerTests()
         {
             var options = new DbContextOptionsBuilder<ERMSDbContext>()
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())

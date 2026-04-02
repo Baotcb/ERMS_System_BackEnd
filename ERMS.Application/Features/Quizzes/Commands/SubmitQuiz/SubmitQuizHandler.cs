@@ -4,12 +4,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ERMS.Application.Features.Quizzes.Commands.SubmitQuiz;
 
-public sealed class SubmitQuizCommandHandler
+public sealed class SubmitQuizHandler
     : IRequestHandler<SubmitQuizCommand, QuizResultDto>
 {
     private readonly IERMSDbContext _context;
 
-    public SubmitQuizCommandHandler(IERMSDbContext context)
+    public SubmitQuizHandler(IERMSDbContext context)
     {
         _context = context;
     }

@@ -5,13 +5,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ERMS.Application.Features.Quizzes.Commands.StartQuiz;
 
-public sealed class StartQuizCommandHandler
+public sealed class StartQuizHandler
     : IRequestHandler<StartQuizCommand, StartQuizResult>
 {
     private readonly IERMSDbContext _context;
     private readonly ICurrentUserService _currentUserService;
 
-    public StartQuizCommandHandler(
+    public StartQuizHandler(
         IERMSDbContext context,
         ICurrentUserService currentUserService)
     {

@@ -11,19 +11,19 @@ using Xunit;
 
 namespace ERMS.UnitTests.Features.Quizzes.Commands.SubmitQuiz
 {
-    public class SubmitQuizCommandHandlerTests : IDisposable
+    public class SubmitQuizHandlerTests : IDisposable
     {
         private readonly ERMSDbContext _context;
-        private readonly SubmitQuizCommandHandler _handler;
+        private readonly SubmitQuizHandler _handler;
 
-        public SubmitQuizCommandHandlerTests()
+        public SubmitQuizHandlerTests()
         {
             var options = new DbContextOptionsBuilder<ERMSDbContext>()
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
                 .Options;
 
             _context = new ERMSDbContext(options);
-            _handler = new SubmitQuizCommandHandler(_context);
+            _handler = new SubmitQuizHandler(_context);
         }
 
         [Fact]

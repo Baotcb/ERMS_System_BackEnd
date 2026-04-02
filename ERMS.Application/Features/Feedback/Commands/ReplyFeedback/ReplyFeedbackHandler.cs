@@ -8,13 +8,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ERMS.Application.Features.Feedback.Commands.ReplyFeedback
 {
-    public class ReplyFeedbackCommandHandler
+    public class ReplyFeedbackHandler
      : IRequestHandler<ReplyFeedbackCommand, int>
     {
         private readonly IERMSDbContext _context;
         private readonly ICurrentUserService _currentUser;
 
-        public ReplyFeedbackCommandHandler(
+        public ReplyFeedbackHandler(
             IERMSDbContext context,
             ICurrentUserService currentUser)
         {

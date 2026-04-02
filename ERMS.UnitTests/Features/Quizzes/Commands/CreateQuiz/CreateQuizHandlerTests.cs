@@ -12,15 +12,15 @@ using Xunit;
 
 namespace ERMS.UnitTests.Features.Quizzes.Commands.CreateQuiz
 {
-    public class CreateQuizCommandHandlerTests
+    public class CreateQuizHandlerTests
     {
         private readonly Mock<IERMSDbContext> _contextMock;
-        private readonly CreateQuizCommandHandler _handler;
+        private readonly CreateQuizHandler _handler;
 
-        public CreateQuizCommandHandlerTests()
+        public CreateQuizHandlerTests()
         {
             _contextMock = new Mock<IERMSDbContext>();
-            _handler = new CreateQuizCommandHandler(_contextMock.Object);
+            _handler = new CreateQuizHandler(_contextMock.Object);
         }
 
         [Fact]

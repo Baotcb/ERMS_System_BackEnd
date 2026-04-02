@@ -6,17 +6,17 @@ using Microsoft.Extensions.Logging;
 
 namespace ERMS.Application.Features.Courses.Commands.CreateCourse
 {
-    public sealed class CreateCourseCommandHandler
+    public sealed class CreateCourseHandler
         : IRequestHandler<CreateCourseCommand, Guid>
     {
         private readonly IERMSDbContext _context;
         private readonly ICurrentUserService _currentUserService;
-        private readonly ILogger<CreateCourseCommandHandler> _logger;
+        private readonly ILogger<CreateCourseHandler> _logger;
 
-        public CreateCourseCommandHandler(
+        public CreateCourseHandler(
             IERMSDbContext context,
             ICurrentUserService currentUserService,
-            ILogger<CreateCourseCommandHandler> logger)
+            ILogger<CreateCourseHandler> logger)
         {
             _context = context;
             _currentUserService = currentUserService;

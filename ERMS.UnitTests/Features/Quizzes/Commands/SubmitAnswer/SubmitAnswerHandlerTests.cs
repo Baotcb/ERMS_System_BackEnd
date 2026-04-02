@@ -12,12 +12,12 @@ using Xunit;
 
 namespace ERMS.UnitTests.Features.Quizzes.Commands.SubmitAnswer
 {
-    public class SubmitAnswerCommandHandlerTests : IDisposable
+    public class SubmitAnswerHandlerTests : IDisposable
     {
         private readonly ERMSDbContext _context;
-        private readonly SubmitAnswerCommandHandler _handler;
+        private readonly SubmitAnswerHandler _handler;
 
-        public SubmitAnswerCommandHandlerTests()
+        public SubmitAnswerHandlerTests()
         {
             // 1. Khởi tạo InMemoryDatabase
             var options = new DbContextOptionsBuilder<ERMSDbContext>()
@@ -27,7 +27,7 @@ namespace ERMS.UnitTests.Features.Quizzes.Commands.SubmitAnswer
             _context = new ERMSDbContext(options);
 
             // 2. Khởi tạo Handler với Context thật (nhưng data ảo)
-            _handler = new SubmitAnswerCommandHandler(_context);
+            _handler = new SubmitAnswerHandler(_context);
         }
 
         [Fact]

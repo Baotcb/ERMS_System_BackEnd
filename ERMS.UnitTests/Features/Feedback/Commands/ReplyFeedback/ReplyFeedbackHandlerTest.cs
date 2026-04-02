@@ -12,13 +12,13 @@ using Xunit;
 
 namespace ERMS.UnitTests.Features.Feedback.Commands.ReplyFeedback
 {
-    public class ReplyFeedbackCommandHandlerTest : IDisposable
+    public class ReplyFeedbackHandlerTest : IDisposable
     {
         private readonly ERMSDbContext _context;
         private readonly Mock<ICurrentUserService> _currentUserServiceMock;
-        private readonly ReplyFeedbackCommandHandler _handler;
+        private readonly ReplyFeedbackHandler _handler;
 
-        public ReplyFeedbackCommandHandlerTest()
+        public ReplyFeedbackHandlerTest()
         {
             var options = new DbContextOptionsBuilder<ERMSDbContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
@@ -26,7 +26,7 @@ namespace ERMS.UnitTests.Features.Feedback.Commands.ReplyFeedback
 
             _context = new ERMSDbContext(options);
             _currentUserServiceMock = new Mock<ICurrentUserService>();
-            _handler = new ReplyFeedbackCommandHandler(_context, _currentUserServiceMock.Object);
+            _handler = new ReplyFeedbackHandler(_context, _currentUserServiceMock.Object);
         }
 
         [Fact]

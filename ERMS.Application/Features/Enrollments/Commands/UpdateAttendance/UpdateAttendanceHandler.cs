@@ -5,17 +5,17 @@ using Microsoft.Extensions.Logging;
 
 namespace ERMS.Application.Features.Enrollments.Commands.UpdateAttendance
 {
-    public sealed class UpdateAttendanceCommandHandler
+    public sealed class UpdateAttendanceHandler
         : IRequestHandler<UpdateAttendanceCommand, Guid>
     {
         private readonly IERMSDbContext _context;
         private readonly ICurrentUserService _currentUserService;
-        private readonly ILogger<UpdateAttendanceCommandHandler> _logger;
+        private readonly ILogger<UpdateAttendanceHandler> _logger;
 
-        public UpdateAttendanceCommandHandler(
+        public UpdateAttendanceHandler(
             IERMSDbContext context,
             ICurrentUserService currentUserService,
-            ILogger<UpdateAttendanceCommandHandler> logger)
+            ILogger<UpdateAttendanceHandler> logger)
         {
             _context = context;
             _currentUserService = currentUserService;

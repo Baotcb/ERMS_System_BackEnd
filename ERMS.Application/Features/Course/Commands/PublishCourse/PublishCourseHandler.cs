@@ -5,19 +5,19 @@ using Microsoft.Extensions.Logging;
 
 namespace ERMS.Application.Features.Courses.Commands.PublishCourse
 {
-    public sealed class PublishCourseCommandHandler
+    public sealed class PublishCourseHandler
         : IRequestHandler<PublishCourseCommand, bool>
     {
         private readonly IERMSDbContext _context;
         private readonly ICurrentUserService _currentUserService;
-        private readonly ILogger<PublishCourseCommandHandler> _logger;
+        private readonly ILogger<PublishCourseHandler> _logger;
         private readonly IZoomService _zoomService;
         private readonly IEmailService _emailService;
 
-        public PublishCourseCommandHandler(
+        public PublishCourseHandler(
             IERMSDbContext context,
             ICurrentUserService currentUserService,
-            ILogger<PublishCourseCommandHandler> logger,
+            ILogger<PublishCourseHandler> logger,
             IZoomService zoomService,
             IEmailService emailService)
         {

@@ -9,20 +9,20 @@ using Xunit;
 
 namespace ERMS.UnitTests.Features.Feedback.Commands.UpdateReply
 {
-    public class UpdateReplyCommandHandlerTest : IDisposable
+    public class UpdateReplyHandlerTest : IDisposable
     {
         private readonly ERMSDbContext _context;
         private readonly Mock<ICurrentUserService> _currentUserServiceMock;
-        private readonly UpdateReplyCommandHandler _handler;
+        private readonly UpdateReplyHandler _handler;
 
-        public UpdateReplyCommandHandlerTest()
+        public UpdateReplyHandlerTest()
         {
             var options = new DbContextOptionsBuilder<ERMSDbContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
             _context = new ERMSDbContext(options);
             _currentUserServiceMock = new Mock<ICurrentUserService>();
-            _handler = new UpdateReplyCommandHandler(_context, _currentUserServiceMock.Object);
+            _handler = new UpdateReplyHandler(_context, _currentUserServiceMock.Object);
         }
 
         [Fact]

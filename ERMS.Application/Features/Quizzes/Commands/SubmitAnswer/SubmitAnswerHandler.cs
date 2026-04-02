@@ -4,12 +4,12 @@ using ERMS.Domain.Entities.Training;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-public sealed class SubmitAnswerCommandHandler
+public sealed class SubmitAnswerHandler
     : IRequestHandler<SubmitAnswerCommand>
 {
     private readonly IERMSDbContext _context;
 
-    public SubmitAnswerCommandHandler(IERMSDbContext context)
+    public SubmitAnswerHandler(IERMSDbContext context)
     {
         _context = context;
     }

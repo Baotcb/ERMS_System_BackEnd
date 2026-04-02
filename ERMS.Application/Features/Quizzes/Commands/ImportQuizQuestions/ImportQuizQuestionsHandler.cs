@@ -6,12 +6,12 @@ using System.Text.Json;
 
 namespace ERMS.Application.Features.Quizzes.Commands.ImportQuizQuestions
 {
-    public class ImportQuizQuestionsCommandHandler
+    public class ImportQuizQuestionsHandler
         : IRequestHandler<ImportQuizQuestionsCommand, int>
     {
         private readonly IERMSDbContext _context;
 
-        public ImportQuizQuestionsCommandHandler(IERMSDbContext context)
+        public ImportQuizQuestionsHandler(IERMSDbContext context)
         {
             _context = context;
         }

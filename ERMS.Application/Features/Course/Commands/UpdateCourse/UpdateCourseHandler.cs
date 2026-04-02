@@ -5,17 +5,17 @@ using Microsoft.Extensions.Logging;
 
 namespace ERMS.Application.Features.Courses.Commands.UpdateCourse
 {
-    public sealed class UpdateCourseCommandHandler
+    public sealed class UpdateCourseHandler
         : IRequestHandler<UpdateCourseCommand, Guid>
     {
         private readonly IERMSDbContext _context;
         private readonly ICurrentUserService _currentUserService;
-        private readonly ILogger<UpdateCourseCommandHandler> _logger;
+        private readonly ILogger<UpdateCourseHandler> _logger;
 
-        public UpdateCourseCommandHandler(
+        public UpdateCourseHandler(
             IERMSDbContext context,
             ICurrentUserService currentUserService,
-            ILogger<UpdateCourseCommandHandler> logger)
+            ILogger<UpdateCourseHandler> logger)
         {
             _context = context;
             _currentUserService = currentUserService;

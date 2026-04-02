@@ -15,15 +15,15 @@ using Xunit;
 
 namespace ERMS.UnitTests.Features.Quizzes.Commands.StartQuiz
 {
-    public class StartQuizCommandHandlerTests
+    public class StartQuizHandlerTests
     {
         private readonly Mock<IERMSDbContext> _contextMock = new();
         private readonly Mock<ICurrentUserService> _currentUserServiceMock = new();
-        private readonly StartQuizCommandHandler _handler;
+        private readonly StartQuizHandler _handler;
 
-        public StartQuizCommandHandlerTests()
+        public StartQuizHandlerTests()
         {
-            _handler = new StartQuizCommandHandler(
+            _handler = new StartQuizHandler(
                 _contextMock.Object,
                 _currentUserServiceMock.Object);
         }

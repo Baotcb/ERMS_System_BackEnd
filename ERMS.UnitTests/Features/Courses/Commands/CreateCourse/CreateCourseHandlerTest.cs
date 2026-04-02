@@ -13,14 +13,14 @@ using Xunit;
 
 namespace ERMS.UnitTests.Features.Courses.Commands.CreateCourse
 {
-    public class CreateCourseCommandHandlerTest : IDisposable
+    public class CreateCourseHandlerTest : IDisposable
     {
         private readonly ERMSDbContext _context;
         private readonly Mock<ICurrentUserService> _currentUserServiceMock;
-        private readonly Mock<ILogger<CreateCourseCommandHandler>> _loggerMock;
-        private readonly CreateCourseCommandHandler _handler;
+        private readonly Mock<ILogger<CreateCourseHandler>> _loggerMock;
+        private readonly CreateCourseHandler _handler;
 
-        public CreateCourseCommandHandlerTest()
+        public CreateCourseHandlerTest()
         {
             var options = new DbContextOptionsBuilder<ERMSDbContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
@@ -28,9 +28,9 @@ namespace ERMS.UnitTests.Features.Courses.Commands.CreateCourse
 
             _context = new ERMSDbContext(options);
             _currentUserServiceMock = new Mock<ICurrentUserService>();
-            _loggerMock = new Mock<ILogger<CreateCourseCommandHandler>>();
+            _loggerMock = new Mock<ILogger<CreateCourseHandler>>();
 
-            _handler = new CreateCourseCommandHandler(
+            _handler = new CreateCourseHandler(
                 _context,
                 _currentUserServiceMock.Object,
                 _loggerMock.Object);

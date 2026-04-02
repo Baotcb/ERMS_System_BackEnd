@@ -20,7 +20,7 @@ using OfferEntity = ERMS.Domain.Entities.Application.Offer;
 
 namespace ERMS.UnitTests.Features.Applications.Commands.ConfirmHire;
 
-public class ConfirmHireCommandHandlerTests
+public class ConfirmHireHandlerTests
 {
     private readonly Mock<IERMSDbContext> _contextMock;
     private readonly Mock<ICurrentUserService> _currentUserServiceMock;
@@ -37,7 +37,7 @@ public class ConfirmHireCommandHandlerTests
     private readonly Guid _jobPostingId = Guid.NewGuid();
     private const string TestEmail = "john.doe@company.com";
 
-    public ConfirmHireCommandHandlerTests()
+    public ConfirmHireHandlerTests()
     {
         _contextMock = new Mock<IERMSDbContext>();
         _currentUserServiceMock = new Mock<ICurrentUserService>();

@@ -4,13 +4,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ERMS.Application.Features.Enrollments.Commands.UpdateCertificate
 {
-    public class UpdateCertificateCommandHandler
+    public class UpdateCertificateHandler
         : IRequestHandler<UpdateCertificateCommand, bool>
     {
         private readonly IERMSDbContext _context;
         private readonly ICurrentUserService _currentUser;
 
-        public UpdateCertificateCommandHandler(
+        public UpdateCertificateHandler(
             IERMSDbContext context,
             ICurrentUserService currentUser)
         {

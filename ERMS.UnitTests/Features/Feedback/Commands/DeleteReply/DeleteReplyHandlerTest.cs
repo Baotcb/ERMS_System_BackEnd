@@ -9,20 +9,20 @@ using Xunit;
 
 namespace ERMS.UnitTests.Features.Feedback.Commands.DeleteReply
 {
-    public class DeleteReplyCommandHandlerTest : IDisposable
+    public class DeleteReplyHandlerTest : IDisposable
     {
         private readonly ERMSDbContext _context;
         private readonly Mock<ICurrentUserService> _currentUserServiceMock;
-        private readonly DeleteReplyCommandHandler _handler;
+        private readonly DeleteReplyHandler _handler;
 
-        public DeleteReplyCommandHandlerTest()
+        public DeleteReplyHandlerTest()
         {
             var options = new DbContextOptionsBuilder<ERMSDbContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
             _context = new ERMSDbContext(options);
             _currentUserServiceMock = new Mock<ICurrentUserService>();
-            _handler = new DeleteReplyCommandHandler(_context, _currentUserServiceMock.Object);
+            _handler = new DeleteReplyHandler(_context, _currentUserServiceMock.Object);
         }
 
         [Fact]

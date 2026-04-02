@@ -16,14 +16,14 @@ using Xunit;
 
 namespace ERMS.UnitTests.Features.Quizzes.Commands.ImportQuizQuestions
 {
-    public class ImportQuizQuestionsCommandHandlerTests
+    public class ImportQuizQuestionsHandlerTests
     {
         private readonly Mock<IERMSDbContext> _contextMock = new();
-        private readonly ImportQuizQuestionsCommandHandler _handler;
+        private readonly ImportQuizQuestionsHandler _handler;
 
-        public ImportQuizQuestionsCommandHandlerTests()
+        public ImportQuizQuestionsHandlerTests()
         {
-            _handler = new ImportQuizQuestionsCommandHandler(_contextMock.Object);
+            _handler = new ImportQuizQuestionsHandler(_contextMock.Object);
         }
 
         [Fact]
