@@ -83,22 +83,6 @@ public class AdminControllerTests
     }
 
     [Test]
-    public async Task GetEnterpriseDetail_ShouldForwardProvidedQuery_AndReturnOk()
-    {
-        var query = new GetEnterpriseAdminDetailQuery { EnterpriseId = Guid.NewGuid() };
-        var response = new GetEnterpriseAdminDetailResponse { EnterpriseId = query.EnterpriseId };
-        _senderMock
-            .Setup(sender => sender.Send(query, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(response);
-
-        var result = await _controller.GetEnterpriseDetail(query);
-
-        result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.Should().BeSameAs(response);
-        _senderMock.Verify(sender => sender.Send(query, It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Test]
     public async Task SetEnterpriseStatus_ShouldOverwriteRouteEnterpriseId_AndReturnSuccessPayload()
     {
         var routeEnterpriseId = Guid.NewGuid();
@@ -223,7 +207,7 @@ public class AdminControllerTests
     {
         var response = new GetSystemIntegrationsResponse
         {
-            new() { Name = "Google OAuth", Category = "Authentication", Status = "Configured", EnvironmentScope = "System" }
+            new() { Name = "Gemini", Category = "AI", Status = "Configured", EnvironmentScope = "System" }
         };
 
         _senderMock

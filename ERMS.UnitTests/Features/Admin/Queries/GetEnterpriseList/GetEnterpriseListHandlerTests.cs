@@ -204,15 +204,15 @@ public class GetEnterpriseListHandlerTests
         var freePlan = new SubscriptionPlan
         {
             Id = Guid.NewGuid(),
-            PlanName = "Basic",
-            PlanCode = "BASIC"
+            PlanName = "Free",
+            PlanCode = "FREE"
         };
 
         var proPlan = new SubscriptionPlan
         {
             Id = Guid.NewGuid(),
-            PlanName = "Enterprise",
-            PlanCode = "ENT"
+            PlanName = "Pro",
+            PlanCode = "PRO"
         };
 
         var enterprises = new List<Enterprise>
@@ -258,7 +258,7 @@ public class GetEnterpriseListHandlerTests
         result.TotalCount.Should().Be(1);
         result.Items.Should().ContainSingle();
         result.Items[0].EnterpriseName.Should().Be("Pro Co");
-        result.Items[0].CurrentPlanCode.Should().Be("ENT");
+        result.Items[0].CurrentPlanCode.Should().Be("PRO");
     }
 
     [Fact]
@@ -327,18 +327,18 @@ public class GetEnterpriseListHandlerTests
     [Fact]
     public async Task Handle_ShouldMatchSharedTierClassification_ForPlanTierFiltering()
     {
-        var growthPlan = new SubscriptionPlan
+        var proPlan = new SubscriptionPlan
+        {
+            Id = Guid.NewGuid(),
+            PlanName = "Pro",
+            PlanCode = "PRO"
+        };
+
+        var freeNamedPlan = new SubscriptionPlan
         {
             Id = Guid.NewGuid(),
             PlanName = "Starter",
-            PlanCode = "GROWTH"
-        };
-
-        var enterpriseNamedPlan = new SubscriptionPlan
-        {
-            Id = Guid.NewGuid(),
-            PlanName = "Enterprise Plus",
-            PlanCode = "CUSTOM"
+            PlanCode = "FREE"
         };
 
         var freePlan = new SubscriptionPlan
@@ -353,11 +353,11 @@ public class GetEnterpriseListHandlerTests
             new()
             {
                 Id = Guid.NewGuid(),
-                EnterpriseName = "Growth Code",
+                EnterpriseName = "Pro Tier",
                 EnterpriseCode = "GC001",
                 Status = EnterpriseStatus.Active,
-                SubscriptionPlanId = growthPlan.Id,
-                SubscriptionPlan = growthPlan,
+                SubscriptionPlanId = proPlan.Id,
+                SubscriptionPlan = proPlan,
                 SubscriptionEndDate = new DateTime(2026, 6, 1),
                 CreatedAt = new DateTime(2026, 1, 1),
                 IsDeleted = false
@@ -365,11 +365,11 @@ public class GetEnterpriseListHandlerTests
             new()
             {
                 Id = Guid.NewGuid(),
-                EnterpriseName = "Enterprise Name",
+                EnterpriseName = "Free Name",
                 EnterpriseCode = "EN001",
                 Status = EnterpriseStatus.Active,
-                SubscriptionPlanId = enterpriseNamedPlan.Id,
-                SubscriptionPlan = enterpriseNamedPlan,
+                SubscriptionPlanId = freeNamedPlan.Id,
+                SubscriptionPlan = freeNamedPlan,
                 SubscriptionEndDate = new DateTime(2026, 6, 2),
                 CreatedAt = new DateTime(2026, 1, 2),
                 IsDeleted = false
@@ -638,6 +638,46 @@ public class GetEnterpriseListHandlerTests
         result.PageSize.Should().Be(10);
         result.TotalPages.Should().Be(1);
         result.Items.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldCapRequestedPageSizeToOneHundred()
+    {
+        var plan = new SubscriptionPlan
+        {
+            Id = Guid.NewGuid(),
+            PlanName = "Pro",
+            PlanCode = "PRO"
+        };
+        var enterprises = Enumerable.Range(1, 150)
+            .Select(index => new Enterprise
+            {
+                Id = Guid.NewGuid(),
+                EnterpriseName = $"Enterprise {index}",
+                EnterpriseCode = $"E{index:000}",
+                Status = EnterpriseStatus.Active,
+                SubscriptionPlanId = plan.Id,
+                SubscriptionPlan = plan,
+                SubscriptionEndDate = new DateTime(2026, 6, 1),
+                CreatedAt = new DateTime(2026, 1, 1).AddMinutes(index),
+                IsDeleted = false
+            })
+            .ToList();
+
+        _mockContext.Setup(x => x.Enterprises).Returns(enterprises.AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.Employees).Returns(new List<Employee>().AsQueryable().BuildMockDbSet().Object);
+
+        var result = await _handler.Handle(
+            new GetEnterpriseListQuery
+            {
+                PageNumber = 1,
+                PageSize = 500
+            },
+            CancellationToken.None);
+
+        result.PageSize.Should().Be(100);
+        result.Items.Should().HaveCount(100);
+        result.TotalPages.Should().Be(2);
     }
 
     [Fact]

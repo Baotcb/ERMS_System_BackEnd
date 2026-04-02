@@ -13,6 +13,7 @@ public sealed class GetPlatformStatsResponse
     public List<PlatformSubscriptionMixDto> SubscriptionMix { get; set; } = [];
     public List<TopEnterpriseDto> TopEnterprises { get; set; } = [];
     public List<ChurnWatchlistItemDto> ChurnWatchlist { get; set; } = [];
+    public IntegrationHealthDto IntegrationHealth { get; set; } = new();
 }
 
 public sealed class PlatformStatusDistributionDto
@@ -42,4 +43,11 @@ public sealed class ChurnWatchlistItemDto
     public string Status { get; set; } = string.Empty;
     public string RiskReason { get; set; } = string.Empty;
     public DateTime SubscriptionEndDate { get; set; }
+}
+
+public sealed class IntegrationHealthDto
+{
+    public int Healthy { get; set; }
+    public int Warning { get; set; }
+    public int Error { get; set; }
 }

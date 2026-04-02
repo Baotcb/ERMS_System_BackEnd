@@ -3,58 +3,46 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ERMS.Application.Features.Admin.Queries.GetSystemIntegrations;
+using ERMS.Application.Interface;
 using FluentAssertions;
+using Moq;
 using Xunit;
 
 namespace ERMS.UnitTests.Features.Admin.Queries.GetSystemIntegrations;
 
 public class GetSystemIntegrationsHandlerTests
 {
+    private readonly Mock<ISystemIntegrationStatusService> _integrationStatusService;
     private readonly GetSystemIntegrationsHandler _handler;
 
     public GetSystemIntegrationsHandlerTests()
     {
-        _handler = new GetSystemIntegrationsHandler();
+        _integrationStatusService = new Mock<ISystemIntegrationStatusService>();
+        _handler = new GetSystemIntegrationsHandler(_integrationStatusService.Object);
     }
 
     [Fact]
-    public async Task Handle_ShouldReturnExpectedSafeConnectorMetadata()
+    public async Task Handle_ShouldReturnGeminiIntegrationMetadata()
     {
+        var checkedAt = new DateTime(2026, 4, 1, 12, 0, 0, DateTimeKind.Utc);
+        _integrationStatusService
+            .Setup(service => service.GetSystemIntegrationsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetSystemIntegrationsResponse
+            {
+                new() { Name = "Gemini", Category = "AI", Status = "Configured", EnvironmentScope = "System", LastChecked = checkedAt }
+            });
+
         var result = await _handler.Handle(new GetSystemIntegrationsQuery(), CancellationToken.None);
 
         result.Should().BeEquivalentTo(
             [
                 new
                 {
-                    Name = "Google OAuth",
-                    Category = "Authentication",
-                    Status = "Configured",
-                    EnvironmentScope = "System",
-                    LastChecked = (DateTime?)null
-                },
-                new
-                {
-                    Name = "SMTP",
-                    Category = "Communication",
-                    Status = "Configured",
-                    EnvironmentScope = "System",
-                    LastChecked = (DateTime?)null
-                },
-                new
-                {
-                    Name = "Cloudinary",
-                    Category = "Media",
-                    Status = "Configured",
-                    EnvironmentScope = "System",
-                    LastChecked = (DateTime?)null
-                },
-                new
-                {
                     Name = "Gemini",
                     Category = "AI",
                     Status = "Configured",
                     EnvironmentScope = "System",
-                    LastChecked = (DateTime?)null
+                    LastChecked = (DateTime?)checkedAt
                 }
             ],
             options => options.WithStrictOrdering());
@@ -63,6 +51,13 @@ public class GetSystemIntegrationsHandlerTests
     [Fact]
     public async Task Handle_ShouldExposeOnlyApprovedSafeFields()
     {
+        _integrationStatusService
+            .Setup(service => service.GetSystemIntegrationsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetSystemIntegrationsResponse
+            {
+                new() { Name = "Gemini", Category = "AI", Status = "Configured", EnvironmentScope = "System", LastChecked = DateTime.UtcNow }
+            });
+
         var result = await _handler.Handle(new GetSystemIntegrationsQuery(), CancellationToken.None);
 
         typeof(SystemIntegrationDto).GetProperties()
@@ -79,17 +74,31 @@ public class GetSystemIntegrationsHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ShouldReturnExactlyFourUniqueIntegrations()
+    public async Task Handle_ShouldReturnSingleGeminiIntegration()
     {
+        _integrationStatusService
+            .Setup(service => service.GetSystemIntegrationsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetSystemIntegrationsResponse
+            {
+                new() { Name = "Gemini", Category = "AI", Status = "Configured", EnvironmentScope = "System", LastChecked = DateTime.UtcNow }
+            });
+
         var result = await _handler.Handle(new GetSystemIntegrationsQuery(), CancellationToken.None);
 
-        result.Should().HaveCount(4);
-        result.Select(integration => integration.Name).Should().OnlyHaveUniqueItems();
+        result.Should().ContainSingle();
+        result.Select(integration => integration.Name).Should().ContainSingle("Gemini");
     }
 
     [Fact]
     public async Task Handle_ShouldIncludeGeminiAsAiIntegration_WithSystemScope()
     {
+        _integrationStatusService
+            .Setup(service => service.GetSystemIntegrationsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetSystemIntegrationsResponse
+            {
+                new() { Name = "Gemini", Category = "AI", Status = "Configured", EnvironmentScope = "System", LastChecked = DateTime.UtcNow }
+            });
+
         var result = await _handler.Handle(new GetSystemIntegrationsQuery(), CancellationToken.None);
 
         result.Should().ContainSingle(integration =>
@@ -99,38 +108,50 @@ public class GetSystemIntegrationsHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ShouldIncludeCoreSystemIntegrations_WithExpectedCategories()
+    public async Task Handle_ShouldNotIncludeLegacyNonAiIntegrations()
     {
+        _integrationStatusService
+            .Setup(service => service.GetSystemIntegrationsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetSystemIntegrationsResponse
+            {
+                new() { Name = "Gemini", Category = "AI", Status = "Configured", EnvironmentScope = "System", LastChecked = DateTime.UtcNow }
+            });
+
         var result = await _handler.Handle(new GetSystemIntegrationsQuery(), CancellationToken.None);
 
-        result.Should().ContainSingle(integration =>
-            integration.Name == "Google OAuth" &&
-            integration.Category == "Authentication" &&
-            integration.Status == "Configured" &&
-            integration.EnvironmentScope == "System" &&
-            integration.LastChecked == null);
-
-        result.Should().ContainSingle(integration =>
-            integration.Name == "SMTP" &&
-            integration.Category == "Communication" &&
-            integration.Status == "Configured" &&
-            integration.EnvironmentScope == "System" &&
-            integration.LastChecked == null);
-
-        result.Should().ContainSingle(integration =>
-            integration.Name == "Cloudinary" &&
-            integration.Category == "Media" &&
-            integration.Status == "Configured" &&
-            integration.EnvironmentScope == "System" &&
-            integration.LastChecked == null);
+        result.Should().NotContain(integration => integration.Name == "Google OAuth");
+        result.Should().NotContain(integration => integration.Name == "SMTP");
+        result.Should().NotContain(integration => integration.Name == "Cloudinary");
+        result.Should().NotContain(integration => integration.Name == "Zoom");
+        result.Should().NotContain(integration => integration.Name == "Geolocation");
     }
 
     [Fact]
-    public async Task Handle_ShouldNotIncludeZoomOrGeolocation()
+    public async Task Handle_ShouldStampLastChecked_WhenReportingIntegrationStatus()
     {
+        _integrationStatusService
+            .Setup(service => service.GetSystemIntegrationsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetSystemIntegrationsResponse
+            {
+                new() { Name = "Gemini", Category = "AI", Status = "Configured", EnvironmentScope = "System", LastChecked = DateTime.UtcNow }
+            });
+
         var result = await _handler.Handle(new GetSystemIntegrationsQuery(), CancellationToken.None);
 
-        result.Should().NotContain(integration => integration.Name == "Zoom");
-        result.Should().NotContain(integration => integration.Name == "Geolocation");
+        result.Should().OnlyContain(integration => integration.LastChecked.HasValue);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldDelegateToIntegrationStatusService()
+    {
+        _integrationStatusService
+            .Setup(service => service.GetSystemIntegrationsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetSystemIntegrationsResponse());
+
+        await _handler.Handle(new GetSystemIntegrationsQuery(), CancellationToken.None);
+
+        _integrationStatusService.Verify(
+            service => service.GetSystemIntegrationsAsync(It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 }

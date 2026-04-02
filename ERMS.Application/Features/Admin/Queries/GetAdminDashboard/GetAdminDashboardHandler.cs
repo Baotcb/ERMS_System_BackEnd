@@ -21,115 +21,120 @@ public sealed class GetAdminDashboardHandler : IRequestHandler<GetAdminDashboard
         var enterprises = _context.Enterprises
             .AsNoTracking()
             .Where(enterprise => !enterprise.IsDeleted);
-        var enterpriseSnapshots = await enterprises
+
+        var summary = await enterprises
+            .GroupBy(_ => 1)
+            .Select(group => new
+            {
+                TotalEnterprises = group.Count(),
+                ActiveEnterprises = group.Count(enterprise => enterprise.Status == EnterpriseStatus.Active),
+                LockedEnterprises = group.Count(enterprise => enterprise.Status == EnterpriseStatus.Locked),
+                ExpiringSoonEnterprises = group.Count(enterprise =>
+                    enterprise.Status == EnterpriseStatus.Active &&
+                    enterprise.SubscriptionEndDate >= now &&
+                    enterprise.SubscriptionEndDate <= expiringThreshold)
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var attentionItems = await enterprises
+            .Where(enterprise =>
+                enterprise.Status == EnterpriseStatus.Locked ||
+                enterprise.Status == EnterpriseStatus.Suspended ||
+                enterprise.Status == EnterpriseStatus.Inactive ||
+                (enterprise.Status == EnterpriseStatus.Active && enterprise.SubscriptionEndDate <= expiringThreshold))
             .Select(enterprise => new
             {
                 enterprise.Id,
                 enterprise.EnterpriseName,
                 enterprise.EnterpriseCode,
                 enterprise.Status,
-                enterprise.SubscriptionEndDate
+                enterprise.SubscriptionEndDate,
+                Priority = enterprise.Status == EnterpriseStatus.Locked
+                    ? 0
+                    : enterprise.Status == EnterpriseStatus.Suspended
+                        ? 1
+                        : enterprise.Status == EnterpriseStatus.Inactive
+                            ? 2
+                            : enterprise.Status == EnterpriseStatus.Active && enterprise.SubscriptionEndDate < now
+                                ? 3
+                                : enterprise.Status == EnterpriseStatus.Active && enterprise.SubscriptionEndDate <= expiringThreshold
+                                    ? 4
+                                    : (int?)null,
+                AttentionReason = enterprise.Status == EnterpriseStatus.Locked
+                    ? "Doanh nghiệp đang bị khóa"
+                    : enterprise.Status == EnterpriseStatus.Suspended
+                        ? "Doanh nghiệp đang tạm dừng"
+                        : enterprise.Status == EnterpriseStatus.Inactive
+                            ? "Doanh nghiệp đã ngừng hoạt động"
+                            : enterprise.Status == EnterpriseStatus.Active && enterprise.SubscriptionEndDate < now
+                                ? "Subscription đã hết hạn"
+                                : enterprise.Status == EnterpriseStatus.Active && enterprise.SubscriptionEndDate <= expiringThreshold
+                                    ? "Subscription sắp hết hạn"
+                                    : null
+            })
+            .Where(item => item.Priority.HasValue && item.AttentionReason != null)
+            .OrderBy(item => item.Priority)
+            .ThenBy(item => item.SubscriptionEndDate)
+            .Take(6)
+            .Select(item => new AdminDashboardAttentionItemDto
+            {
+                EnterpriseId = item.Id,
+                EnterpriseName = item.EnterpriseName,
+                EnterpriseCode = item.EnterpriseCode,
+                Status = item.Status,
+                AttentionReason = item.AttentionReason!,
+                SubscriptionEndDate = item.SubscriptionEndDate
+            })
+            .ToListAsync(cancellationToken);
+
+        var recentActivities = await (
+            from history in _context.ApprovalHistories.AsNoTracking()
+            where history.EntityType == "Enterprise"
+            join enterprise in _context.Enterprises
+                .AsNoTracking()
+                .Where(value => !value.IsDeleted)
+                on history.EntityId equals enterprise.Id into enterpriseGroup
+            from enterprise in enterpriseGroup.DefaultIfEmpty()
+            orderby history.CreatedAt descending
+            select new AdminDashboardActivityDto
+            {
+                ApprovalHistoryId = history.Id,
+                EnterpriseId = history.EntityId,
+                EnterpriseName = enterprise != null ? enterprise.EnterpriseName : string.Empty,
+                EnterpriseCode = enterprise != null ? enterprise.EnterpriseCode : string.Empty,
+                Action = history.Action,
+                PreviousStatus = history.PreviousStatus,
+                NewStatus = history.NewStatus,
+                ChangedByName = history.PerformedBy != null ? history.PerformedBy.FullName : string.Empty,
+                ChangedAt = history.CreatedAt
+            })
+            .Take(6)
+            .ToListAsync(cancellationToken);
+
+        var recentPayments = await _context.SubscriptionHistories
+            .AsNoTracking()
+            .OrderByDescending(history => history.CreatedAt)
+            .Take(5)
+            .Select(history => new RecentPaymentDto
+            {
+                EnterpriseId = history.EnterpriseId,
+                EnterpriseName = history.Enterprise.EnterpriseName,
+                EnterpriseCode = history.Enterprise.EnterpriseCode,
+                ActionType = history.ActionType,
+                Amount = history.Amount,
+                CreatedAt = history.CreatedAt
             })
             .ToListAsync(cancellationToken);
 
         return new GetAdminDashboardResponse
         {
-            TotalEnterprises = enterpriseSnapshots.Count,
-            ActiveEnterprises = enterpriseSnapshots.Count(enterprise => enterprise.Status == EnterpriseStatus.Active),
-            LockedEnterprises = enterpriseSnapshots.Count(enterprise => enterprise.Status == EnterpriseStatus.Locked),
-            ExpiringSoonEnterprises = enterpriseSnapshots.Count(enterprise =>
-                enterprise.Status == EnterpriseStatus.Active &&
-                enterprise.SubscriptionEndDate >= now &&
-                enterprise.SubscriptionEndDate <= expiringThreshold),
-            AttentionItems = enterpriseSnapshots
-                .Select(enterprise => new
-                {
-                    enterprise.Id,
-                    enterprise.EnterpriseName,
-                    enterprise.EnterpriseCode,
-                    enterprise.Status,
-                    enterprise.SubscriptionEndDate,
-                    Priority = GetAttentionPriority(enterprise.Status, enterprise.SubscriptionEndDate, now, expiringThreshold),
-                    AttentionReason = GetAttentionReason(enterprise.Status, enterprise.SubscriptionEndDate, now, expiringThreshold)
-                })
-                .Where(item => item.Priority.HasValue && item.AttentionReason != null)
-                .OrderBy(item => item.Priority)
-                .ThenBy(item => item.SubscriptionEndDate)
-                .Take(6)
-                .Select(item => new AdminDashboardAttentionItemDto
-                {
-                    EnterpriseId = item.Id,
-                    EnterpriseName = item.EnterpriseName,
-                    EnterpriseCode = item.EnterpriseCode,
-                    Status = item.Status,
-                    AttentionReason = item.AttentionReason!,
-                    SubscriptionEndDate = item.SubscriptionEndDate
-                })
-                .ToList(),
-            RecentActivities = await _context.ApprovalHistories
-                .AsNoTracking()
-                .Where(history => history.EntityType == "Enterprise")
-                .OrderByDescending(history => history.CreatedAt)
-                .Take(6)
-                .Select(history => new AdminDashboardActivityDto
-                {
-                    ApprovalHistoryId = history.Id,
-                    EnterpriseId = history.EntityId,
-                    EnterpriseName = _context.Enterprises
-                        .Where(enterprise => enterprise.Id == history.EntityId)
-                        .Select(enterprise => enterprise.EnterpriseName)
-                        .FirstOrDefault() ?? string.Empty,
-                    EnterpriseCode = _context.Enterprises
-                        .Where(enterprise => enterprise.Id == history.EntityId)
-                        .Select(enterprise => enterprise.EnterpriseCode)
-                        .FirstOrDefault() ?? string.Empty,
-                    Action = history.Action,
-                    PreviousStatus = history.PreviousStatus,
-                    NewStatus = history.NewStatus,
-                    ChangedByName = history.PerformedBy == null ? string.Empty : history.PerformedBy.FullName,
-                    ChangedAt = history.CreatedAt
-                })
-                .ToListAsync(cancellationToken),
-            RecentPayments = await _context.SubscriptionHistories
-                .AsNoTracking()
-                .OrderByDescending(history => history.CreatedAt)
-                .Take(5)
-                .Select(history => new RecentPaymentDto
-                {
-                    EnterpriseId = history.EnterpriseId,
-                    EnterpriseName = history.Enterprise.EnterpriseName,
-                    EnterpriseCode = history.Enterprise.EnterpriseCode,
-                    ActionType = history.ActionType,
-                    Amount = history.Amount,
-                    CreatedAt = history.CreatedAt
-                })
-                .ToListAsync(cancellationToken)
-        };
-    }
-
-    private static int? GetAttentionPriority(string status, DateTime subscriptionEndDate, DateTime now, DateTime expiringThreshold)
-    {
-        return status switch
-        {
-            EnterpriseStatus.Locked => 0,
-            EnterpriseStatus.Suspended => 1,
-            EnterpriseStatus.Inactive => 2,
-            EnterpriseStatus.Active when subscriptionEndDate < now => 3,
-            EnterpriseStatus.Active when subscriptionEndDate <= expiringThreshold => 4,
-            _ => null
-        };
-    }
-
-    private static string? GetAttentionReason(string status, DateTime subscriptionEndDate, DateTime now, DateTime expiringThreshold)
-    {
-        return status switch
-        {
-            EnterpriseStatus.Locked => "Doanh nghiep dang bi khoa",
-            EnterpriseStatus.Suspended => "Doanh nghiep dang tam dung",
-            EnterpriseStatus.Inactive => "Doanh nghiep da ngung hoat dong",
-            EnterpriseStatus.Active when subscriptionEndDate < now => "Subscription da het han",
-            EnterpriseStatus.Active when subscriptionEndDate <= expiringThreshold => "Subscription sap het han",
-            _ => null
+            TotalEnterprises = summary?.TotalEnterprises ?? 0,
+            ActiveEnterprises = summary?.ActiveEnterprises ?? 0,
+            LockedEnterprises = summary?.LockedEnterprises ?? 0,
+            ExpiringSoonEnterprises = summary?.ExpiringSoonEnterprises ?? 0,
+            AttentionItems = attentionItems,
+            RecentActivities = recentActivities,
+            RecentPayments = recentPayments
         };
     }
 }

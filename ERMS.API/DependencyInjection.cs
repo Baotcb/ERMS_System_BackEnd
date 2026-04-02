@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -117,10 +118,21 @@ namespace ERMS.API
                 options.AddFixedWindowLimiter("fixed", limiterOptions =>
                 {
                     limiterOptions.PermitLimit = 5;
-                    limiterOptions.Window = TimeSpan.FromSeconds(10);
+                    limiterOptions.Window = TimeSpan.FromSeconds(5);
                     limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
                     limiterOptions.QueueLimit = 0;
                 });
+
+                options.AddPolicy("admin-fixed", httpContext =>
+                    RateLimitPartition.GetFixedWindowLimiter(
+                        GetAdminRateLimitPartitionKey(httpContext),
+                        _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 5,
+                            Window = TimeSpan.FromSeconds(10),
+                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                            QueueLimit = 0
+                        }));
             });
 
 
@@ -162,6 +174,18 @@ namespace ERMS.API
         private static bool TryParseCidr(string cidr, out System.Net.IPNetwork network)
         {
             return System.Net.IPNetwork.TryParse(cidr, out network);
+        }
+
+        private static string GetAdminRateLimitPartitionKey(HttpContext context)
+        {
+            var adminId = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!string.IsNullOrWhiteSpace(adminId))
+            {
+                return $"admin-user:{adminId}";
+            }
+
+            var ipAddress = context.Connection.RemoteIpAddress?.ToString();
+            return string.IsNullOrWhiteSpace(ipAddress) ? "admin-user:anonymous" : $"admin-ip:{ipAddress}";
         }
     }
 }

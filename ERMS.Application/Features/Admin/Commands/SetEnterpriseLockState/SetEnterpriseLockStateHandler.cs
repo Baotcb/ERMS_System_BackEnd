@@ -21,6 +21,11 @@ public sealed class SetEnterpriseLockStateHandler : IRequestHandler<SetEnterpris
 
     public async Task<bool> Handle(SetEnterpriseLockStateCommand request, CancellationToken cancellationToken)
     {
+        if (request.EnterpriseId == Guid.Empty)
+        {
+            throw new ArgumentException("EnterpriseId không hợp lệ.", nameof(request.EnterpriseId));
+        }
+
         var userId = _currentUserService.UserId;
         if (userId == null)
         {
@@ -48,6 +53,11 @@ public sealed class SetEnterpriseLockStateHandler : IRequestHandler<SetEnterpris
             ? EnterpriseStatus.Locked
             : EnterpriseStatus.Active;
         var action = request.IsLocked ? "Lock" : "Unlock";
+
+        if (previousStatus == newStatus)
+        {
+            return true;
+        }
 
         enterprise.Status = newStatus;
 

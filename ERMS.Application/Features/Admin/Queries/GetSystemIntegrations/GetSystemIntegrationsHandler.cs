@@ -1,49 +1,19 @@
+using ERMS.Application.Interface;
 using MediatR;
 
 namespace ERMS.Application.Features.Admin.Queries.GetSystemIntegrations;
 
 public sealed class GetSystemIntegrationsHandler : IRequestHandler<GetSystemIntegrationsQuery, GetSystemIntegrationsResponse>
 {
-    public GetSystemIntegrationsHandler()
+    private readonly ISystemIntegrationStatusService _integrationStatusService;
+
+    public GetSystemIntegrationsHandler(ISystemIntegrationStatusService integrationStatusService)
     {
+        _integrationStatusService = integrationStatusService;
     }
 
     public Task<GetSystemIntegrationsResponse> Handle(GetSystemIntegrationsQuery request, CancellationToken cancellationToken)
     {
-        return Task.FromResult(new GetSystemIntegrationsResponse
-        {
-            new()
-            {
-                Name = "Google OAuth",
-                Category = "Authentication",
-                Status = "Configured",
-                EnvironmentScope = "System",
-                LastChecked = null
-            },
-            new()
-            {
-                Name = "SMTP",
-                Category = "Communication",
-                Status = "Configured",
-                EnvironmentScope = "System",
-                LastChecked = null
-            },
-            new()
-            {
-                Name = "Cloudinary",
-                Category = "Media",
-                Status = "Configured",
-                EnvironmentScope = "System",
-                LastChecked = null
-            },
-            new()
-            {
-                Name = "Gemini",
-                Category = "AI",
-                Status = "Configured",
-                EnvironmentScope = "System",
-                LastChecked = null
-            }
-        });
+        return _integrationStatusService.GetSystemIntegrationsAsync(cancellationToken);
     }
 }

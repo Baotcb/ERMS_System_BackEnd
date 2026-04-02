@@ -1,5 +1,6 @@
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Enterprise;
+using ERMS.Domain.Entities.Enterprise;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,6 +18,10 @@ public sealed class GetEnterpriseAdminDetailHandler : IRequestHandler<GetEnterpr
     public async Task<GetEnterpriseAdminDetailResponse> Handle(GetEnterpriseAdminDetailQuery request, CancellationToken cancellationToken)
     {
         var now = DateTime.UtcNow;
+        var subscriptionHistorySet = _context.SubscriptionHistories;
+        var subscriptionHistories = subscriptionHistorySet is null
+            ? Enumerable.Empty<SubscriptionHistory>().AsQueryable()
+            : subscriptionHistorySet.AsNoTracking();
         var response = await _context.Enterprises
             .AsNoTracking()
             .Where(enterprise => enterprise.Id == request.EnterpriseId && !enterprise.IsDeleted)
@@ -47,7 +52,33 @@ public sealed class GetEnterpriseAdminDetailHandler : IRequestHandler<GetEnterpr
                 },
                 SubscriptionStartDate = enterprise.SubscriptionStartDate,
                 SubscriptionEndDate = enterprise.SubscriptionEndDate,
-                SubscriptionStatus = enterprise.SubscriptionStatus
+                SubscriptionStatus = enterprise.SubscriptionStatus,
+                DepartmentCount = _context.Departments
+                    .AsNoTracking()
+                    .Count(department => department.EnterpriseId == enterprise.Id && !department.IsDeleted),
+                EmployeeCount = _context.Employees
+                    .AsNoTracking()
+                    .Count(employee => employee.EnterpriseId == enterprise.Id && !employee.IsDeleted),
+                JobPostingCount = _context.JobPostings
+                    .AsNoTracking()
+                    .Count(jobPosting => jobPosting.EnterpriseId == enterprise.Id && !jobPosting.IsDeleted),
+                CourseCount = _context.Courses
+                    .AsNoTracking()
+                    .Count(course => course.EnterpriseId == enterprise.Id && !course.IsDeleted),
+                RecentPayment = subscriptionHistories
+                    .Where(history => history.EnterpriseId == enterprise.Id)
+                    .OrderByDescending(history => history.CreatedAt)
+                    .Select(history => new RecentPaymentSummary
+                    {
+                        Amount = history.Amount,
+                        PaymentMethod = history.PaymentMethod,
+                        PaymentReference = history.PaymentReference,
+                        PaidAt = history.CreatedAt
+                    })
+                    .FirstOrDefault(),
+                TotalSpent = subscriptionHistories
+                    .Where(history => history.EnterpriseId == enterprise.Id)
+                    .Sum(history => (decimal?)history.Amount) ?? 0
             })
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -55,40 +86,6 @@ public sealed class GetEnterpriseAdminDetailHandler : IRequestHandler<GetEnterpr
         {
             throw new KeyNotFoundException($"Không tìm thấy doanh nghiệp với ID {request.EnterpriseId}.");
         }
-
-        response.DepartmentCount = await _context.Departments
-            .AsNoTracking()
-            .CountAsync(department => department.EnterpriseId == request.EnterpriseId && !department.IsDeleted, cancellationToken);
-
-        response.EmployeeCount = await _context.Employees
-            .AsNoTracking()
-            .CountAsync(employee => employee.EnterpriseId == request.EnterpriseId && !employee.IsDeleted, cancellationToken);
-
-        response.JobPostingCount = await _context.JobPostings
-            .AsNoTracking()
-            .CountAsync(jobPosting => jobPosting.EnterpriseId == request.EnterpriseId && !jobPosting.IsDeleted, cancellationToken);
-
-        response.CourseCount = await _context.Courses
-            .AsNoTracking()
-            .CountAsync(course => course.EnterpriseId == request.EnterpriseId && !course.IsDeleted, cancellationToken);
-
-        response.RecentPayment = await _context.SubscriptionHistories
-            .AsNoTracking()
-            .Where(history => history.EnterpriseId == request.EnterpriseId)
-            .OrderByDescending(history => history.CreatedAt)
-            .Select(history => new RecentPaymentSummary
-            {
-                Amount = history.Amount,
-                PaymentMethod = history.PaymentMethod,
-                PaymentReference = history.PaymentReference,
-                PaidAt = history.CreatedAt
-            })
-            .FirstOrDefaultAsync(cancellationToken);
-
-        response.TotalSpent = await _context.SubscriptionHistories
-            .AsNoTracking()
-            .Where(history => history.EnterpriseId == request.EnterpriseId)
-            .SumAsync(history => (decimal?)history.Amount, cancellationToken) ?? 0;
 
         response.StatusHistory = await _context.ApprovalHistories
             .AsNoTracking()
@@ -117,30 +114,30 @@ public sealed class GetEnterpriseAdminDetailHandler : IRequestHandler<GetEnterpr
 
         if (status == EnterpriseStatus.Locked)
         {
-            riskFlags.Add("Doanh nghiep dang bi khoa.");
+            riskFlags.Add("Doanh nghiệp đang bị khóa.");
         }
         else if (status == EnterpriseStatus.Suspended)
         {
-            riskFlags.Add("Doanh nghiep dang tam dung.");
+            riskFlags.Add("Doanh nghiệp đang tạm dừng.");
         }
         else if (status == EnterpriseStatus.Inactive)
         {
-            riskFlags.Add("Doanh nghiep da ngung hoat dong.");
+            riskFlags.Add("Doanh nghiệp đã ngừng hoạt động.");
         }
 
         if (subscriptionEndDate < now)
         {
-            riskFlags.Add("Subscription da het han.");
+            riskFlags.Add("Subscription đã hết hạn.");
         }
         else if (subscriptionEndDate <= now.AddDays(30))
         {
             var daysRemaining = Math.Max(0, (subscriptionEndDate.Date - now.Date).Days);
-            riskFlags.Add($"Subscription sap het han trong {daysRemaining} ngay.");
+            riskFlags.Add($"Subscription sắp hết hạn trong {daysRemaining} ngày.");
         }
 
         if (!hasPaymentHistory)
         {
-            riskFlags.Add("Chua co lich su thanh toan.");
+            riskFlags.Add("Chưa có lịch sử thanh toán.");
         }
 
         return riskFlags;

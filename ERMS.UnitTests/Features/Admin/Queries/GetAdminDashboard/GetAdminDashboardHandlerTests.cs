@@ -294,7 +294,7 @@ public class GetAdminDashboardHandlerTests
         result.ExpiringSoonEnterprises.Should().Be(1);
         result.AttentionItems.Should().ContainSingle(item =>
             item.EnterpriseId == thresholdEnterpriseId &&
-            item.AttentionReason == "Subscription sap het han");
+            item.AttentionReason == "Subscription sắp hết hạn");
     }
 
     [Fact]
@@ -486,7 +486,51 @@ public class GetAdminDashboardHandlerTests
 
         var result = await _handler.Handle(new GetAdminDashboardQuery(), CancellationToken.None);
 
-        result.AttentionItems.Should().Contain(item => item.EnterpriseId == suspendedId && item.AttentionReason == "Doanh nghiep dang tam dung");
-        result.AttentionItems.Should().Contain(item => item.EnterpriseId == expiredId && item.AttentionReason == "Subscription da het han");
+        result.AttentionItems.Should().Contain(item => item.EnterpriseId == suspendedId && item.AttentionReason == "Doanh nghiệp đang tạm dừng");
+        result.AttentionItems.Should().Contain(item => item.EnterpriseId == expiredId && item.AttentionReason == "Subscription đã hết hạn");
+    }
+
+    [Fact]
+    public async Task Handle_ShouldNotReadEnterpriseSetMoreThanTwice_WhenBuildingDashboard()
+    {
+        var enterpriseId = Guid.NewGuid();
+        var enterpriseReads = 0;
+        var enterprises = new List<Enterprise>
+        {
+            new()
+            {
+                Id = enterpriseId,
+                EnterpriseName = "Tech Corp",
+                EnterpriseCode = "TC001",
+                Status = EnterpriseStatus.Active,
+                SubscriptionEndDate = DateTime.UtcNow.AddDays(20),
+                IsDeleted = false
+            }
+        }.AsQueryable().BuildMockDbSet().Object;
+
+        var approvalHistories = new List<ApprovalHistory>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                EntityType = "Enterprise",
+                EntityId = enterpriseId,
+                Action = "Activate",
+                CreatedAt = DateTime.UtcNow
+            }
+        };
+
+        _mockContext.Setup(x => x.Enterprises).Returns(() =>
+        {
+            enterpriseReads++;
+            return enterprises;
+        });
+        _mockContext.Setup(x => x.ApprovalHistories).Returns(approvalHistories.AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.SubscriptionHistories).Returns(new List<SubscriptionHistory>().AsQueryable().BuildMockDbSet().Object);
+
+        var result = await _handler.Handle(new GetAdminDashboardQuery(), CancellationToken.None);
+
+        enterpriseReads.Should().BeLessThanOrEqualTo(2);
+        result.RecentActivities.Should().ContainSingle();
     }
 }

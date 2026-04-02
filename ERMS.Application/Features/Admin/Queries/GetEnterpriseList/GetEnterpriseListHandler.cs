@@ -5,8 +5,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ERMS.Application.Features.Admin.Queries.GetEnterpriseList;
 
-public sealed class GetEnterpriseListHandler : IRequestHandler<GetEnterpriseListQuery, GetEnterpriseListResponse>
+    public sealed class GetEnterpriseListHandler : IRequestHandler<GetEnterpriseListQuery, GetEnterpriseListResponse>
 {
+    private const int DefaultPageSize = 10;
+    private const int MaxPageSize = 100;
+
     private readonly IERMSDbContext _context;
 
     public GetEnterpriseListHandler(IERMSDbContext context)
@@ -55,8 +58,8 @@ public sealed class GetEnterpriseListHandler : IRequestHandler<GetEnterpriseList
 
         var totalCount = await enterprisesQuery.CountAsync(cancellationToken);
 
-        var pageNumber = request.PageNumber < 1 ? 1 : request.PageNumber;
-        var pageSize = request.PageSize < 1 ? 10 : request.PageSize;
+        var pageNumber = Math.Max(request.PageNumber, 1);
+        var pageSize = Math.Clamp(request.PageSize < 1 ? DefaultPageSize : request.PageSize, 1, MaxPageSize);
 
         var enterprises = await enterprisesQuery
             .OrderByDescending(enterprise => enterprise.CreatedAt)

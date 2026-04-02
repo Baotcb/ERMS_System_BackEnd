@@ -141,7 +141,7 @@ public class GetEnterpriseAdminDetailHandlerTests
                 NewStatus = EnterpriseStatus.Active,
                 PerformedById = actorId,
                 PerformedBy = new User { Id = actorId, FullName = "Admin Tran" },
-                Note = "Da xac minh va mo lai",
+                Note = "Đã xác minh và mở lại",
                 CreatedAt = new DateTime(2026, 3, 20, 14, 30, 0, DateTimeKind.Utc)
             }
         };
@@ -305,7 +305,7 @@ public class GetEnterpriseAdminDetailHandlerTests
 
         result.RecentPayment.Should().BeNull();
         result.TotalSpent.Should().Be(0);
-        result.RiskFlags.Should().Contain(flag => flag.Contains("Chua co lich su thanh toan"));
+        result.RiskFlags.Should().Contain(flag => flag.Contains("Chưa có lịch sử thanh toán"));
     }
 
     [Fact]
@@ -491,9 +491,9 @@ public class GetEnterpriseAdminDetailHandlerTests
 
         var result = await _handler.Handle(new GetEnterpriseAdminDetailQuery { EnterpriseId = enterpriseId }, CancellationToken.None);
 
-        result.RiskFlags.Should().Contain(flag => flag.Contains("bi khoa"));
-        result.RiskFlags.Should().Contain(flag => flag.Contains("het han"));
-        result.RiskFlags.Should().Contain(flag => flag.Contains("Chua co lich su thanh toan"));
+        result.RiskFlags.Should().Contain(flag => flag.Contains("bị khóa"));
+        result.RiskFlags.Should().Contain(flag => flag.Contains("hết hạn"));
+        result.RiskFlags.Should().Contain(flag => flag.Contains("Chưa có lịch sử thanh toán"));
     }
 
     [Fact]
@@ -614,7 +614,7 @@ public class GetEnterpriseAdminDetailHandlerTests
 
         var result = await _handler.Handle(new GetEnterpriseAdminDetailQuery { EnterpriseId = enterpriseId }, CancellationToken.None);
 
-        result.RiskFlags.Should().Contain(flag => flag.Contains("Subscription sap het han trong"));
+        result.RiskFlags.Should().Contain(flag => flag.Contains("Subscription sắp hết hạn trong"));
     }
 
     [Fact]
@@ -646,7 +646,7 @@ public class GetEnterpriseAdminDetailHandlerTests
 
         var result = await _handler.Handle(new GetEnterpriseAdminDetailQuery { EnterpriseId = enterpriseId }, CancellationToken.None);
 
-        result.RiskFlags.Should().Contain(flag => flag.Contains("tam dung"));
+        result.RiskFlags.Should().Contain(flag => flag.Contains("tạm dừng"));
     }
 
     [Fact]
@@ -678,6 +678,70 @@ public class GetEnterpriseAdminDetailHandlerTests
 
         var result = await _handler.Handle(new GetEnterpriseAdminDetailQuery { EnterpriseId = enterpriseId }, CancellationToken.None);
 
-        result.RiskFlags.Should().Contain(flag => flag.Contains("ngung hoat dong"));
+        result.RiskFlags.Should().Contain(flag => flag.Contains("ngừng hoạt động"));
+    }
+
+    [Fact]
+    public async Task Handle_ShouldReadSubscriptionHistorySetOnlyOnce_WhenBuildingPaymentSummary()
+    {
+        var enterpriseId = Guid.NewGuid();
+        var planId = Guid.NewGuid();
+        var subscriptionHistoryReads = 0;
+        var enterprise = new Enterprise
+        {
+            Id = enterpriseId,
+            EnterpriseName = "Payment Detail Corp",
+            EnterpriseCode = "PD001",
+            Status = EnterpriseStatus.Active,
+            SubscriptionPlanId = planId,
+            SubscriptionPlan = new SubscriptionPlan { Id = planId, PlanName = "Pro", PlanCode = "PRO" },
+            SubscriptionStartDate = new DateTime(2026, 1, 1),
+            SubscriptionEndDate = DateTime.UtcNow.AddDays(45),
+            SubscriptionStatus = "Active",
+            IsDeleted = false
+        };
+
+        var paymentsDbSet = new List<SubscriptionHistory>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                EnterpriseId = enterpriseId,
+                SubscriptionPlanId = planId,
+                SubscriptionPlan = enterprise.SubscriptionPlan,
+                Amount = 1000000,
+                PaymentMethod = "Cash",
+                CreatedAt = new DateTime(2026, 1, 1)
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                EnterpriseId = enterpriseId,
+                SubscriptionPlanId = planId,
+                SubscriptionPlan = enterprise.SubscriptionPlan,
+                Amount = 2500000,
+                PaymentMethod = "BankTransfer",
+                CreatedAt = new DateTime(2026, 2, 1)
+            }
+        }.AsQueryable().BuildMockDbSet().Object;
+
+        _mockContext.Setup(x => x.Enterprises).Returns(new List<Enterprise> { enterprise }.AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.Departments).Returns(new List<Department>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.Employees).Returns(new List<Employee>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.SubscriptionHistories).Returns(() =>
+        {
+            subscriptionHistoryReads++;
+            return paymentsDbSet;
+        });
+        _mockContext.Setup(x => x.JobPostings).Returns(new List<JobPosting>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.Courses).Returns(new List<Course>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.ApprovalHistories).Returns(new List<ApprovalHistory>().AsQueryable().BuildMockDbSet().Object);
+
+        var result = await _handler.Handle(new GetEnterpriseAdminDetailQuery { EnterpriseId = enterpriseId }, CancellationToken.None);
+
+        subscriptionHistoryReads.Should().Be(1);
+        result.TotalSpent.Should().Be(3500000);
+        result.RecentPayment.Should().NotBeNull();
+        result.RecentPayment!.Amount.Should().Be(2500000);
     }
 }

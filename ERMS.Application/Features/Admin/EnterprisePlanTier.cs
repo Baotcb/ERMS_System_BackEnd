@@ -8,9 +8,9 @@ public static class EnterprisePlanTier
     public const string Free = "Free";
     public const string Pro = "Pro";
 
-    private static readonly string[] ProPlanTokens = ["pro", "enterprise", "ent", "growth"];
-    private static readonly HashSet<string> FreeTierAliases = [Free.ToLowerInvariant(), "free", "basic"];
-    private static readonly HashSet<string> ProTierAliases = [Pro.ToLowerInvariant(), "pro", "enterprise", "ent", "growth"];
+    public static readonly string[] ProPlanTokens = ["pro"];
+    private static readonly HashSet<string> FreeTierAliases = [Free.ToLowerInvariant(), "free"];
+    private static readonly HashSet<string> ProTierAliases = [Pro.ToLowerInvariant(), "pro"];
     private static readonly Expression<Func<Enterprise, bool>> ProEnterpriseExpression = BuildEnterpriseTierExpression(matchesProTier: true);
     private static readonly Expression<Func<Enterprise, bool>> FreeEnterpriseExpression = BuildEnterpriseTierExpression(matchesProTier: false);
 
@@ -88,10 +88,12 @@ public static class EnterprisePlanTier
     private static Expression BuildContainsExpression(MemberExpression propertyExpression, string token)
     {
         var stringValue = Expression.Coalesce(propertyExpression, Expression.Constant(string.Empty));
-        var loweredValue = Expression.Call(stringValue, typeof(string).GetMethod(nameof(string.ToLower), Type.EmptyTypes)!);
+        var normalizedValue = Expression.Call(
+            stringValue,
+            typeof(string).GetMethod(nameof(string.ToLower), Type.EmptyTypes)!);
 
         return Expression.Call(
-            loweredValue,
+            normalizedValue,
             typeof(string).GetMethod(nameof(string.Contains), [typeof(string)])!,
             Expression.Constant(token));
     }

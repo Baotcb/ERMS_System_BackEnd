@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ERMS.Application.Features.Admin.Queries.GetPlatformStats;
+using ERMS.Application.Features.Admin.Queries.GetSystemIntegrations;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Enterprise;
 using ERMS.Domain.Entities.Enterprise;
@@ -18,12 +19,17 @@ namespace ERMS.UnitTests.Features.Admin.Queries.GetPlatformStats;
 public class GetPlatformStatsHandlerTests
 {
     private readonly Mock<IERMSDbContext> _mockContext;
+    private readonly Mock<ISystemIntegrationStatusService> _mockIntegrationService;
     private readonly GetPlatformStatsHandler _handler;
 
     public GetPlatformStatsHandlerTests()
     {
         _mockContext = new Mock<IERMSDbContext>();
-        _handler = new GetPlatformStatsHandler(_mockContext.Object);
+        _mockIntegrationService = new Mock<ISystemIntegrationStatusService>();
+        _mockIntegrationService
+            .Setup(x => x.GetSystemIntegrationsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetSystemIntegrationsResponse());
+        _handler = new GetPlatformStatsHandler(_mockContext.Object, _mockIntegrationService.Object);
     }
 
     [Fact]
@@ -44,11 +50,11 @@ public class GetPlatformStatsHandlerTests
             PlanCode = "PRO",
             PriceMonthly = 2000000
         };
-        var enterpriseTierPlan = new SubscriptionPlan
+        var secondaryFreePlan = new SubscriptionPlan
         {
             Id = Guid.NewGuid(),
-            PlanName = "Enterprise",
-            PlanCode = "ENT",
+            PlanName = "Starter",
+            PlanCode = "FREE",
             PriceMonthly = 5000000
         };
 
@@ -81,8 +87,8 @@ public class GetPlatformStatsHandlerTests
                 Id = Guid.NewGuid(),
                 EnterpriseName = "Locked Pro Co",
                 Status = EnterpriseStatus.Locked,
-                SubscriptionPlan = enterpriseTierPlan,
-                SubscriptionPlanId = enterpriseTierPlan.Id,
+                SubscriptionPlan = secondaryFreePlan,
+                SubscriptionPlanId = secondaryFreePlan.Id,
                 SubscriptionEndDate = now.AddDays(35),
                 IsDeleted = false
             },
@@ -167,8 +173,8 @@ public class GetPlatformStatsHandlerTests
         result.InactiveEnterprises.Should().Be(1);
         result.MrrCurrentMonth.Should().Be(2000000);
         result.RenewalRate.Should().Be(50);
-        result.SubscriptionMix.Should().ContainSingle(item => item.TierName == "Free" && item.Count == 2);
-        result.SubscriptionMix.Should().ContainSingle(item => item.TierName == "Pro" && item.Count == 3);
+        result.SubscriptionMix.Should().ContainSingle(item => item.TierName == "Free" && item.Count == 3);
+        result.SubscriptionMix.Should().ContainSingle(item => item.TierName == "Pro" && item.Count == 2);
         result.StatusDistribution.Should().ContainSingle(item => item.Status == EnterpriseStatus.Active && item.Count == 2);
         result.TopEnterprises.Should().ContainSingle(item => item.EnterpriseId == topEnterpriseId && item.Value == 3);
         result.ChurnWatchlist.Should().Contain(item => item.EnterpriseId == expiringSoonId);
@@ -220,11 +226,11 @@ public class GetPlatformStatsHandlerTests
             PlanCode = "PRO",
             PriceMonthly = 3000000
         };
-        var growthPlan = new SubscriptionPlan
+        var freePlan = new SubscriptionPlan
         {
             Id = Guid.NewGuid(),
             PlanName = "Starter",
-            PlanCode = "GROWTH",
+            PlanCode = "FREE",
             PriceMonthly = 5000000
         };
 
@@ -255,8 +261,8 @@ public class GetPlatformStatsHandlerTests
                 Id = Guid.NewGuid(),
                 EnterpriseName = "Inactive Growth",
                 Status = EnterpriseStatus.Inactive,
-                SubscriptionPlan = growthPlan,
-                SubscriptionPlanId = growthPlan.Id,
+                SubscriptionPlan = freePlan,
+                SubscriptionPlanId = freePlan.Id,
                 SubscriptionEndDate = now.AddDays(10),
                 IsDeleted = false
             }
@@ -269,7 +275,7 @@ public class GetPlatformStatsHandlerTests
         var result = await _handler.Handle(new GetPlatformStatsQuery(), CancellationToken.None);
 
         result.MrrCurrentMonth.Should().Be(3000000);
-        result.SubscriptionMix.Should().ContainSingle(item => item.TierName == "Pro" && item.Count == 3);
+        result.SubscriptionMix.Should().ContainSingle(item => item.TierName == "Pro" && item.Count == 2);
     }
 
     [Fact]
@@ -501,7 +507,7 @@ public class GetPlatformStatsHandlerTests
 
         result.ChurnWatchlist.Should().ContainSingle(item =>
             item.EnterpriseId == enterpriseId &&
-            item.RiskReason.Contains("7 ngay"));
+            item.RiskReason.Contains("7 ngày"));
     }
 
     [Fact]
@@ -592,5 +598,59 @@ public class GetPlatformStatsHandlerTests
 
         result.TopEnterprises.Should().HaveCount(2);
         result.TopEnterprises.Should().OnlyContain(item => item.Value == 0);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldReturnZeroIntegrationHealth_WhenNoIntegrationsExist()
+    {
+        var plan = new SubscriptionPlan { Id = Guid.NewGuid(), PlanName = "Free", PlanCode = "FREE", PriceMonthly = 0 };
+        var enterprises = new List<Enterprise>
+        {
+            new() { Id = Guid.NewGuid(), EnterpriseName = "A", Status = EnterpriseStatus.Active, SubscriptionPlan = plan, SubscriptionPlanId = plan.Id, SubscriptionEndDate = DateTime.UtcNow.AddDays(30), IsDeleted = false }
+        };
+
+        _mockContext.Setup(x => x.Enterprises).Returns(enterprises.AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.Employees).Returns(new List<Employee>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.SubscriptionHistories).Returns(new List<SubscriptionHistory>().AsQueryable().BuildMockDbSet().Object);
+
+        var result = await _handler.Handle(new GetPlatformStatsQuery(), CancellationToken.None);
+
+        result.IntegrationHealth.Should().NotBeNull();
+        result.IntegrationHealth.Healthy.Should().Be(0);
+        result.IntegrationHealth.Warning.Should().Be(0);
+        result.IntegrationHealth.Error.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldClassifyIntegrationStatuses_IntoHealthWarningError()
+    {
+        var plan = new SubscriptionPlan { Id = Guid.NewGuid(), PlanName = "Free", PlanCode = "FREE", PriceMonthly = 0 };
+        var enterprises = new List<Enterprise>
+        {
+            new() { Id = Guid.NewGuid(), EnterpriseName = "A", Status = EnterpriseStatus.Active, SubscriptionPlan = plan, SubscriptionPlanId = plan.Id, SubscriptionEndDate = DateTime.UtcNow.AddDays(30), IsDeleted = false }
+        };
+
+        var integrations = new GetSystemIntegrationsResponse
+        {
+            new SystemIntegrationDto { Name = "Email", Status = "Configured" },
+            new SystemIntegrationDto { Name = "SMS", Status = "Configured" },
+            new SystemIntegrationDto { Name = "Storage", Status = "MissingConfiguration" },
+            new SystemIntegrationDto { Name = "Payment", Status = "Error" },
+            new SystemIntegrationDto { Name = "AI", Status = "Unknown" }
+        };
+
+        _mockIntegrationService
+            .Setup(x => x.GetSystemIntegrationsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(integrations);
+
+        _mockContext.Setup(x => x.Enterprises).Returns(enterprises.AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.Employees).Returns(new List<Employee>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.SubscriptionHistories).Returns(new List<SubscriptionHistory>().AsQueryable().BuildMockDbSet().Object);
+
+        var result = await _handler.Handle(new GetPlatformStatsQuery(), CancellationToken.None);
+
+        result.IntegrationHealth.Healthy.Should().Be(2);
+        result.IntegrationHealth.Warning.Should().Be(1);
+        result.IntegrationHealth.Error.Should().Be(2);
     }
 }

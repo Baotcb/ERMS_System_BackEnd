@@ -17,7 +17,7 @@ namespace ERMS.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [EnableRateLimiting("fixed")]
+    [EnableRateLimiting("admin-fixed")]
     [Authorize(Roles = AppRoles.Admin)]
     public class AdminController : ControllerBase
     {
@@ -46,13 +46,6 @@ namespace ERMS.API.Controllers
         public async Task<IActionResult> GetEnterpriseDetailById(Guid enterpriseId)
         {
             var result = await _sender.Send(new GetEnterpriseAdminDetailQuery { EnterpriseId = enterpriseId });
-            return Ok(result);
-        }
-
-        [HttpGet("enterprise-detail")]
-        public async Task<IActionResult> GetEnterpriseDetail([FromQuery] GetEnterpriseAdminDetailQuery query)
-        {
-            var result = await _sender.Send(query);
             return Ok(result);
         }
 

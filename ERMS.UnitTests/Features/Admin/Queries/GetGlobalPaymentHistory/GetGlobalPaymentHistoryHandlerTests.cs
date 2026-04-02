@@ -360,6 +360,39 @@ public class GetGlobalPaymentHistoryHandlerTests
     }
 
     [Fact]
+    public async Task Handle_ShouldCapRequestedPageSizeToOneHundred()
+    {
+        var plan = new SubscriptionPlan { Id = Guid.NewGuid(), PlanName = "Pro" };
+        var histories = Enumerable.Range(1, 150)
+            .Select(index => new SubscriptionHistory
+            {
+                Id = Guid.NewGuid(),
+                EnterpriseId = Guid.NewGuid(),
+                Enterprise = new Enterprise { EnterpriseName = $"Enterprise {index}", EnterpriseCode = $"EN{index:000}" },
+                SubscriptionPlanId = plan.Id,
+                SubscriptionPlan = plan,
+                ActionType = "Renew",
+                Amount = 1000000 + index,
+                CreatedAt = new DateTime(2026, 1, 1).AddMinutes(index)
+            })
+            .ToList();
+
+        _mockContext.Setup(x => x.SubscriptionHistories).Returns(histories.AsQueryable().BuildMockDbSet().Object);
+
+        var result = await _handler.Handle(
+            new GetGlobalPaymentHistoryQuery
+            {
+                PageNumber = 1,
+                PageSize = 1000
+            },
+            CancellationToken.None);
+
+        result.PageSize.Should().Be(100);
+        result.Items.Should().HaveCount(100);
+        result.TotalPages.Should().Be(2);
+    }
+
+    [Fact]
     public async Task Handle_ShouldSearchByEnterpriseCode_CaseInsensitive()
     {
         var plan = new SubscriptionPlan { Id = Guid.NewGuid(), PlanName = "Pro" };

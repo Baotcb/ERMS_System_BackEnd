@@ -79,6 +79,19 @@ public class SetEnterpriseLockStateHandlerTests
     }
 
     [Fact]
+    public async Task Handle_ShouldThrowArgumentException_WhenEnterpriseIdIsEmpty()
+    {
+        _mockCurrentUserService.Setup(x => x.UserId).Returns(Guid.NewGuid());
+        _mockCurrentUserService.Setup(x => x.Roles).Returns(new[] { AppRoles.Admin });
+
+        var act = async () => await _handler.Handle(
+            new SetEnterpriseLockStateCommand { EnterpriseId = Guid.Empty, IsLocked = true },
+            CancellationToken.None);
+
+        await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    [Fact]
     public async Task Handle_ShouldSetLockedStatus_WhenIsLockedIsTrue()
     {
         var enterprise = new Enterprise
