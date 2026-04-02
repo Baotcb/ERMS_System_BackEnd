@@ -18,7 +18,7 @@ namespace ERMS.UnitTests.Features.Certifications.Queries
     {
         private readonly ERMSDbContext _context;
         private readonly Mock<ICurrentUserService> _currentUserServiceMock;
-        private readonly GetMyCertificationsByCourseQueryHandler _handler;
+        private readonly GetMyCertificationsByCourseHandler _handler;
 
         public GetMyCertificationsByCourseHandlerTest()
         {
@@ -29,10 +29,10 @@ namespace ERMS.UnitTests.Features.Certifications.Queries
             _context = new ERMSDbContext(options);
             _currentUserServiceMock = new Mock<ICurrentUserService>();
 
-            _handler = new GetMyCertificationsByCourseQueryHandler(
+            _handler = new GetMyCertificationsByCourseHandler(
                 _context,
                 _currentUserServiceMock.Object,
-                Mock.Of<Microsoft.Extensions.Logging.ILogger<GetMyCertificationsByCourseQueryHandler>>());
+                Mock.Of<Microsoft.Extensions.Logging.ILogger<GetMyCertificationsByCourseHandler>>());
         }
 
         //   Helper tạo Employee chuẩn (tránh lỗi thiếu field)

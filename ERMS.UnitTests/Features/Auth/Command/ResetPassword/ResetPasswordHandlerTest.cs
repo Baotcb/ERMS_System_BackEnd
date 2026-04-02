@@ -13,7 +13,7 @@ namespace ERMS.UnitTests.Features.Auth.Command.ResetPassword
     public class ResetPasswordHandlerTest
     {
         private readonly Mock<UserManager<User>> _userManagerMock;
-        private readonly ResetPasswordCommandHandler _handler;
+        private readonly ResetPasswordHandler _handler;
 
         public ResetPasswordHandlerTest()
         {
@@ -21,7 +21,7 @@ namespace ERMS.UnitTests.Features.Auth.Command.ResetPassword
             _userManagerMock = new Mock<UserManager<User>>(
                 userStoreMock.Object, null, null, null, null, null, null, null, null);
 
-            _handler = new ResetPasswordCommandHandler(_userManagerMock.Object);
+            _handler = new ResetPasswordHandler(_userManagerMock.Object);
         }
 
         [Fact]
