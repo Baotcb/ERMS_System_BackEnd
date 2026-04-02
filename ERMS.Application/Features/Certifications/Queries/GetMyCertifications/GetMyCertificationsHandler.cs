@@ -5,17 +5,17 @@ using Microsoft.Extensions.Logging;
 
 namespace ERMS.Application.Features.Certifications.Queries.GetMyCertifications
 {
-    public sealed class GetMyCertificationsQueryHandler
+    public sealed class GetMyCertificationsHandler
         : IRequestHandler<GetMyCertificationsQuery, List<CertificationDto>>
     {
         private readonly IERMSDbContext _context;
         private readonly ICurrentUserService _currentUserService;
-        private readonly ILogger<GetMyCertificationsQueryHandler> _logger;
+        private readonly ILogger<GetMyCertificationsHandler> _logger;
 
-        public GetMyCertificationsQueryHandler(
+        public GetMyCertificationsHandler(
             IERMSDbContext context,
             ICurrentUserService currentUserService,
-            ILogger<GetMyCertificationsQueryHandler> logger)
+            ILogger<GetMyCertificationsHandler> logger)
         {
             _context = context;
             _currentUserService = currentUserService;

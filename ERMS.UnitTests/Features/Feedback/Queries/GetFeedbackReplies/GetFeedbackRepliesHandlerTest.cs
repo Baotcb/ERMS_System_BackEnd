@@ -7,18 +7,18 @@ using Xunit;
 
 namespace ERMS.UnitTests.Features.Feedback.Queries.GetFeedbackReplies
 {
-    public class GetFeedbackRepliesQueryHandlerTest : IDisposable
+    public class GetFeedbackRepliesHandlerTest : IDisposable
     {
         private readonly ERMSDbContext _context;
-        private readonly GetFeedbackRepliesQueryHandler _handler;
+        private readonly GetFeedbackRepliesHandler _handler;
 
-        public GetFeedbackRepliesQueryHandlerTest()
+        public GetFeedbackRepliesHandlerTest()
         {
             var options = new DbContextOptionsBuilder<ERMSDbContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
             _context = new ERMSDbContext(options);
-            _handler = new GetFeedbackRepliesQueryHandler(_context);
+            _handler = new GetFeedbackRepliesHandler(_context);
         }
 
         [Fact]

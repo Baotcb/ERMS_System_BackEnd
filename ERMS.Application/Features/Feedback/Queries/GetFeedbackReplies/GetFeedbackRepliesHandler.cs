@@ -7,12 +7,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ERMS.Application.Features.Feedback.Queries.GetFeedbackReplies
 {
-    public class GetFeedbackRepliesQueryHandler
+    public class GetFeedbackRepliesHandler
     : IRequestHandler<GetFeedbackRepliesQuery, List<ReplyDto>>
     {
         private readonly IERMSDbContext _context;
 
-        public GetFeedbackRepliesQueryHandler(IERMSDbContext context)
+        public GetFeedbackRepliesHandler(IERMSDbContext context)
         {
             _context = context;
         }

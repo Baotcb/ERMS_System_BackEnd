@@ -4,12 +4,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ERMS.Application.Features.Quizzes.Queries.GetQuizQuestions;
 
-public sealed class GetQuizQuestionsQueryHandler
+public sealed class GetQuizQuestionsHandler
     : IRequestHandler<GetQuizQuestionsQuery, List<QuizQuestionDto>>
 {
     private readonly IERMSDbContext _context;
 
-    public GetQuizQuestionsQueryHandler(IERMSDbContext context)
+    public GetQuizQuestionsHandler(IERMSDbContext context)
     {
         _context = context;
     }

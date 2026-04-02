@@ -4,13 +4,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ERMS.Application.Features.Courses.Queries.GetCourseProgress;
 
-public class GetCourseProgressQueryHandler
+public class GetCourseProgressHandler
     : IRequestHandler<GetCourseProgressQuery, CourseProgressDto>
 {
     private readonly IERMSDbContext _context;
     private readonly ICurrentUserService _currentUserService;
 
-    public GetCourseProgressQueryHandler(
+    public GetCourseProgressHandler(
         IERMSDbContext context,
         ICurrentUserService currentUserService)
     {

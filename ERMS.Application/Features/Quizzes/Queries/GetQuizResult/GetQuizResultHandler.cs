@@ -4,13 +4,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ERMS.Application.Features.Quizzes.Queries.GetQuizResult;
 
-public sealed class GetQuizResultQueryHandler
+public sealed class GetQuizResultHandler
     : IRequestHandler<GetQuizResultQuery, GetQuizResultResponse?>
 {
     private readonly IERMSDbContext _context;
     private readonly ICurrentUserService _currentUserService;
 
-    public GetQuizResultQueryHandler(
+    public GetQuizResultHandler(
         IERMSDbContext context,
         ICurrentUserService currentUserService)
     {

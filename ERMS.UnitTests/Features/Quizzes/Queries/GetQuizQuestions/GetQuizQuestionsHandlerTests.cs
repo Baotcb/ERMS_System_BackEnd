@@ -12,15 +12,15 @@ using Xunit;
 
 namespace ERMS.UnitTests.Features.Quizzes.Queries.GetQuizQuestions
 {
-    public class GetQuizQuestionsQueryHandlerTests
+    public class GetQuizQuestionsHandlerTests
     {
         private readonly Mock<IERMSDbContext> _contextMock;
-        private readonly GetQuizQuestionsQueryHandler _handler;
+        private readonly GetQuizQuestionsHandler _handler;
 
-        public GetQuizQuestionsQueryHandlerTests()
+        public GetQuizQuestionsHandlerTests()
         {
             _contextMock = new Mock<IERMSDbContext>();
-            _handler = new GetQuizQuestionsQueryHandler(_contextMock.Object);
+            _handler = new GetQuizQuestionsHandler(_contextMock.Object);
         }
 
         private void SetupQuizAttempts(List<QuizAttempt> attempts)

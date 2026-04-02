@@ -5,17 +5,17 @@ using Microsoft.Extensions.Logging;
 
 namespace ERMS.Application.Features.Enrollments.Queries.GetCourseAttendance
 {
-    public sealed class GetCourseAttendanceQueryHandler
+    public sealed class GetCourseAttendanceHandler
         : IRequestHandler<GetCourseAttendanceQuery, List<CourseAttendanceDto>>
     {
         private readonly IERMSDbContext _context;
         private readonly ICurrentUserService _currentUserService;
-        private readonly ILogger<GetCourseAttendanceQueryHandler> _logger;
+        private readonly ILogger<GetCourseAttendanceHandler> _logger;
 
-        public GetCourseAttendanceQueryHandler(
+        public GetCourseAttendanceHandler(
             IERMSDbContext context,
             ICurrentUserService currentUserService,
-            ILogger<GetCourseAttendanceQueryHandler> logger)
+            ILogger<GetCourseAttendanceHandler> logger)
         {
             _context = context;
             _currentUserService = currentUserService;
