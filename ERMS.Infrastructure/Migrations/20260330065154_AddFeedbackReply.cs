@@ -35,12 +35,6 @@ namespace ERMS.Infrastructure.Migrations
                 oldClrType: typeof(bool),
                 oldType: "bit");
 
-            migrationBuilder.AddColumn<DateTime>(
-                name: "DeletedAt",
-                table: "CourseFeedbacks",
-                type: "datetime2",
-                nullable: true);
-
             migrationBuilder.CreateTable(
                 name: "CourseFeedbackReplies",
                 columns: table => new
@@ -92,10 +86,6 @@ namespace ERMS.Infrastructure.Migrations
             migrationBuilder.DropColumn(
                 name: "DeletedAt",
                 table: "WorkshopConfirmations");
-
-            migrationBuilder.DropColumn(
-                name: "DeletedAt",
-                table: "CourseFeedbacks");
 
             migrationBuilder.AlterColumn<bool>(
                 name: "IsDeleted",
