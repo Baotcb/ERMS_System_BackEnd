@@ -48,8 +48,13 @@ namespace ERMS.Infrastructure
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<ISystemIntegrationStatusService, SystemIntegrationStatusService>();
             services.AddTransient<IEmailService, EmailService>();
+            services.AddTransient<IRejectionEmailService, RejectionEmailService>();
             services.AddScoped<IExcelParserService, ExcelParserService>();
             services.AddScoped<IGoogleAuthService, GoogleAuthService>();
+            services.AddHttpClient<IGeminiProbeService, GeminiProbeService>(client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(10);
+            });
 
             // CV Processing Services
             services.AddScoped<ICloudinaryService, CloudinaryService>();

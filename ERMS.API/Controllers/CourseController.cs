@@ -1,4 +1,6 @@
-﻿using ERMS.Application.Features.Courses.Commands.CreateCourse;
+using ERMS.Application.Features.Certifications.Queries;
+using ERMS.Application.Features.Certifications.Queries.GetMyCertifications;
+using ERMS.Application.Features.Courses.Commands.CreateCourse;
 using ERMS.Application.Features.Courses.Commands.PublishCourse;
 using ERMS.Application.Features.Courses.Commands.UpdateCourse;
 using ERMS.Application.Features.Courses.Queries.GetAllCourses;
@@ -6,8 +8,10 @@ using ERMS.Application.Features.Courses.Queries.GetCourseDetails;
 using ERMS.Application.Features.Courses.Queries.GetCourseProgress;
 using ERMS.Application.Features.CourseSkills.Commands.CreateCourseSkill;
 using ERMS.Application.Features.Enrollments.Commands.AssignEmployeesToCourse;
+using ERMS.Application.Features.Enrollments.Commands.UpdateCertificate;
 using ERMS.Application.Features.Quizzes.Commands.CreateQuiz;
 using ERMS.Application.Features.Quizzes.Commands.StartQuiz;
+using ERMS.Application.Features.Quizzes.Queries.GetQuizResult;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -72,6 +76,13 @@ namespace ERMS.API.Controllers
             return Ok(result);
         }
 
+        [HttpGet("department-training-results")]
+        public async Task<IActionResult> GetDepartmentTrainingResults()
+        {
+            var result = await _mediator.Send(new Application.Features.Enrollments.Queries.GetDepartmentTrainingResults.GetDepartmentTrainingResultsQuery());
+            return Ok(result);
+        }
+
         [HttpPost("{courseId}/assign-employees")]
         public async Task<IActionResult> AssignEmployees(
     Guid courseId,
@@ -89,6 +100,17 @@ namespace ERMS.API.Controllers
 
             return Ok(result);
         }
+
+        [HttpGet("{courseId}/enrolled-employees")]
+        public async Task<IActionResult> GetEnrolledEmployees(Guid courseId)
+        {
+            var result = await _mediator.Send(new Application.Features.Enrollments.Queries.GetEnrolledEmployeeIds.GetEnrolledEmployeeIdsQuery
+            {
+                CourseId = courseId
+            });
+            return Ok(result);
+        }
+
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(Guid id, UpdateCourseCommand command)
@@ -109,6 +131,25 @@ namespace ERMS.API.Controllers
             {
                 return BadRequest(new { message = ex.Message });
             }
+        }
+
+        [HttpPut("certificate")]
+        public async Task<IActionResult> UpdateCertificate([FromBody] UpdateCertificateCommand
+            request)
+        {
+            var command = new UpdateCertificateCommand
+            {
+                EnrollmentId = request.EnrollmentId,
+                CertificateUrl = request.CertificateUrl
+            };
+
+            var result = await _mediator.Send(command);
+
+            return Ok(new
+            {
+                success = result,
+                message = "Cấp chứng chỉ thành công"
+            });
         }
 
         [HttpPost("{id}/publish")]
@@ -141,12 +182,23 @@ namespace ERMS.API.Controllers
         [HttpPost("{courseId}/quizzes/start")]
         public async Task<IActionResult> StartCourseQuiz(Guid courseId)
         {
-            var result = await _mediator.Send(new StartQuizCommand
+            try
             {
-                CourseId = courseId
-            });
+                var result = await _mediator.Send(new StartQuizCommand
+                {
+                    CourseId = courseId
+                });
 
-            return Ok(result);
+                return Ok(result);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpPost("course-skill")]
@@ -164,6 +216,68 @@ namespace ERMS.API.Controllers
                 CourseId = courseId
             });
 
+            return Ok(result);
+        }
+
+        [HttpPost("{courseId}/workshop-confirmation")]
+        public async Task<IActionResult> ConfirmWorkshop(
+            Guid courseId,
+            [FromBody] Application.Features.Workshop.Commands.ConfirmWorkshop.ConfirmWorkshopCommand command)
+        {
+            command.CourseId = courseId;
+            try
+            {
+                var result = await _mediator.Send(command);
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("{courseId}/workshop-confirmation")]
+        public async Task<IActionResult> GetWorkshopConfirmation(Guid courseId)
+        {
+            var result = await _mediator.Send(
+                new Application.Features.Workshop.Queries.GetWorkshopConfirmation.GetWorkshopConfirmationQuery
+                {
+                    CourseId = courseId
+                });
+
+            if (result == null) return NotFound();
+            return Ok(result);
+        }
+
+        [HttpGet("my-certifications")]
+        public async Task<IActionResult> GetMyCertifications()
+        {
+            var result = await _mediator.Send(new GetMyCertificationsQuery());
+            return Ok(result);
+        }
+
+        [HttpGet("my-certifications/{courseId}")]
+        public async Task<IActionResult> GetMyCertificationsByCourse(Guid courseId)
+        {
+            var result = await _mediator.Send(
+                new GetMyCertificationsByCourseQuery { CourseId = courseId });
+
+            return Ok(result);
+        }
+
+        [HttpGet("{courseId}/quiz-result")]
+        public async Task<IActionResult> GetQuizResult(Guid courseId)
+        {
+            var result = await _mediator.Send(new GetQuizResultQuery
+            {
+                CourseId = courseId
+            });
+
+            if (result == null) return NoContent();
             return Ok(result);
         }
     }

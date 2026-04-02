@@ -72,6 +72,9 @@ namespace ERMS.Infrastructure.Data
         public DbSet<QuizQuestion> QuizQuestions { get; set; }
         public DbSet<QuizAttempt> QuizAttempts { get; set; }
         public DbSet<QuizAnswer> QuizAnswers { get; set; }
+        public DbSet<CourseFeedback> CourseFeedbacks { get; set; }
+        public DbSet<CourseFeedbackReply> CourseFeedbackReplies { get; set; }
+        public DbSet<WorkshopConfirmation> WorkshopConfirmations { get; set; }
 
     
         public DbSet<Notification> Notifications { get; set; }
@@ -88,6 +91,8 @@ namespace ERMS.Infrastructure.Data
                 property.SetPrecision(18);
                 property.SetScale(2);
             }
+
+            // WorkshopConfirmation: EvidencePhotoUrls is stored as JSON string directly
 
        
             builder.Entity<Enterprise>()
@@ -344,17 +349,13 @@ namespace ERMS.Infrastructure.Data
                 .HasForeignKey(e => e.EnterpriseId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // JobPosting: Enterprise -> Department -> JobPosting vs Enterprise -> JobPosting
+
             builder.Entity<JobPosting>()
                 .HasOne(j => j.Enterprise)
                 .WithMany()
                 .HasForeignKey(j => j.EnterpriseId)
                 .OnDelete(DeleteBehavior.Restrict);
-            
-            // PlanDetail: Enterprise -> RecruitmentPlan -> PlanDetail vs Enterprise -> Department -> PlanDetail (PlanDetail -> Department relationship removed)
-
-
-            // TrainingRequest: Enterprise -> Department -> TrainingRequest vs Enterprise -> TrainingRequest
+          
             builder.Entity<TrainingRequest>()
                 .HasOne(t => t.Enterprise)
                 .WithMany()
@@ -399,6 +400,58 @@ namespace ERMS.Infrastructure.Data
 
             builder.Entity<Course>()
                 .Property(c => c.IsOnline)
+                .HasDefaultValue(false);
+
+   
+            builder.Entity<CourseFeedback>()
+                .HasOne(x => x.Course)
+                .WithMany(c => c.CourseFeedbacks)
+                .HasForeignKey(x => x.CourseId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<CourseFeedback>()
+                .HasOne(x => x.Employee)
+                .WithMany()
+                .HasForeignKey(x => x.EmployeeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<CourseFeedback>()
+                .Property(x => x.IsDeleted)
+                .HasDefaultValue(false);
+
+            builder.Entity<CourseFeedbackReply>()
+        .HasOne(x => x.Feedback)
+        .WithMany(x => x.Replies)
+        .HasForeignKey(x => x.FeedbackId);
+
+            builder.Entity<CourseFeedbackReply>()
+                .HasOne(x => x.ParentReply)
+                .WithMany(x => x.ChildReplies)
+                .HasForeignKey(x => x.ParentReplyId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<WorkshopConfirmation>()
+                .HasOne(x => x.Course)
+                .WithOne(c => c.WorkshopConfirmation)
+                .HasForeignKey<WorkshopConfirmation>(x => x.CourseId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<WorkshopConfirmation>()
+                .HasOne(x => x.ConfirmedByUser)
+                .WithMany()
+                .HasForeignKey(x => x.ConfirmedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<WorkshopConfirmation>()
+                .HasIndex(x => x.CourseId)
+                .IsUnique();
+
+            builder.Entity<WorkshopConfirmation>()
+                .Property(x => x.EvidencePhotoUrls)
+                .HasDefaultValue("[]");
+
+            builder.Entity<WorkshopConfirmation>()
+                .Property(x => x.IsDeleted)
                 .HasDefaultValue(false);
         }
         public async Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)

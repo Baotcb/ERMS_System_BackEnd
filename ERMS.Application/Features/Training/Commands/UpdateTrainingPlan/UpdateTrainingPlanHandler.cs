@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Interface;
+using ERMS.Application.Interface;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -70,6 +70,13 @@ namespace ERMS.Application.Features.Training.Commands.UpdateTrainingPlan
             {
                 bool isUpdated = false;
 
+                if (plan.Status == "NeedRevision" || plan.Status == "Rejected")
+                {
+                    plan.Status = "Pending";
+                    plan.ReviewNote = null;
+                    isUpdated = true;
+                }
+
                 if (plan.PlanName != request.PlanName)
                 {
                     plan.PlanName = request.PlanName;
@@ -106,11 +113,8 @@ namespace ERMS.Application.Features.Training.Commands.UpdateTrainingPlan
                     isUpdated = true;
                 }
 
-                if (plan.ReviewNote != request.ReviewNote)
-                {
-                    plan.ReviewNote = request.ReviewNote;
-                    isUpdated = true;
-                }
+                // Bỏ qua ReviewNote từ request update bởi vì user HR không được phép tự tạo ReviewNote khi update Plan
+                // ReviewNote sẽ tự reset khi submit lại ở logic bên trên
 
                 if (isUpdated)
                 {
@@ -146,9 +150,33 @@ namespace ERMS.Application.Features.Training.Commands.UpdateTrainingPlan
                 if (toAdd.Any())
                 {
                     var addRequests = await _context.TrainingRequests
-                        .Where(r => toAdd.Contains(r.Id) && !r.IsDeleted)
+                        .Where(r => toAdd.Contains(r.Id)
+                            && !r.IsDeleted
+                            && r.EnterpriseId == enterpriseId)
                         .ToListAsync(cancellationToken);
 
+                    // chỉ cho phép request chưa có plan hoặc đang thuộc plan hiện tại
+                    var invalidRequests = addRequests
+                        .Where(r => r.TrainingPlanId != null && r.TrainingPlanId != plan.Id)
+                        .ToList();
+
+                    if (invalidRequests.Any())
+                    {
+                        var invalidIds = string.Join(", ", invalidRequests.Select(r => r.Id));
+                        throw new Exception($"Các request [{invalidIds}] đã thuộc kế hoạch khác");
+                    }
+
+                    // (Optional) Check status
+                    var invalidStatus = addRequests
+                        .Where(r => r.Status != "Pending")
+                        .ToList();
+
+                    if (invalidStatus.Any())
+                    {
+                        throw new Exception("Chỉ được thêm request ở trạng thái Pending");
+                    }
+
+                    // Assign
                     foreach (var r in addRequests)
                     {
                         r.TrainingPlanId = plan.Id;

@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using System;
 using System.Collections.Generic;
 
@@ -41,11 +41,19 @@ namespace ERMS.Application.Features.Courses.Queries.GetAllCourses
 
         public string TrainerEmail { get; set; } 
 
+        public string? ContentManagerEmail { get; set; }
+
         public int? DurationMinutes { get; set; }
 
         public string? Level { get; set; }
 
         public string Status { get; set; } = null!;
+
+        public bool IsOnline { get; set; }
+
+        public string? Location { get; set; }
+
+        public DateTime StartTime { get; set; }
 
         public bool IsMandatory { get; set; }
 

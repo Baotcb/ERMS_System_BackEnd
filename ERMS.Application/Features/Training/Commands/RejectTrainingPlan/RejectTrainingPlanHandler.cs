@@ -50,7 +50,7 @@ namespace ERMS.Application.Features.Training.Commands.RejectTrainingPlan
             if (plan.Status == "Approved")
                 throw new Exception("Kế hoạch đã được phê duyệt, không thể từ chối");
 
-            // ✅ Reject
+            //   Reject
             plan.Status = "Rejected";
             plan.ApprovedById = userId.Value;
             plan.ApprovedAt = DateTime.UtcNow;

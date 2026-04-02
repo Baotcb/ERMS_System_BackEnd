@@ -11,4 +11,9 @@ public sealed class WithdrawApplicationCommand : IRequest<WithdrawApplicationRes
     /// The Application ID to withdraw
     /// </summary>
     public Guid ApplicationId { get; set; }
+
+    /// <summary>
+    /// Optional reason for withdrawing the application
+    /// </summary>
+    public string? Reason { get; set; }
 }
