@@ -19,7 +19,7 @@ namespace ERMS.UnitTests.Features.Certifications.Queries
     {
         private readonly ERMSDbContext _context;
         private readonly Mock<ICurrentUserService> _currentUserServiceMock;
-        private readonly GetMyCertificationsQueryHandler _handler;
+        private readonly GetMyCertificationsHandler _handler;
 
         public GetMyCertificationsHandlerTest()
         {
@@ -30,10 +30,10 @@ namespace ERMS.UnitTests.Features.Certifications.Queries
             _context = new ERMSDbContext(options);
             _currentUserServiceMock = new Mock<ICurrentUserService>();
 
-            _handler = new GetMyCertificationsQueryHandler(
+            _handler = new GetMyCertificationsHandler(
                 _context,
                 _currentUserServiceMock.Object,
-                Mock.Of<Microsoft.Extensions.Logging.ILogger<GetMyCertificationsQueryHandler>>());
+                Mock.Of<Microsoft.Extensions.Logging.ILogger<GetMyCertificationsHandler>>());
         }
 
         //   Helper chuẩn để tránh lỗi Required fields
