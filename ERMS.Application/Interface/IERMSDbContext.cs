@@ -26,6 +26,7 @@ namespace ERMS.Application.Interface
         DbSet<Enterprise> Enterprises { get; set; }
         DbSet<SubscriptionHistory> SubscriptionHistories { get; set; }
         DbSet<OwnershipTransfer> OwnershipTransfers { get; set; }
+        DbSet<PaymentOrder> PaymentOrders { get; set; }
 
       
         DbSet<Department> Departments { get; set; }
