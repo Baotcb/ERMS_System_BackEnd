@@ -41,24 +41,17 @@ public sealed class StartQuizHandler
         if (enrollment == null)
             throw new Exception("Người dùng chưa đăng ký khóa học");
 
-        var quiz = request.QuizId.HasValue
-            ? await _context.Quizzes
-                .Include(x => x.Questions)
-                .FirstOrDefaultAsync(x =>
-                    x.Id == request.QuizId.Value &&
-                    x.IsActive &&
-                    !x.IsDeleted,
-                    cancellationToken)
-            : await _context.Quizzes
-                .Include(x => x.Questions)
-                .FirstOrDefaultAsync(x =>
-                    x.CourseId == courseId &&
-                    x.IsActive &&
-                    !x.IsDeleted,
-                    cancellationToken);
+        var quiz = await _context.Quizzes
+    .Include(x => x.Questions)
+    .FirstOrDefaultAsync(x =>
+        x.Id == request.QuizId &&
+        x.IsActive &&
+        !x.IsDeleted,
+        cancellationToken);
 
         if (quiz == null)
             throw new Exception("Không tìm thấy bài kiểm tra");
+
 
         // CHECK LESSON COMPLETION
 
@@ -83,7 +76,7 @@ public sealed class StartQuizHandler
                 !x.IsDeleted,
                 cancellationToken);
 
-        if (totalLessons < 0 && completedLessons < totalLessons)
+        if (totalLessons > 0 && completedLessons < totalLessons)
         {
             throw new Exception(
                 $"Bạn phải hoàn thành tất cả các bài học trong khóa học trước khi làm bài kiểm tra");
