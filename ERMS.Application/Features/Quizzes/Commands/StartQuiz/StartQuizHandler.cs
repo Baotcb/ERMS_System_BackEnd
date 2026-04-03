@@ -30,7 +30,7 @@ public sealed class StartQuizHandler
         if (employee == null)
             throw new Exception("Tài khoản chưa được liên kết với hồ sơ nhân viên. Vui lòng liên hệ HR/Admin.");
 
-        var courseId = request.CourseId
+        var courseId = _context.Quizzes.FirstOrDefault(x => x.Id == request.QuizId && !x.IsDeleted)?.CourseId
             ?? throw new Exception("Thiếu thông tin khóa học.");
 
         var enrollment = await _context.Enrollments
@@ -41,24 +41,17 @@ public sealed class StartQuizHandler
         if (enrollment == null)
             throw new Exception("Người dùng chưa đăng ký khóa học");
 
-        var quiz = request.QuizId.HasValue
-            ? await _context.Quizzes
-                .Include(x => x.Questions)
-                .FirstOrDefaultAsync(x =>
-                    x.Id == request.QuizId.Value &&
-                    x.IsActive &&
-                    !x.IsDeleted,
-                    cancellationToken)
-            : await _context.Quizzes
-                .Include(x => x.Questions)
-                .FirstOrDefaultAsync(x =>
-                    x.CourseId == courseId &&
-                    x.IsActive &&
-                    !x.IsDeleted,
-                    cancellationToken);
+        var quiz = await _context.Quizzes
+    .Include(x => x.Questions)
+    .FirstOrDefaultAsync(x =>
+        x.Id == request.QuizId &&
+        x.IsActive &&
+        !x.IsDeleted,
+        cancellationToken);
 
         if (quiz == null)
             throw new Exception("Không tìm thấy bài kiểm tra");
+
 
         // CHECK LESSON COMPLETION
 
@@ -92,8 +85,26 @@ public sealed class StartQuizHandler
         var attemptCount = await _context.QuizAttempts
             .CountAsync(x => x.QuizId == quiz.Id && x.EnrollmentId == enrollment.Id, cancellationToken);
 
+        var lastAttempt = await _context.QuizAttempts
+    .Where(x => x.QuizId == quiz.Id && x.EnrollmentId == enrollment.Id)
+    .OrderByDescending(x => x.StartedAt)
+    .FirstOrDefaultAsync(cancellationToken);
+
         if (quiz.MaxAttempts.HasValue && attemptCount >= quiz.MaxAttempts)
-            throw new Exception("Đã đạt tối đa số lần làm bài");
+        {
+            if (lastAttempt != null)
+            {
+                var nextAvailableTime = lastAttempt.StartedAt.AddMinutes(quiz.TimeLimitMinutes.Value);
+
+                if (DateTime.UtcNow < nextAvailableTime)
+                {
+                    var remaining = nextAvailableTime - DateTime.UtcNow;
+
+                    throw new Exception(
+                        $"Bạn đã đạt tối đa số lần làm bài. Vui lòng thử lại sau {remaining.Minutes} phút {remaining.Seconds} giây.");
+                }
+            }
+        }
 
         var attempt = new QuizAttempt
         {
