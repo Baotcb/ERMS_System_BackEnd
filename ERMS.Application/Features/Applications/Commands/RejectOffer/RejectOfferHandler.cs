@@ -11,16 +11,16 @@ namespace ERMS.Application.Features.Applications.Commands.RejectOffer;
 /// Handler for rejecting a job offer.
 /// Only the owning Candidate can reject their own offer.
 /// </summary>
-public sealed class RejectOfferCommandHandler : IRequestHandler<RejectOfferCommand, RejectOfferResult>
+public sealed class RejectOfferHandler : IRequestHandler<RejectOfferCommand, RejectOfferResult>
 {
     private readonly IERMSDbContext _context;
     private readonly ICurrentUserService _currentUserService;
-    private readonly ILogger<RejectOfferCommandHandler> _logger;
+    private readonly ILogger<RejectOfferHandler> _logger;
 
-    public RejectOfferCommandHandler(
+    public RejectOfferHandler(
         IERMSDbContext context,
         ICurrentUserService currentUserService,
-        ILogger<RejectOfferCommandHandler> logger)
+        ILogger<RejectOfferHandler> logger)
     {
         _context = context;
         _currentUserService = currentUserService;
