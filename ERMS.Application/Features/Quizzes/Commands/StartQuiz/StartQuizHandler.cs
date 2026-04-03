@@ -30,7 +30,7 @@ public sealed class StartQuizHandler
         if (employee == null)
             throw new Exception("Tài khoản chưa được liên kết với hồ sơ nhân viên. Vui lòng liên hệ HR/Admin.");
 
-        var courseId = request.CourseId
+        var courseId = _context.Quizzes.FirstOrDefault(x => x.Id == request.QuizId && !x.IsDeleted)?.CourseId
             ?? throw new Exception("Thiếu thông tin khóa học.");
 
         var enrollment = await _context.Enrollments
@@ -83,7 +83,7 @@ public sealed class StartQuizHandler
                 !x.IsDeleted,
                 cancellationToken);
 
-        if (totalLessons > 0 && completedLessons < totalLessons)
+        if (totalLessons < 0 && completedLessons < totalLessons)
         {
             throw new Exception(
                 $"Bạn phải hoàn thành tất cả các bài học trong khóa học trước khi làm bài kiểm tra");
