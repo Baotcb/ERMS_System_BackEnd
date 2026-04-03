@@ -2,7 +2,6 @@ trigger:
   branches:
     include:
     - master
-#test github action
 pr: none
 variables:
   dockerRegistryConnection: 'DockerHubConnection'
