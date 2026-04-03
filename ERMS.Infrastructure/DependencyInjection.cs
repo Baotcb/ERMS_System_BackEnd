@@ -44,7 +44,9 @@ namespace ERMS.Infrastructure
 
 
             services.AddScoped<ICurrentUserService, CurrentUserService>();
+            services.AddSingleton<IAIServiceConfiguration, AIServiceConfiguration>();
             services.AddScoped<ITokenService, TokenService>();
+            services.AddScoped<ISystemIntegrationStatusService, SystemIntegrationStatusService>();
             services.AddTransient<IEmailService, EmailService>();
             services.AddTransient<IRejectionEmailService, RejectionEmailService>();
             services.AddScoped<IExcelParserService, ExcelParserService>();

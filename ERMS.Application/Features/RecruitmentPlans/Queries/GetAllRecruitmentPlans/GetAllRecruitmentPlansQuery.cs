@@ -32,6 +32,8 @@ public sealed class RecruitmentPlanDto
     public DateTime? EndDate { get; set; }
     public decimal? TotalBudget { get; set; }
     public string Status { get; set; } = null!;
+    public int DepartmentId { get; set; }
+    public string? DepartmentName { get; set; }
     public string? CreatedByName { get; set; }
     public string? ApprovedByName { get; set; }
     public DateTime? ApprovedAt { get; set; }
