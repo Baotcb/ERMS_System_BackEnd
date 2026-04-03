@@ -92,8 +92,26 @@ public sealed class StartQuizCommandHandler
         var attemptCount = await _context.QuizAttempts
             .CountAsync(x => x.QuizId == quiz.Id && x.EnrollmentId == enrollment.Id, cancellationToken);
 
+        var lastAttempt = await _context.QuizAttempts
+    .Where(x => x.QuizId == quiz.Id && x.EnrollmentId == enrollment.Id)
+    .OrderByDescending(x => x.StartedAt)
+    .FirstOrDefaultAsync(cancellationToken);
+
         if (quiz.MaxAttempts.HasValue && attemptCount >= quiz.MaxAttempts)
-            throw new Exception("Đã đạt tối đa số lần làm bài");
+        {
+            if (lastAttempt != null)
+            {
+                var nextAvailableTime = lastAttempt.StartedAt.AddMinutes(quiz.TimeLimitMinutes.Value);
+
+                if (DateTime.UtcNow < nextAvailableTime)
+                {
+                    var remaining = nextAvailableTime - DateTime.UtcNow;
+
+                    throw new Exception(
+                        $"Bạn đã đạt tối đa số lần làm bài. Vui lòng thử lại sau {remaining.Minutes} phút {remaining.Seconds} giây.");
+                }
+            }
+        }
 
         var attempt = new QuizAttempt
         {
