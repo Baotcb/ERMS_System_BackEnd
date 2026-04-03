@@ -127,7 +127,7 @@ namespace ERMS.Infrastructure.Data
 
             builder.Entity<Employee>()
                 .HasOne(e => e.Department)
-                .WithMany()
+                .WithMany(d => d.Employees)
                 .HasForeignKey(e => e.DepartmentId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .IsRequired(false);

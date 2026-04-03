@@ -1,4 +1,3 @@
-﻿using ERMS.Application.Features.Enterprises.Commands.LockEnterprise;
 using ERMS.Application.Features.Enterprises.Commands.ViewPaymentHistoryEnterprise;
 using ERMS.Application.Features.Enterprises.Commands.GetUrlAvataEnterprise;
 using ERMS.Application.Features.Enterprises.Queries.GetEnterpriseDetails;
@@ -34,24 +33,6 @@ namespace ERMS.API.Controllers
             catch (UnauthorizedAccessException ex)
             {
                 return Unauthorized(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
-        [HttpPost("lock-enterprise")]
-        [Authorize(Roles = AppRoles.Admin)]
-        public async Task<IActionResult> LockEnterprise([FromBody] LockEnterpriseCommand command)
-        {
-            try
-            {
-                var result = await _sender.Send(command);
-                return Ok(new
-                {
-                    message = command.IsLocked ? "Khóa doanh nghiệp thành công." : "Mở khóa doanh nghiệp thành công.",
-                    result
-                });
             }
             catch (Exception ex)
             {
