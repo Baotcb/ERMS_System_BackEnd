@@ -4,6 +4,7 @@ using ERMS.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ERMS.Infrastructure.Migrations
 {
     [DbContext(typeof(ERMSDbContext))]
-    partial class ERMSDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260403084201_AddReportTable")]
+    partial class AddReportTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -798,96 +801,6 @@ namespace ERMS.Infrastructure.Migrations
                     b.HasIndex("ToUserId");
 
                     b.ToTable("OwnershipTransfers");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.Enterprise.PaymentOrder", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal>("Amount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<DateTime?>("CancelledAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CheckoutUrl")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("CreatedById")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Currency")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)")
-                        .HasDefaultValue("VND");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasDefaultValue("");
-
-                    b.Property<Guid>("EnterpriseId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<long>("OrderCode")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime?>("PaidAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("PayOSReference")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("PaymentLinkId")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<Guid?>("PreviousPlanId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasDefaultValue("Pending");
-
-                    b.Property<Guid>("SubscriptionPlanId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("EnterpriseId");
-
-                    b.HasIndex("OrderCode")
-                        .IsUnique();
-
-                    b.HasIndex("PaymentLinkId");
-
-                    b.HasIndex("PreviousPlanId");
-
-                    b.HasIndex("Status");
-
-                    b.HasIndex("SubscriptionPlanId");
-
-                    b.ToTable("PaymentOrders");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Enterprise.SubscriptionHistory", b =>
@@ -3068,40 +2981,6 @@ namespace ERMS.Infrastructure.Migrations
                     b.Navigation("FromUser");
 
                     b.Navigation("ToUser");
-                });
-
-            modelBuilder.Entity("ERMS.Domain.Entities.Enterprise.PaymentOrder", b =>
-                {
-                    b.HasOne("ERMS.Domain.Entities.Identity.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("ERMS.Domain.Entities.Enterprise.Enterprise", "Enterprise")
-                        .WithMany()
-                        .HasForeignKey("EnterpriseId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("ERMS.Domain.Entities.Enterprise.SubscriptionPlan", "PreviousPlan")
-                        .WithMany()
-                        .HasForeignKey("PreviousPlanId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("ERMS.Domain.Entities.Enterprise.SubscriptionPlan", "SubscriptionPlan")
-                        .WithMany()
-                        .HasForeignKey("SubscriptionPlanId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("Enterprise");
-
-                    b.Navigation("PreviousPlan");
-
-                    b.Navigation("SubscriptionPlan");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Enterprise.SubscriptionHistory", b =>
