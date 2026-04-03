@@ -6,7 +6,7 @@ using System.Text;
 
 namespace ERMS.Domain.Entities.Training
 {
-    public class WorkshopConfirmation : BaseEntity
+    public class WorkshopConfirmation : BaseEntityInt
     {
         public Guid CourseId { get; set; }
         public Guid ConfirmedByUserId { get; set; }

@@ -78,6 +78,7 @@ namespace ERMS.Infrastructure.Data
 
     
         public DbSet<Notification> Notifications { get; set; }
+        public DbSet<Report> Reports { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -453,6 +454,18 @@ namespace ERMS.Infrastructure.Data
             builder.Entity<WorkshopConfirmation>()
                 .Property(x => x.IsDeleted)
                 .HasDefaultValue(false);
+
+            builder.Entity<Report>()
+                .HasOne(r => r.ReportedBy)
+                .WithMany()
+                .HasForeignKey(r => r.ReportedById)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Report>()
+                .HasOne(r => r.ResolvedBy)
+                .WithMany()
+                .HasForeignKey(r => r.ResolvedById)
+                .OnDelete(DeleteBehavior.Restrict);
         }
         public async Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
         {

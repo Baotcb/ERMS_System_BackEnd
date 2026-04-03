@@ -78,6 +78,7 @@ namespace ERMS.Application.Interface
 
       
         DbSet<Notification> Notifications { get; set; }
+        DbSet<Report> Reports { get; set; }
 
         
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
