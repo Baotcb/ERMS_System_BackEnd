@@ -21,7 +21,8 @@ namespace ERMS.Application.Features.Training.Queries.GetAllTrainingPlans
         public int PageSize { get; set; }
 
         public int TotalPages =>
-            (int)Math.Ceiling((double)TotalCount / PageSize);
+        PageSize <= 0 ? 0 :
+        (int)Math.Ceiling((double)TotalCount / PageSize);
     }
 
     public sealed class TrainingPlanDto
@@ -32,11 +33,11 @@ namespace ERMS.Application.Features.Training.Queries.GetAllTrainingPlans
         public string Status { get; set; } = null!;
         public decimal? TotalBudget { get; set; }
 
-        public DateTime StartDate { get; set; }
-        public DateTime EndDate { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
 
         public string CreatedBy { get; set; } = null!;
-        public DateTime CreatedAt { get; set; }
+        public DateTime? CreatedAt { get; set; }
         public string? ReviewNote { get; set; }
         public string? Description { get; set; }
         public int Year { get; set; }

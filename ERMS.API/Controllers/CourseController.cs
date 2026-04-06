@@ -9,9 +9,11 @@ using ERMS.Application.Features.Courses.Queries.GetCourseProgress;
 using ERMS.Application.Features.CourseSkills.Commands.CreateCourseSkill;
 using ERMS.Application.Features.Enrollments.Commands.AssignEmployeesToCourse;
 using ERMS.Application.Features.Enrollments.Commands.UpdateCertificate;
+using ERMS.Application.Features.Enrollments.Queries.GetTrainingPerformanceChart;
 using ERMS.Application.Features.Quizzes.Commands.CreateQuiz;
 using ERMS.Application.Features.Quizzes.Commands.StartQuiz;
 using ERMS.Application.Features.Quizzes.Queries.GetQuizResult;
+using ERMS.Domain.Constants.Roles;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -80,6 +82,14 @@ namespace ERMS.API.Controllers
         public async Task<IActionResult> GetDepartmentTrainingResults()
         {
             var result = await _mediator.Send(new Application.Features.Enrollments.Queries.GetDepartmentTrainingResults.GetDepartmentTrainingResultsQuery());
+            return Ok(result);
+        }
+
+        [Authorize(Roles = AppRoles.HRManager)]
+        [HttpGet("performance")]
+        public async Task<IActionResult> GetCoursePerformance()
+        {
+            var result = await _mediator.Send(new GetTrainingPerformanceChartQuery());
             return Ok(result);
         }
 

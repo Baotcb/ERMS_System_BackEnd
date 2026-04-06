@@ -16,5 +16,6 @@ public sealed class GetQuizResultResponse
     public int TotalQuestions { get; set; }
     public int AttemptCount { get; set; }
     public int? MaxAttempts { get; set; }
+    public DateTime? NextAvailableTime { get; set; }
     public DateTime? CompletedAt { get; set; }
 }

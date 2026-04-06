@@ -46,20 +46,17 @@ public sealed class GetQuizResultHandler
                 cancellationToken);
         if (quiz == null) return null;
 
-        // Get the latest completed attempt
-        var latestAttempt = await _context.QuizAttempts
-            .Where(x => x.QuizId == quiz.Id &&
-                        x.EnrollmentId == enrollment.Id &&
-                        x.Status == "Completed")
-            .OrderByDescending(x => x.CompletedAt)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (latestAttempt == null) return null;
-
         var attemptCount = await _context.QuizAttempts
-            .CountAsync(x => x.QuizId == quiz.Id &&
-                             x.EnrollmentId == enrollment.Id,
-                             cancellationToken);
+             .CountAsync(x => x.QuizId == quiz.Id && x.EnrollmentId == enrollment.Id, cancellationToken);
+
+        var latestAttempt = await _context.QuizAttempts
+    .Where(x => x.QuizId == quiz.Id && x.EnrollmentId == enrollment.Id)
+    .OrderByDescending(x => x.StartedAt)
+    .FirstOrDefaultAsync(cancellationToken);
+
+        var NextAvailableTime = latestAttempt != null && quiz.TimeLimitMinutes.HasValue
+            ? latestAttempt.StartedAt.AddMinutes(quiz.TimeLimitMinutes.Value)
+            : (DateTime?)null;
 
         return new GetQuizResultResponse
         {
@@ -70,6 +67,7 @@ public sealed class GetQuizResultHandler
             TotalQuestions = latestAttempt.TotalQuestions,
             AttemptCount = attemptCount,
             MaxAttempts = quiz.MaxAttempts,
+            NextAvailableTime = NextAvailableTime,
             CompletedAt = latestAttempt.CompletedAt
         };
     }
