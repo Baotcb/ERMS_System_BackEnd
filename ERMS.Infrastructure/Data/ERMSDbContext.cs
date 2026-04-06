@@ -27,6 +27,7 @@ namespace ERMS.Infrastructure.Data
         public DbSet<Enterprise> Enterprises { get; set; }
         public DbSet<SubscriptionHistory> SubscriptionHistories { get; set; }
         public DbSet<OwnershipTransfer> OwnershipTransfers { get; set; }
+        public DbSet<PaymentOrder> PaymentOrders { get; set; }
 
        
         public DbSet<Department> Departments { get; set; }
@@ -78,6 +79,7 @@ namespace ERMS.Infrastructure.Data
 
     
         public DbSet<Notification> Notifications { get; set; }
+        public DbSet<Report> Reports { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -127,7 +129,7 @@ namespace ERMS.Infrastructure.Data
 
             builder.Entity<Employee>()
                 .HasOne(e => e.Department)
-                .WithMany()
+                .WithMany(d => d.Employees)
                 .HasForeignKey(e => e.DepartmentId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .IsRequired(false);
@@ -453,6 +455,83 @@ namespace ERMS.Infrastructure.Data
             builder.Entity<WorkshopConfirmation>()
                 .Property(x => x.IsDeleted)
                 .HasDefaultValue(false);
+
+            // PaymentOrder Configurations
+            builder.Entity<PaymentOrder>()
+                .HasIndex(p => p.OrderCode)
+                .IsUnique();
+                
+            builder.Entity<PaymentOrder>()
+                .HasIndex(p => p.PaymentLinkId);
+                
+            builder.Entity<PaymentOrder>()
+                .HasIndex(p => p.EnterpriseId);
+
+            builder.Entity<PaymentOrder>()
+                .HasIndex(p => p.Status);
+
+            builder.Entity<PaymentOrder>()
+                .HasOne(p => p.Enterprise)
+                .WithMany()
+                .HasForeignKey(p => p.EnterpriseId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<PaymentOrder>()
+                .HasOne(p => p.SubscriptionPlan)
+                .WithMany()
+                .HasForeignKey(p => p.SubscriptionPlanId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<PaymentOrder>()
+                .HasOne(p => p.PreviousPlan)
+                .WithMany()
+                .HasForeignKey(p => p.PreviousPlanId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<PaymentOrder>()
+                .HasOne(p => p.CreatedBy)
+                .WithMany()
+                .HasForeignKey(p => p.CreatedById)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<PaymentOrder>()
+                .Property(p => p.Currency)
+                .HasMaxLength(10)
+                .HasDefaultValue("VND");
+
+            builder.Entity<PaymentOrder>()
+                .Property(p => p.Description)
+                .HasMaxLength(500)
+                .HasDefaultValue("");
+
+            builder.Entity<PaymentOrder>()
+                .Property(p => p.Status)
+                .HasMaxLength(20)
+                .HasDefaultValue("Pending");
+
+            builder.Entity<PaymentOrder>()
+                .Property(p => p.PaymentLinkId)
+                .HasMaxLength(200);
+
+            builder.Entity<PaymentOrder>()
+                .Property(p => p.CheckoutUrl)
+                .HasMaxLength(1000);
+
+            builder.Entity<PaymentOrder>()
+                .Property(p => p.PayOSReference)
+                .HasMaxLength(200);
+
+            builder.Entity<Report>()
+                .HasOne(r => r.ReportedBy)
+                .WithMany()
+                .HasForeignKey(r => r.ReportedById)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Report>()
+                .HasOne(r => r.ResolvedBy)
+                .WithMany()
+                .HasForeignKey(r => r.ResolvedById)
+                .OnDelete(DeleteBehavior.Restrict);
         }
         public async Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
         {

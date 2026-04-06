@@ -106,7 +106,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("ResumeId");
 
-                    b.ToTable("Applications", (string)null);
+                    b.ToTable("Applications");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Application.CVScreeningResult", b =>
@@ -173,7 +173,7 @@ namespace ERMS.Infrastructure.Migrations
                     b.HasIndex("ApplicationId")
                         .IsUnique();
 
-                    b.ToTable("CVScreeningResults", (string)null);
+                    b.ToTable("CVScreeningResults");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Application.Interview", b =>
@@ -251,7 +251,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("ScheduledById");
 
-                    b.ToTable("Interviews", (string)null);
+                    b.ToTable("Interviews");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Application.InterviewParticipant", b =>
@@ -301,7 +301,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("InterviewId");
 
-                    b.ToTable("InterviewParticipants", (string)null);
+                    b.ToTable("InterviewParticipants");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Application.Offer", b =>
@@ -396,7 +396,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("SentById");
 
-                    b.ToTable("Offers", (string)null);
+                    b.ToTable("Offers");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Candidate.Candidate", b =>
@@ -462,7 +462,7 @@ namespace ERMS.Infrastructure.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("Candidates", (string)null);
+                    b.ToTable("Candidates");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Candidate.CandidateSkill", b =>
@@ -495,7 +495,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("SkillId");
 
-                    b.ToTable("CandidateSkills", (string)null);
+                    b.ToTable("CandidateSkills");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Candidate.Education", b =>
@@ -543,7 +543,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("CandidateId");
 
-                    b.ToTable("Educations", (string)null);
+                    b.ToTable("Educations");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Candidate.Resume", b =>
@@ -594,7 +594,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("CandidateId");
 
-                    b.ToTable("Resumes", (string)null);
+                    b.ToTable("Resumes");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Candidate.SavedJob", b =>
@@ -627,7 +627,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("JobPostingId");
 
-                    b.ToTable("SavedJobs", (string)null);
+                    b.ToTable("SavedJobs");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Candidate.WorkExperience", b =>
@@ -675,7 +675,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("CandidateId");
 
-                    b.ToTable("WorkExperiences", (string)null);
+                    b.ToTable("WorkExperiences");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Enterprise.Enterprise", b =>
@@ -751,7 +751,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("SubscriptionPlanId");
 
-                    b.ToTable("Enterprises", (string)null);
+                    b.ToTable("Enterprises");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Enterprise.OwnershipTransfer", b =>
@@ -797,7 +797,97 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("ToUserId");
 
-                    b.ToTable("OwnershipTransfers", (string)null);
+                    b.ToTable("OwnershipTransfers");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Enterprise.PaymentOrder", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CheckoutUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasDefaultValue("VND");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasDefaultValue("");
+
+                    b.Property<Guid>("EnterpriseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long>("OrderCode")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("PaidAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PayOSReference")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("PaymentLinkId")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid?>("PreviousPlanId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("Pending");
+
+                    b.Property<Guid>("SubscriptionPlanId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("EnterpriseId");
+
+                    b.HasIndex("OrderCode")
+                        .IsUnique();
+
+                    b.HasIndex("PaymentLinkId");
+
+                    b.HasIndex("PreviousPlanId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("SubscriptionPlanId");
+
+                    b.ToTable("PaymentOrders");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Enterprise.SubscriptionHistory", b =>
@@ -859,7 +949,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("SubscriptionPlanId");
 
-                    b.ToTable("SubscriptionHistories", (string)null);
+                    b.ToTable("SubscriptionHistories");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Enterprise.SubscriptionPlan", b =>
@@ -919,7 +1009,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("SubscriptionPlans", (string)null);
+                    b.ToTable("SubscriptionPlans");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Identity.User", b =>
@@ -1062,7 +1152,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("ParentDepartmentId");
 
-                    b.ToTable("Departments", (string)null);
+                    b.ToTable("Departments");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Organization.Employee", b =>
@@ -1078,9 +1168,6 @@ namespace ERMS.Infrastructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<int?>("DepartmentId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("DepartmentId1")
                         .HasColumnType("int");
 
                     b.Property<string>("EmployeeCode")
@@ -1133,8 +1220,6 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("DepartmentId");
 
-                    b.HasIndex("DepartmentId1");
-
                     b.HasIndex("EnterpriseId");
 
                     b.HasIndex("JobPositionId");
@@ -1144,7 +1229,7 @@ namespace ERMS.Infrastructure.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("Employees", (string)null);
+                    b.ToTable("Employees");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Organization.JobPosition", b =>
@@ -1176,7 +1261,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("EnterpriseId");
 
-                    b.ToTable("JobPositions", (string)null);
+                    b.ToTable("JobPositions");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.ApprovalHistory", b =>
@@ -1219,7 +1304,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("PerformedById");
 
-                    b.ToTable("ApprovalHistories", (string)null);
+                    b.ToTable("ApprovalHistories");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.JobPosting", b =>
@@ -1333,7 +1418,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("PublishedById");
 
-                    b.ToTable("JobPostings", (string)null);
+                    b.ToTable("JobPostings");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.JobSkill", b =>
@@ -1366,7 +1451,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("SkillId");
 
-                    b.ToTable("JobSkills", (string)null);
+                    b.ToTable("JobSkills");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.PlanDetail", b =>
@@ -1451,7 +1536,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("ReviewerId");
 
-                    b.ToTable("PlanDetails", (string)null);
+                    b.ToTable("PlanDetails");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.RecruitmentCampaign", b =>
@@ -1531,7 +1616,7 @@ namespace ERMS.Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("UQ_RC_Enterprise_Code");
 
-                    b.ToTable("RecruitmentCampaigns", (string)null);
+                    b.ToTable("RecruitmentCampaigns");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.RecruitmentPlan", b =>
@@ -1617,7 +1702,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("EnterpriseId");
 
-                    b.ToTable("RecruitmentPlans", (string)null);
+                    b.ToTable("RecruitmentPlans");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Skill.JobCompetency", b =>
@@ -1651,7 +1736,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("SkillId");
 
-                    b.ToTable("JobCompetencies", (string)null);
+                    b.ToTable("JobCompetencies");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Skill.Skill", b =>
@@ -1692,7 +1777,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("EnterpriseId");
 
-                    b.ToTable("Skills", (string)null);
+                    b.ToTable("Skills");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.System.Notification", b =>
@@ -1747,7 +1832,61 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Notifications", (string)null);
+                    b.ToTable("Notifications");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.System.Report", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ActionTaken")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("AdminNote")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("EntityId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("ReportedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("ResolvedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReportedById");
+
+                    b.HasIndex("ResolvedById");
+
+                    b.ToTable("Reports");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.Course", b =>
@@ -1758,6 +1897,9 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.Property<string>("CompletionCriteria")
                         .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ContentManagerEmail")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CourseCode")
@@ -1837,7 +1979,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("TrainingPlanId");
 
-                    b.ToTable("Courses", (string)null);
+                    b.ToTable("Courses");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.CourseFeedback", b =>
@@ -1860,6 +2002,9 @@ namespace ERMS.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<Guid>("EmployeeId")
                         .HasColumnType("uniqueidentifier");
 
@@ -1867,7 +2012,9 @@ namespace ERMS.Infrastructure.Migrations
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<int>("TrainerRating")
                         .HasColumnType("int");
@@ -1881,7 +2028,55 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("EmployeeId");
 
-                    b.ToTable("CourseFeedbacks", (string)null);
+                    b.ToTable("CourseFeedbacks");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.CourseFeedbackReply", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("FeedbackId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsAnonymous")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("ParentReplyId")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ReplyBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ReplyByAvatarUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReplyByName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReplyContent")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FeedbackId");
+
+                    b.HasIndex("ParentReplyId");
+
+                    b.ToTable("CourseFeedbackReplies");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.CourseSkill", b =>
@@ -1911,7 +2106,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("SkillId");
 
-                    b.ToTable("CourseSkills", (string)null);
+                    b.ToTable("CourseSkills");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.Enrollment", b =>
@@ -1977,7 +2172,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("EnrolledById");
 
-                    b.ToTable("Enrollments", (string)null);
+                    b.ToTable("Enrollments");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.Lesson", b =>
@@ -2040,7 +2235,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("CourseId");
 
-                    b.ToTable("Lessons", (string)null);
+                    b.ToTable("Lessons");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.LessonProgress", b =>
@@ -2086,7 +2281,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("LessonId");
 
-                    b.ToTable("LessonProgresses", (string)null);
+                    b.ToTable("LessonProgresses");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.Quiz", b =>
@@ -2143,7 +2338,7 @@ namespace ERMS.Infrastructure.Migrations
                     b.HasIndex("CourseId")
                         .IsUnique();
 
-                    b.ToTable("Quizzes", (string)null);
+                    b.ToTable("Quizzes");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.QuizAnswer", b =>
@@ -2182,7 +2377,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("QuizQuestionId");
 
-                    b.ToTable("QuizAnswers", (string)null);
+                    b.ToTable("QuizAnswers");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.QuizAttempt", b =>
@@ -2238,7 +2433,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("QuizId");
 
-                    b.ToTable("QuizAttempts", (string)null);
+                    b.ToTable("QuizAttempts");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.QuizQuestion", b =>
@@ -2291,7 +2486,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("QuizId");
 
-                    b.ToTable("QuizQuestions", (string)null);
+                    b.ToTable("QuizQuestions");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.TrainingPlan", b =>
@@ -2360,7 +2555,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("EnterpriseId");
 
-                    b.ToTable("TrainingPlans", (string)null);
+                    b.ToTable("TrainingPlans");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.TrainingRequest", b =>
@@ -2431,7 +2626,7 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.HasIndex("TrainingPlanId");
 
-                    b.ToTable("TrainingRequests", (string)null);
+                    b.ToTable("TrainingRequests");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.WorkshopConfirmation", b =>
@@ -2454,6 +2649,9 @@ namespace ERMS.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("EvidencePhotoUrls")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -2461,7 +2659,9 @@ namespace ERMS.Infrastructure.Migrations
                         .HasDefaultValue("[]");
 
                     b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("Notes")
                         .HasColumnType("nvarchar(max)");
@@ -2476,7 +2676,7 @@ namespace ERMS.Infrastructure.Migrations
                     b.HasIndex("CourseId")
                         .IsUnique();
 
-                    b.ToTable("WorkshopConfirmations", (string)null);
+                    b.ToTable("WorkshopConfirmations");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", b =>
@@ -2870,6 +3070,40 @@ namespace ERMS.Infrastructure.Migrations
                     b.Navigation("ToUser");
                 });
 
+            modelBuilder.Entity("ERMS.Domain.Entities.Enterprise.PaymentOrder", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Enterprise.Enterprise", "Enterprise")
+                        .WithMany()
+                        .HasForeignKey("EnterpriseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Enterprise.SubscriptionPlan", "PreviousPlan")
+                        .WithMany()
+                        .HasForeignKey("PreviousPlanId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERMS.Domain.Entities.Enterprise.SubscriptionPlan", "SubscriptionPlan")
+                        .WithMany()
+                        .HasForeignKey("SubscriptionPlanId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Enterprise");
+
+                    b.Navigation("PreviousPlan");
+
+                    b.Navigation("SubscriptionPlan");
+                });
+
             modelBuilder.Entity("ERMS.Domain.Entities.Enterprise.SubscriptionHistory", b =>
                 {
                     b.HasOne("ERMS.Domain.Entities.Enterprise.Enterprise", "Enterprise")
@@ -2931,13 +3165,9 @@ namespace ERMS.Infrastructure.Migrations
             modelBuilder.Entity("ERMS.Domain.Entities.Organization.Employee", b =>
                 {
                     b.HasOne("ERMS.Domain.Entities.Organization.Department", "Department")
-                        .WithMany()
+                        .WithMany("Employees")
                         .HasForeignKey("DepartmentId")
                         .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("ERMS.Domain.Entities.Organization.Department", null)
-                        .WithMany("Employees")
-                        .HasForeignKey("DepartmentId1");
 
                     b.HasOne("ERMS.Domain.Entities.Enterprise.Enterprise", "Enterprise")
                         .WithMany()
@@ -3178,6 +3408,24 @@ namespace ERMS.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("ERMS.Domain.Entities.System.Report", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "ReportedBy")
+                        .WithMany()
+                        .HasForeignKey("ReportedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "ResolvedBy")
+                        .WithMany()
+                        .HasForeignKey("ResolvedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ReportedBy");
+
+                    b.Navigation("ResolvedBy");
+                });
+
             modelBuilder.Entity("ERMS.Domain.Entities.Training.Course", b =>
                 {
                     b.HasOne("ERMS.Domain.Entities.Enterprise.Enterprise", "Enterprise")
@@ -3212,6 +3460,24 @@ namespace ERMS.Infrastructure.Migrations
                     b.Navigation("Course");
 
                     b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.CourseFeedbackReply", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Training.CourseFeedback", "Feedback")
+                        .WithMany("Replies")
+                        .HasForeignKey("FeedbackId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Training.CourseFeedbackReply", "ParentReply")
+                        .WithMany("ChildReplies")
+                        .HasForeignKey("ParentReplyId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Feedback");
+
+                    b.Navigation("ParentReply");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.CourseSkill", b =>
@@ -3572,6 +3838,16 @@ namespace ERMS.Infrastructure.Migrations
                     b.Navigation("Quiz");
 
                     b.Navigation("WorkshopConfirmation");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.CourseFeedback", b =>
+                {
+                    b.Navigation("Replies");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.CourseFeedbackReply", b =>
+                {
+                    b.Navigation("ChildReplies");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.Enrollment", b =>

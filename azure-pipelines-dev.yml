@@ -5,6 +5,11 @@ trigger:
     
 pr: none 
 variables:
+- group: SONAR_TOKEN
+- name: sonarProjectKey
+  value: 'EnterpriseResourcePlanningSystem_EnterpriseResourcePlanningSystem_BE'
+- name: sonarOrg
+  value: 'enterpriseresourceplanningsystem'
 - name: dockerRegistryConnection
   value: 'DockerHubConnection'
 - name: imageName
@@ -35,6 +40,27 @@ stages:
         version: '$(dotNetVersion)'
         includePreviewVersions: true
 
+    - task: JavaToolInstaller@0
+      inputs:
+        versionSpec: '17'
+        jdkArchitectureOption: 'x64'
+        jdkSourceOption: 'PreInstalled'
+
+    - script: dotnet tool install --global dotnet-sonarscanner
+      displayName: 'Install SonarScanner Tool'
+
+    - script: |
+        export PATH="$PATH:$HOME/.dotnet/tools"
+        dotnet sonarscanner begin /k:"$(sonarProjectKey)" \
+        /o:"$(sonarOrg)" \
+        /d:sonar.token="$SONAR_TOKEN_ENV" \
+        /d:sonar.host.url="https://sonarcloud.io" \
+        /d:sonar.coverage.exclusions="**/*" \
+        /d:sonar.cpd.exclusions="**/*"
+      displayName: 'SonarScanner Begin'
+      env: 
+        SONAR_TOKEN_ENV: $(SONAR_TOKEN) 
+
     - task: DotNetCoreCLI@2
       displayName: 'Restore Dependencies'
       inputs:
@@ -47,6 +73,13 @@ stages:
         command: 'build'
         projects: '$(solution)'
         arguments: '--configuration $(buildConfiguration) --no-restore'
+
+    - script: |
+        export PATH="$PATH:$HOME/.dotnet/tools"
+        dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN_ENV"
+      displayName: 'SonarScanner End'
+      env: 
+        SONAR_TOKEN_ENV: $(SONAR_TOKEN)
 
     - task: Docker@2
       displayName: 'Build code C# và Push lên Docker Hub'

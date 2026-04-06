@@ -12,13 +12,13 @@ using Xunit;
 
 namespace ERMS.UnitTests.Features.Lessons.Commands.UpdateLesson
 {
-    public class UpdateLessonCommandHandlerTests : IDisposable
+    public class UpdateLessonHandlerTests : IDisposable
     {
         private readonly ERMSDbContext _context;
         private readonly Mock<ICurrentUserService> _currentUserMock;
         private readonly UpdateLessonHandler _handler;
 
-        public UpdateLessonCommandHandlerTests()
+        public UpdateLessonHandlerTests()
         {
             var options = new DbContextOptionsBuilder<ERMSDbContext>()
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
