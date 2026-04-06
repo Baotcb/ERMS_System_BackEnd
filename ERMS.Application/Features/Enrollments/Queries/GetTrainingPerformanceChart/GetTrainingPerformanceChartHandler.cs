@@ -1,4 +1,5 @@
 ﻿using ERMS.Application.Interface;
+using ERMS.Domain.Constants.Roles;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -35,6 +36,10 @@ namespace ERMS.Application.Features.Enrollments.Queries.GetTrainingPerformanceCh
 
             if (enterpriseId == null)
                 throw new Exception("Người dùng không thuộc doanh nghiệp nào.");
+
+            var role = _currentUserService.Roles;
+            if (!role.Contains(AppRoles.HRManager))
+                throw new UnauthorizedAccessException("Chỉ HR Manager mới có quyền truy cập biểu đồ hiệu suất.");
 
             // 1. Lấy dữ liệu thô từ Database (Lọc theo Enterprise và chưa xóa)
             var rawData = await _context.Enrollments

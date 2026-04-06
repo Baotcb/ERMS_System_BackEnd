@@ -1,5 +1,6 @@
 ﻿using ERMS.Application.Features.Enrollments.Queries.GetTrainingPerformanceChart;
 using ERMS.Application.Interface;
+using ERMS.Domain.Constants.Roles;
 using ERMS.Domain.Entities.Training;
 using ERMS.UnitTests.Helpers;
 using FluentAssertions;
@@ -60,6 +61,9 @@ namespace ERMS.UnitTests.Features.Enrollments.Queries.GetTrainingPerformanceChar
         {
             // Arrange
             var enterpriseId = Guid.NewGuid();
+            _currentUserServiceMock
+                .Setup(x => x.Roles)
+                .Returns(new List<string> { AppRoles.HRManager });
             _currentUserServiceMock.Setup(x => x.GetEnterpriseIdAsync()).ReturnsAsync(enterpriseId);
 
             var courseA = new Course { CourseName = "Course A", EnterpriseId = enterpriseId };
@@ -95,6 +99,9 @@ namespace ERMS.UnitTests.Features.Enrollments.Queries.GetTrainingPerformanceChar
         {
             // Arrange
             var enterpriseId = Guid.NewGuid();
+            _currentUserServiceMock
+                .Setup(x => x.Roles)
+                .Returns(new List<string> { AppRoles.HRManager });
             _currentUserServiceMock.Setup(x => x.GetEnterpriseIdAsync()).ReturnsAsync(enterpriseId);
 
             var courseBasic = new Course { Level = "Basic", EnterpriseId = enterpriseId };
@@ -128,6 +135,9 @@ namespace ERMS.UnitTests.Features.Enrollments.Queries.GetTrainingPerformanceChar
             // Arrange
             var myEnterpriseId = Guid.NewGuid();
             var otherEnterpriseId = Guid.NewGuid();
+            _currentUserServiceMock
+                .Setup(x => x.Roles)
+                .Returns(new List<string> { AppRoles.HRManager });
             _currentUserServiceMock.Setup(x => x.GetEnterpriseIdAsync()).ReturnsAsync(myEnterpriseId);
 
             var myCourse = new Course { CourseName = "My Course", EnterpriseId = myEnterpriseId };
@@ -152,6 +162,61 @@ namespace ERMS.UnitTests.Features.Enrollments.Queries.GetTrainingPerformanceChar
             result.Should().HaveCount(1);
             result[0].Label.Should().Be("My Course");
             result[0].Value.Should().Be(100); // Chỉ tính 1 bản ghi hợp lệ duy nhất
+        }
+        [Fact]
+        public async Task Handle_UserNotHRManager_ThrowsForbiddenException()
+        {
+            // Arrange
+            _currentUserServiceMock
+                .Setup(x => x.Roles)
+                .Returns(new List<string> { "Employee" });
+
+            _currentUserServiceMock
+                .Setup(x => x.GetEnterpriseIdAsync())
+                .ReturnsAsync(Guid.NewGuid());
+
+            var query = new GetTrainingPerformanceChartQuery();
+
+            // Act
+            var act = async () => await _handler.Handle(query, CancellationToken.None);
+
+            // Assert
+            await act.Should().ThrowAsync<UnauthorizedAccessException>()
+    .WithMessage("Chỉ HR Manager mới có quyền truy cập biểu đồ hiệu suất.");
+        }
+        [Fact]
+        public async Task Handle_UserIsHRManager_ShouldReturnData()
+        {
+            // Arrange
+            var enterpriseId = Guid.NewGuid();
+
+            _currentUserServiceMock
+                .Setup(x => x.Roles)
+                .Returns(new List<string> { AppRoles.HRManager });
+
+            _currentUserServiceMock
+                .Setup(x => x.GetEnterpriseIdAsync())
+                .ReturnsAsync(enterpriseId);
+
+            var course = new Course { CourseName = "Course A", EnterpriseId = enterpriseId };
+
+            var enrollments = new List<Enrollment>
+    {
+        new Enrollment { Course = course, Status = "Completed", Progress = 100, IsDeleted = false }
+    };
+
+            SetupMockContext(enrollments);
+
+            var query = new GetTrainingPerformanceChartQuery();
+
+            // Act
+            var result = await _handler.Handle(query, CancellationToken.None);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.Should().HaveCount(1);
+            result[0].Label.Should().Be("Course A");
+            result[0].Value.Should().Be(100);
         }
     }
 }
