@@ -9,5 +9,11 @@ namespace ERMS.Domain.Constants.Enterprise
             public const string Cancelled = "Cancelled";
             public const string Expired = "Expired";
         }
+
+        public static class ActionType
+        {
+            public const string Renew = "Renew";
+            public const string Upgrade = "Upgrade";
+        }
     }
 }

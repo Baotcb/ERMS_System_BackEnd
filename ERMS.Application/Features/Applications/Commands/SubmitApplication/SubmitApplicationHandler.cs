@@ -19,6 +19,7 @@ public sealed class SubmitApplicationHandler : IRequestHandler<SubmitApplication
     private readonly ICloudinaryService _cloudinaryService;
     private readonly IPdfTextExtractor _pdfTextExtractor;
     private readonly IBackgroundTaskQueue _backgroundQueue;
+    private readonly ISubscriptionLimitChecker _subscriptionLimitChecker;
     private readonly ILogger<SubmitApplicationHandler> _logger;
 
     public SubmitApplicationHandler(
@@ -27,6 +28,7 @@ public sealed class SubmitApplicationHandler : IRequestHandler<SubmitApplication
         ICloudinaryService cloudinaryService,
         IPdfTextExtractor pdfTextExtractor,
         IBackgroundTaskQueue backgroundQueue,
+        ISubscriptionLimitChecker subscriptionLimitChecker,
         ILogger<SubmitApplicationHandler> logger)
     {
         _context = context;
@@ -34,6 +36,7 @@ public sealed class SubmitApplicationHandler : IRequestHandler<SubmitApplication
         _cloudinaryService = cloudinaryService;
         _pdfTextExtractor = pdfTextExtractor;
         _backgroundQueue = backgroundQueue;
+        _subscriptionLimitChecker = subscriptionLimitChecker;
         _logger = logger;
     }
 
@@ -56,7 +59,6 @@ public sealed class SubmitApplicationHandler : IRequestHandler<SubmitApplication
 
         // 3. Load and validate JobPosting
         var jobPosting = await _context.JobPostings
-            .Include(jp => jp.PlanDetail)
             .FirstOrDefaultAsync(jp => jp.Id == request.JobPostingId && !jp.IsDeleted, cancellationToken)
             ?? throw new Exception($"Không tìm thấy tin tuyển dụng với ID {request.JobPostingId}.");
 
@@ -146,19 +148,31 @@ public sealed class SubmitApplicationHandler : IRequestHandler<SubmitApplication
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        // 11. Enqueue CV scoring for background processing
-        await _backgroundQueue.EnqueueAsync(new CvScoringWorkItem(
-            ApplicationId: application.Id,
-            ResumeText: resumeText,
-            JobDescription: jobPosting.Description,
-            RequiredSkills: jobPosting.Requirements ?? "",
-            EducationLevel: jobPosting.EducationLevel,
-            ExperienceLevel: jobPosting.ExperienceLevel
-        ), cancellationToken);
+        // 11. Enqueue CV scoring only for PRO plan enterprises
+        var isProPlan = await _subscriptionLimitChecker.IsProPlanAsync(jobPosting.EnterpriseId, cancellationToken);
+        if (isProPlan)
+        {
+            await _backgroundQueue.EnqueueAsync(new CvScoringWorkItem(
+                ApplicationId: application.Id,
+                ResumeText: resumeText,
+                JobDescription: jobPosting.Description,
+                RequiredSkills: jobPosting.Requirements ?? "",
+                EducationLevel: jobPosting.EducationLevel,
+                ExperienceLevel: jobPosting.ExperienceLevel
+            ), cancellationToken);
 
-        _logger.LogInformation(
-            "Application {ApplicationId} submitted successfully. CV scoring enqueued for background processing.",
-            application.Id);
+            _logger.LogInformation(
+                "Application {ApplicationId} submitted successfully. CV scoring enqueued for Pro enterprise {EnterpriseId}.",
+                application.Id,
+                jobPosting.EnterpriseId);
+        }
+        else
+        {
+            _logger.LogInformation(
+                "Application {ApplicationId} submitted successfully. CV scoring skipped for Free enterprise {EnterpriseId}.",
+                application.Id,
+                jobPosting.EnterpriseId);
+        }
 
         // 12. Return result immediately (CV scoring runs in background)
         return new SubmitApplicationResult
