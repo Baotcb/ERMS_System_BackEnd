@@ -32,7 +32,7 @@ public class HandlePayOSWebhookHandler : IRequestHandler<HandlePayOSWebhookComma
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to verify PayOS webhook signature or payload.");
+            _logger.LogWarning(ex, "Không thể xác minh chữ ký hoặc dữ liệu webhook PayOS.");
             return false;
         }
 

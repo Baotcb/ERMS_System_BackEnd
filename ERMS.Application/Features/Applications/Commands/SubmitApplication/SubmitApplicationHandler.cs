@@ -85,7 +85,7 @@ public sealed class SubmitApplicationHandler : IRequestHandler<SubmitApplication
         }
 
         // 6. Upload CV to Cloudinary
-        _logger.LogInformation("Uploading CV for candidate {CandidateId} to job {JobPostingId}",
+        _logger.LogInformation("Đang tải CV cho ứng viên {CandidateId} vào công việc {JobPostingId}",
             candidate.Id, request.JobPostingId);
 
         string resumeUrl, resumePublicId;

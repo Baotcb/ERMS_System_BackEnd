@@ -63,7 +63,7 @@ public class SubscriptionController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled error processing PayOS webhook");
+            _logger.LogError(ex, "Lỗi không xử lý được khi xử lý webhook PayOS");
             return Ok(new { success = false });
         }
     }

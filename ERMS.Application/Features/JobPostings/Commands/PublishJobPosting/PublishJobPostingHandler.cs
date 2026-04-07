@@ -58,7 +58,7 @@ public sealed class PublishJobPostingHandler : IRequestHandler<PublishJobPosting
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Published JobPosting {JobPostingId}", request.Id);
+        _logger.LogInformation("Đã xuất bản bài tuyển dụng {JobPostingId}", request.Id);
         return Unit.Value;
     }
 }

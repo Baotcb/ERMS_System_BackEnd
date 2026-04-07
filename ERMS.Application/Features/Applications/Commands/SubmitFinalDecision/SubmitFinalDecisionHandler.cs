@@ -213,7 +213,7 @@ public sealed class SubmitFinalDecisionHandler : IRequestHandler<SubmitFinalDeci
         catch (Exception ex)
         {
             await transaction.RollbackAsync(cancellationToken);
-            _logger.LogError(ex, "Failed to submit final decision for Interview {InterviewId}", request.InterviewId);
+            _logger.LogError(ex, "Không thể gửi quyết định cuối cùng cho cuộc phỏng vấn {InterviewId}", request.InterviewId);
             throw;
         }
     }
@@ -245,7 +245,7 @@ public sealed class SubmitFinalDecisionHandler : IRequestHandler<SubmitFinalDeci
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to send rejection email for Application {ApplicationId}", application.Id);
+            _logger.LogWarning(ex, "Không thể gửi email từ chối cho hồ sơ {ApplicationId}", application.Id);
         }
     }
 

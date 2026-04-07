@@ -34,23 +34,23 @@ public class CreatePaymentOrderHandler : IRequestHandler<CreatePaymentOrderComma
     public async Task<CreatePaymentOrderResponse> Handle(CreatePaymentOrderCommand request, CancellationToken cancellationToken)
     {
         var userId = _currentUserService.UserId
-            ?? throw new UnauthorizedAccessException("User not authenticated");
+            ?? throw new UnauthorizedAccessException("Người dùng chưa xác thực");
 
         var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
-            ?? throw new UnauthorizedAccessException("User is not associated with an enterprise");
+            ?? throw new UnauthorizedAccessException("Người dùng không liên kết với doanh nghiệp nào");
 
         var enterprise = await _context.Enterprises
             .Include(e => e.SubscriptionPlan)
             .FirstOrDefaultAsync(e => e.Id == enterpriseId && !e.IsDeleted, cancellationToken)
-            ?? throw new KeyNotFoundException("Enterprise not found");
+            ?? throw new KeyNotFoundException("Không tìm thấy doanh nghiệp");
 
         var targetPlan = await _context.SubscriptionPlans
             .FirstOrDefaultAsync(p => p.Id == request.SubscriptionPlanId && p.IsActive && !p.IsDeleted, cancellationToken)
-            ?? throw new KeyNotFoundException("Subscription plan not found");
+            ?? throw new KeyNotFoundException("Không tìm thấy gói đăng ký");
 
         if (targetPlan.PriceMonthly <= 0)
         {
-            throw new InvalidOperationException("Cannot purchase a free plan");
+            throw new InvalidOperationException("Không thể mua gói miễn phí");
         }
 
         await ExpireStalePendingOrdersAsync(enterpriseId, cancellationToken);
@@ -63,7 +63,7 @@ public class CreatePaymentOrderHandler : IRequestHandler<CreatePaymentOrderComma
             cancellationToken);
         if (hasPending)
         {
-            throw new InvalidOperationException("There is already a pending payment order. Please complete or cancel it first.");
+            throw new InvalidOperationException("Đã có đơn thanh toán đang chờ xử lý. Vui lòng hoàn tất hoặc hủy trước.");
         }
 
         var amount = targetPlan.PriceMonthly;
@@ -103,7 +103,7 @@ public class CreatePaymentOrderHandler : IRequestHandler<CreatePaymentOrderComma
         }
         catch (DbUpdateException ex)
         {
-            _logger.LogWarning(ex, "Failed to save PaymentOrder with OrderCode {OrderCode}, possible duplicate", orderCode);
+            _logger.LogWarning(ex, "Không thể lưu đơn thanh toán với mã đơn {OrderCode}, có thể bị trùng lặp", orderCode);
             throw new InvalidOperationException("Không thể tạo đơn thanh toán. Vui lòng thử lại.", ex);
         }
 
@@ -144,7 +144,7 @@ public class CreatePaymentOrderHandler : IRequestHandler<CreatePaymentOrderComma
             {
                 _logger.LogWarning(
                     ex,
-                    "Failed to cancel stale PayOS payment link for order code {OrderCode}. Keeping status pending.",
+                    "Không thể hủy liên kết thanh toán PayOS hết hạn cho mã đơn {OrderCode}. Giữ trạng thái chờ xử lý.",
                     staleOrder.OrderCode);
                 continue;
             }
@@ -175,6 +175,6 @@ public class CreatePaymentOrderHandler : IRequestHandler<CreatePaymentOrderComma
             }
         }
 
-        throw new InvalidOperationException("Unable to generate unique order code");
+        throw new InvalidOperationException("Không thể tạo mã đơn hàng duy nhất");
     }
 }

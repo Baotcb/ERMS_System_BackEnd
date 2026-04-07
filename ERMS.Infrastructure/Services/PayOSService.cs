@@ -64,7 +64,7 @@ public class PayOSService : IPayOSService
     public async Task<PayOSWebhookData> VerifyWebhookAsync(string webhookBody)
     {
         var webhook = JsonSerializer.Deserialize<Webhook>(webhookBody)
-            ?? throw new InvalidOperationException("Webhook body is invalid.");
+            ?? throw new InvalidOperationException("Dữ liệu webhook không hợp lệ.");
         var webhookData = await _payOS.Webhooks.VerifyAsync(webhook);
 
         return new PayOSWebhookData

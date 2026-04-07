@@ -21,13 +21,13 @@ public class GetCurrentSubscriptionHandler : IRequestHandler<GetCurrentSubscript
     public async Task<CurrentSubscriptionDto> Handle(GetCurrentSubscriptionQuery request, CancellationToken cancellationToken)
     {
         var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
-            ?? throw new UnauthorizedAccessException("User is not associated with an enterprise");
+            ?? throw new UnauthorizedAccessException("Người dùng không liên kết với doanh nghiệp nào");
 
         var enterprise = await _context.Enterprises
             .AsNoTracking()
             .Include(e => e.SubscriptionPlan)
             .FirstOrDefaultAsync(e => e.Id == enterpriseId && !e.IsDeleted, cancellationToken)
-            ?? throw new KeyNotFoundException("Enterprise not found");
+            ?? throw new KeyNotFoundException("Không tìm thấy doanh nghiệp");
 
         var currentJobPostings = await _context.JobPostings
             .AsNoTracking()
