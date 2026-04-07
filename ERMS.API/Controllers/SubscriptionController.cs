@@ -67,7 +67,7 @@ public class SubscriptionController : ControllerBase
             return Ok(new { success = false });
         }
     }
-
+//required by PayOS to verify webhook endpoint when setting up the webhook in their system. 
     [HttpGet("webhook")]
     [AllowAnonymous]
     public IActionResult PayOSWebhookVerify()
