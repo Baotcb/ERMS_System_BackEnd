@@ -61,7 +61,7 @@ namespace ERMS.Application.Features.Departments.Commands.DeleteDepartment
 
             await _context.SaveChangesAsync(cancellationToken);
 
-            _logger.LogInformation("Deleted department {DepartmentId}", department.Id);
+            _logger.LogInformation("Đã xóa phòng ban {DepartmentId}", department.Id);
 
             return true;
         }

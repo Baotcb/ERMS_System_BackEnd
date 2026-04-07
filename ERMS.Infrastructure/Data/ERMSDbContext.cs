@@ -109,6 +109,11 @@ namespace ERMS.Infrastructure.Data
                 .HasMaxLength(50)
                 .HasDefaultValue("Inactive");
 
+            builder.Entity<SubscriptionHistory>()
+                .Property(h => h.Currency)
+                .HasMaxLength(10)
+                .HasDefaultValue("VND");
+
 
             builder.Entity<Department>()
                 .HasOne(d => d.Manager)

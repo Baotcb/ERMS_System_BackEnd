@@ -67,7 +67,7 @@ public sealed class UpdateJobPostingHandler : IRequestHandler<UpdateJobPostingCo
         jobPosting.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Updated JobPosting {JobPostingId}", request.Id);
+        _logger.LogInformation("Đã cập nhật bài tuyển dụng {JobPostingId}", request.Id);
         return Unit.Value;
     }
 }

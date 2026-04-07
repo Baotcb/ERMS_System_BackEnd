@@ -28,17 +28,20 @@ namespace ERMS.Application.Features.Employees.Commands.CreateEmployee
         private readonly UserManager<User> _userManager;
         private readonly ILogger<CreateEmployeeHandler> _logger;
         private readonly ICurrentUserService _currentUserService;
+        private readonly ISubscriptionLimitChecker _subscriptionLimitChecker;
 
         public CreateEmployeeHandler(
             IERMSDbContext context,
             UserManager<User> userManager,
             ILogger<CreateEmployeeHandler> logger,
-            ICurrentUserService currentUserService)
+            ICurrentUserService currentUserService,
+            ISubscriptionLimitChecker subscriptionLimitChecker)
         {
             _context = context;
             _userManager = userManager;
             _logger = logger;
             _currentUserService = currentUserService;
+            _subscriptionLimitChecker = subscriptionLimitChecker;
         }
 
         public async Task<Guid> Handle(CreateEmployeeCommand request, CancellationToken cancellationToken)
@@ -55,6 +58,12 @@ namespace ERMS.Application.Features.Employees.Commands.CreateEmployee
             if (enterprise == null)
             {
                 throw new Exception("Doanh nghiệp không tồn tại");
+            }
+
+            var employeeLimit = await _subscriptionLimitChecker.CheckEmployeeLimitAsync(enterpriseId.Value, cancellationToken);
+            if (!employeeLimit.IsAllowed)
+            {
+                throw new Exception(employeeLimit.Message ?? $"Đã đạt giới hạn {employeeLimit.MaxAllowed} nhân viên.");
             }
 
             if (string.IsNullOrWhiteSpace(request.Role))
