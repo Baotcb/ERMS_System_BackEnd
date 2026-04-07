@@ -30,8 +30,11 @@ public sealed class StartQuizHandler
         if (employee == null)
             throw new Exception("Tài khoản chưa được liên kết với hồ sơ nhân viên. Vui lòng liên hệ HR/Admin.");
 
-        var courseId = _context.Quizzes.FirstOrDefault(x => x.Id == request.QuizId && !x.IsDeleted)?.CourseId
-            ?? throw new Exception("Thiếu thông tin khóa học.");
+        var courseId = request.CourseId;
+        if (request.CourseId == null) {
+            courseId = _context.Quizzes.FirstOrDefault(x => x.Id == request.QuizId && !x.IsDeleted)?.CourseId
+        ?? throw new Exception("Thiếu thông tin khóa học.");
+    }
 
         var enrollment = await _context.Enrollments
             .FirstOrDefaultAsync(x => x.EmployeeId == employee.Id
