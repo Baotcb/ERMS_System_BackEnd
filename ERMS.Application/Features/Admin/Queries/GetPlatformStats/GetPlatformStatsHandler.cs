@@ -119,7 +119,7 @@ public sealed class GetPlatformStatsHandler : IRequestHandler<GetPlatformStatsQu
             {
                 EnterpriseId = enterprise.Id,
                 EnterpriseName = enterprise.EnterpriseName,
-                Metric = "nhan vien",
+                Metric = "nhân viên",
                 Value = enterprise.EmployeeCount
             })
             .ToListAsync(cancellationToken);

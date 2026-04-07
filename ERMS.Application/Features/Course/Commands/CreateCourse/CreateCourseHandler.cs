@@ -11,15 +11,18 @@ namespace ERMS.Application.Features.Courses.Commands.CreateCourse
     {
         private readonly IERMSDbContext _context;
         private readonly ICurrentUserService _currentUserService;
+        private readonly ISubscriptionLimitChecker _subscriptionLimitChecker;
         private readonly ILogger<CreateCourseHandler> _logger;
 
         public CreateCourseHandler(
             IERMSDbContext context,
             ICurrentUserService currentUserService,
+            ISubscriptionLimitChecker subscriptionLimitChecker,
             ILogger<CreateCourseHandler> logger)
         {
             _context = context;
             _currentUserService = currentUserService;
+            _subscriptionLimitChecker = subscriptionLimitChecker;
             _logger = logger;
         }
 
@@ -38,6 +41,11 @@ namespace ERMS.Application.Features.Courses.Commands.CreateCourse
 
             if (enterpriseId == null)
                 throw new Exception("Người dùng không thuộc doanh nghiệp nào");
+
+            // Subscription feature gate: number of courses by plan
+            var courseLimit = await _subscriptionLimitChecker.CheckCourseLimitAsync(enterpriseId.Value, cancellationToken);
+            if (!courseLimit.IsAllowed)
+                throw new InvalidOperationException(courseLimit.Message ?? "Đã đạt giới hạn khóa đào tạo của gói hiện tại.");
 
             // Check duplicate CourseCode
             var existedCode = await _context.Courses

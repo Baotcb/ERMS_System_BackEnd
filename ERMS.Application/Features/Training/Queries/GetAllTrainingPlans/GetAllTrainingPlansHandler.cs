@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace ERMS.Application.Features.Training.Queries.GetAllTrainingPlans
 {
     public sealed class GetAllTrainingPlansHandler
-        : IRequestHandler<GetAllTrainingPlansQuery, GetAllTrainingPlansResult>
+    : IRequestHandler<GetAllTrainingPlansQuery, GetAllTrainingPlansResult>
     {
         private readonly IERMSDbContext _context;
         private readonly ICurrentUserService _currentUserService;
@@ -29,21 +29,22 @@ namespace ERMS.Application.Features.Training.Queries.GetAllTrainingPlans
             GetAllTrainingPlansQuery request,
             CancellationToken cancellationToken)
         {
-            var enterpriseId =
-                await _currentUserService.GetEnterpriseIdAsync();
+            var enterpriseId = await _currentUserService.GetEnterpriseIdAsync();
 
             if (enterpriseId == null)
                 throw new UnauthorizedAccessException();
+
+            //  Fix Page/PageSize
+            var page = request.Page <= 0 ? 1 : request.Page;
+            var pageSize = request.PageSize <= 0 ? 20 : request.PageSize;
 
             var query = _context.TrainingPlans
                 .AsNoTracking()
                 .Where(p =>
                     p.EnterpriseId == enterpriseId &&
-                    !p.IsDeleted)
-                .Include(p => p.CreatedBy)
-                .AsQueryable();
+                    !p.IsDeleted);
 
-            // 🔎 Search
+            //  Search
             if (!string.IsNullOrWhiteSpace(request.Search))
             {
                 query = query.Where(p =>
@@ -51,7 +52,7 @@ namespace ERMS.Application.Features.Training.Queries.GetAllTrainingPlans
                     p.PlanCode.Contains(request.Search));
             }
 
-            // 📌 Filter Status
+            //  Filter Status
             if (!string.IsNullOrWhiteSpace(request.Status))
             {
                 query = query.Where(p =>
@@ -61,31 +62,35 @@ namespace ERMS.Application.Features.Training.Queries.GetAllTrainingPlans
             var totalCount = await query.CountAsync(cancellationToken);
 
             var items = await query
-                .OrderByDescending(p => p.CreatedAt)
-                .Skip((request.Page - 1) * request.PageSize)
-                .Take(request.PageSize)
-                .Select(p => new TrainingPlanDto
-                {
-                    Id = p.Id,
-                    PlanName = p.PlanName,
-                    PlanCode = p.PlanCode,
-                    Description = p.Description,
-                    StartDate = p.StartDate,
-                    EndDate = p.EndDate,
-                    TotalBudget = p.TotalBudget,
-                    Status = p.Status,
-                    CreatedBy = p.CreatedBy.FullName,
-                    CreatedAt = p.CreatedAt,
-                    ReviewNote = p.ReviewNote,
-                    Year = p.StartDate.Year,
-                    TotalCourses = p.Courses.Count
-                })
-                .ToListAsync(cancellationToken);
+     .OrderByDescending(p => p.CreatedAt)
+     .Skip((page - 1) * pageSize)
+     .Take(pageSize)
+     .Select(p => new TrainingPlanDto
+     {
+         Id = p.Id,
+         PlanName = p.PlanName,
+         PlanCode = p.PlanCode,
+         Description = p.Description,
+         StartDate = p.StartDate,
+         EndDate = p.EndDate,
+         TotalBudget = p.TotalBudget,
+         Status = p.Status,
+
+         CreatedBy = p.CreatedBy.FullName,
+         CreatedAt = p.CreatedAt,
+         ReviewNote = p.ReviewNote,
+
+         Year = p.StartDate.Year,
+         TotalCourses = p.Courses.Count()
+     })
+     .ToListAsync(cancellationToken);
 
             return new GetAllTrainingPlansResult
             {
                 TotalCount = totalCount,
-                Items = items
+                Items = items,
+                Page = page,
+                PageSize = pageSize
             };
         }
     }

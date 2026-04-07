@@ -4,6 +4,7 @@ using ERMS.Application.Features.Quizzes.Commands.StartQuiz;
 using ERMS.Application.Features.Quizzes.Commands.SubmitAnswer;
 using ERMS.Application.Features.Quizzes.Commands.SubmitQuiz;
 using ERMS.Application.Features.Quizzes.Queries.GetQuizQuestions;
+using ERMS.Application.Features.Quizzes.Queries.GetQuizResult;
 using ERMS.Application.Features.Quizzes.Queries.GetQuizReview;
 using ERMS.Application.Interface;
 using MediatR;
@@ -59,6 +60,18 @@ namespace ERMS.API.Controllers
             return Ok(quiz);
         }
 
+        [HttpGet("{courseId}/result")]
+        public async Task<IActionResult> GetQuizResult(Guid courseId)
+        {
+            var result = await _mediator.Send(new GetQuizResultQuery
+            {
+                CourseId = courseId
+            });
+            if (result == null)
+                return NotFound(new { message = "Không tìm thấy kết quả bài thi." });
+            return Ok(result);
+        }
+
         [HttpPost("{quizId}/start")]
         public async Task<IActionResult> StartQuiz(Guid quizId)
         {
@@ -69,6 +82,7 @@ namespace ERMS.API.Controllers
 
             return Ok(result);
         }
+
 
         [HttpPost("{attemptId}/answers")]
         public async Task<IActionResult> SubmitAnswer(

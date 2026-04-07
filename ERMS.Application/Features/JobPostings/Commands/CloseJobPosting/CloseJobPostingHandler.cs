@@ -56,7 +56,7 @@ public sealed class CloseJobPostingHandler : IRequestHandler<CloseJobPostingComm
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Closed JobPosting {JobPostingId}", request.Id);
+        _logger.LogInformation("Đã đóng bài tuyển dụng {JobPostingId}", request.Id);
         return Unit.Value;
     }
 }

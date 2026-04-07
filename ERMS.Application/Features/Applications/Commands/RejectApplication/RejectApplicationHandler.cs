@@ -125,7 +125,7 @@ public sealed class RejectApplicationHandler : IRequestHandler<RejectApplication
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to send rejection email for Application {ApplicationId}", application.Id);
+            _logger.LogWarning(ex, "Không thể gửi email từ chối cho hồ sơ {ApplicationId}", application.Id);
         }
     }
 

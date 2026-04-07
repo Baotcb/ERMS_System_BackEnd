@@ -21,15 +21,20 @@ namespace ERMS.UnitTests.Features.Training.Commands.CreateTrainingPlan
         private readonly Mock<IERMSDbContext> _contextMock = new();
         private readonly Mock<ICurrentUserService> _currentUserServiceMock = new();
         private readonly Mock<ILogger<CreateTrainingPlanHandler>> _loggerMock = new();
+        private readonly Mock<ISubscriptionLimitChecker> _subscriptionLimitCheckerMock = new();
 
         private readonly CreateTrainingPlanHandler _handler;
 
         public CreateTrainingPlanHandlerTests()
         {
+            _subscriptionLimitCheckerMock.Setup(x => x.IsProPlanAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
+
             _handler = new CreateTrainingPlanHandler(
                 _contextMock.Object,
                 _currentUserServiceMock.Object,
-                _loggerMock.Object);
+                _loggerMock.Object,
+                _subscriptionLimitCheckerMock.Object);
         }
 
         [Fact]

@@ -38,7 +38,7 @@ public class PdfTextExtractor : IPdfTextExtractor
 
             using var document = PdfDocument.Open(memoryStream);
 
-            _logger.LogInformation("Extracting text from PDF with {PageCount} pages", document.NumberOfPages);
+            _logger.LogInformation("Đang trích xuất văn bản từ PDF với {PageCount} trang", document.NumberOfPages);
 
             foreach (var page in document.GetPages())
             {
@@ -48,13 +48,13 @@ public class PdfTextExtractor : IPdfTextExtractor
 
             var extractedText = textBuilder.ToString().Trim();
 
-            _logger.LogInformation("Extracted {CharCount} characters from PDF", extractedText.Length);
+            _logger.LogInformation("Đã trích xuất {CharCount} ký tự từ PDF", extractedText.Length);
 
             return Task.FromResult(extractedText);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to extract text from PDF");
+            _logger.LogError(ex, "Không thể trích xuất văn bản từ PDF");
             throw new Exception("Không thể trích xuất văn bản từ PDF. Vui lòng đảm bảo file là tài liệu PDF hợp lệ.", ex);
         }
     }

@@ -17,6 +17,7 @@ namespace ERMS.UnitTests.Features.Courses.Commands.CreateCourse
     {
         private readonly ERMSDbContext _context;
         private readonly Mock<ICurrentUserService> _currentUserServiceMock;
+        private readonly Mock<ISubscriptionLimitChecker> _subscriptionLimitCheckerMock;
         private readonly Mock<ILogger<CreateCourseHandler>> _loggerMock;
         private readonly CreateCourseHandler _handler;
 
@@ -28,11 +29,22 @@ namespace ERMS.UnitTests.Features.Courses.Commands.CreateCourse
 
             _context = new ERMSDbContext(options);
             _currentUserServiceMock = new Mock<ICurrentUserService>();
+            _subscriptionLimitCheckerMock = new Mock<ISubscriptionLimitChecker>();
             _loggerMock = new Mock<ILogger<CreateCourseHandler>>();
+
+            _subscriptionLimitCheckerMock
+                .Setup(x => x.CheckCourseLimitAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new SubscriptionLimitResult
+                {
+                    IsAllowed = true,
+                    CurrentCount = 0,
+                    MaxAllowed = 15
+                });
 
             _handler = new CreateCourseHandler(
                 _context,
                 _currentUserServiceMock.Object,
+                _subscriptionLimitCheckerMock.Object,
                 _loggerMock.Object);
         }
 
@@ -203,6 +215,87 @@ namespace ERMS.UnitTests.Features.Courses.Commands.CreateCourse
             // Assert
             await act.Should().ThrowAsync<Exception>()
                 .WithMessage("Thời gian học bị trùng");
+        }
+
+        [Fact]
+        public async Task Handle_ShouldThrowException_WhenEnterpriseReachedCourseLimit()
+        {
+            // Arrange
+            var enterpriseId = Guid.NewGuid();
+            var freePlanId = Guid.NewGuid();
+
+            _currentUserServiceMock.Setup(x => x.UserId).Returns(Guid.NewGuid());
+            _currentUserServiceMock.Setup(x => x.GetEnterpriseIdAsync()).ReturnsAsync(enterpriseId);
+            _subscriptionLimitCheckerMock
+                .Setup(x => x.CheckCourseLimitAsync(enterpriseId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new SubscriptionLimitResult
+                {
+                    IsAllowed = false,
+                    CurrentCount = 2,
+                    MaxAllowed = 2,
+                    Message = "Đã đạt giới hạn 2 khóa đào tạo."
+                });
+
+            _context.SubscriptionPlans.Add(new Domain.Entities.Enterprise.SubscriptionPlan
+            {
+                Id = freePlanId,
+                PlanName = "Free Plan",
+                PlanCode = "FREE",
+                MaxCourses = 2,
+                MaxJobPostings = 2,
+                IsActive = true,
+                IsDeleted = false
+            });
+
+            _context.Enterprises.Add(new Domain.Entities.Enterprise.Enterprise
+            {
+                Id = enterpriseId,
+                EnterpriseName = "Acme",
+                EnterpriseCode = "ACME",
+                SubscriptionPlanId = freePlanId,
+                SubscriptionStartDate = DateTime.UtcNow.AddDays(-10),
+                SubscriptionEndDate = DateTime.UtcNow.AddDays(80),
+                SubscriptionStatus = "Active",
+                IsDeleted = false
+            });
+
+            _context.Courses.AddRange(
+                new Course
+                {
+                    Id = Guid.NewGuid(),
+                    EnterpriseId = enterpriseId,
+                    CourseCode = "LIMIT-001",
+                    CourseName = "Existing 1",
+                    TrainerEmail = "trainer@acme.vn",
+                    Status = "Published",
+                    IsDeleted = false
+                },
+                new Course
+                {
+                    Id = Guid.NewGuid(),
+                    EnterpriseId = enterpriseId,
+                    CourseCode = "LIMIT-002",
+                    CourseName = "Existing 2",
+                    TrainerEmail = "trainer@acme.vn",
+                    Status = "Published",
+                    IsDeleted = false
+                });
+            await _context.SaveChangesAsync();
+
+            var command = new CreateCourseCommand
+            {
+                CourseCode = "NEW-COURSE",
+                CourseName = "Should Be Blocked",
+                TrainerEmail = "new@acme.vn",
+                StartTime = DateTime.UtcNow.AddDays(10)
+            };
+
+            // Act
+            var act = () => _handler.Handle(command, CancellationToken.None);
+
+            // Assert
+            await act.Should().ThrowAsync<Exception>()
+                .WithMessage("*giới hạn*");
         }
 
         public void Dispose()

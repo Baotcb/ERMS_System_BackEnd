@@ -23,11 +23,11 @@ public class CloudinaryService : ICloudinaryService
         _settings = options.Value;
 
         if (string.IsNullOrWhiteSpace(_settings.CloudName))
-            throw new InvalidOperationException("Cloudinary CloudName is not configured in appsettings.");
+            throw new InvalidOperationException("Chưa cấu hình Cloudinary CloudName trong appsettings.");
         if (string.IsNullOrWhiteSpace(_settings.ApiKey))
-            throw new InvalidOperationException("Cloudinary ApiKey is not configured in appsettings.");
+            throw new InvalidOperationException("Chưa cấu hình Cloudinary ApiKey trong appsettings.");
         if (string.IsNullOrWhiteSpace(_settings.ApiSecret))
-            throw new InvalidOperationException("Cloudinary ApiSecret is not configured in appsettings.");
+            throw new InvalidOperationException("Chưa cấu hình Cloudinary ApiSecret trong appsettings.");
 
         var account = new Account(_settings.CloudName, _settings.ApiKey, _settings.ApiSecret);
         _cloudinary = new Cloudinary(account);
@@ -49,17 +49,17 @@ public class CloudinaryService : ICloudinaryService
             Overwrite = false
         };
 
-        _logger.LogInformation("Uploading PDF to Cloudinary: {PublicId}", publicId);
+        _logger.LogInformation("Đang tải PDF lên Cloudinary: {PublicId}", publicId);
 
         var uploadResult = await _cloudinary.UploadAsync(uploadParams);
 
         if (uploadResult.Error != null)
         {
-            _logger.LogError("Cloudinary upload failed: {Error}", uploadResult.Error.Message);
-            throw new Exception($"Failed to upload file to Cloudinary: {uploadResult.Error.Message}");
+            _logger.LogError("Tải lên Cloudinary thất bại: {Error}", uploadResult.Error.Message);
+            throw new Exception($"Tải tệp lên Cloudinary thất bại: {uploadResult.Error.Message}");
         }
 
-        _logger.LogInformation("PDF uploaded successfully. URL: {Url}", uploadResult.SecureUrl);
+        _logger.LogInformation("Đã tải PDF lên thành công. URL: {Url}", uploadResult.SecureUrl);
 
         return (uploadResult.SecureUrl.ToString(), uploadResult.PublicId);
     }
@@ -86,13 +86,13 @@ public class CloudinaryService : ICloudinaryService
                 .FetchFormat("auto")
         };
 
-        _logger.LogInformation("Uploading video to Cloudinary: {PublicId}", publicId);
+        _logger.LogInformation("Đang tải video lên Cloudinary: {PublicId}", publicId);
 
         var result = await _cloudinary.UploadAsync(uploadParams);
 
         if (result.Error != null)
         {
-            _logger.LogError("Upload video failed: {Error}", result.Error.Message);
+            _logger.LogError("Tải video lên thất bại: {Error}", result.Error.Message);
             throw new Exception(result.Error.Message);
         }
 
