@@ -8,7 +8,7 @@ namespace ERMS.Domain.Entities.System
     public class Report : BaseEntity
     {
         public Guid ReportedById { get; set; }
-        public User ReportedBy { get; set; } = null!;
+        public virtual User ReportedBy { get; set; } = null!;
 
         public string EntityType { get; set; } = null!;
         public Guid EntityId { get; set; }
@@ -19,7 +19,7 @@ namespace ERMS.Domain.Entities.System
         public string Status { get; set; } = ReportConstants.Status.Pending;
 
         public Guid? ResolvedById { get; set; }
-        public User? ResolvedBy { get; set; }
+        public virtual User? ResolvedBy { get; set; }
 
         public DateTime? ResolvedAt { get; set; }
         public string? AdminNote { get; set; }

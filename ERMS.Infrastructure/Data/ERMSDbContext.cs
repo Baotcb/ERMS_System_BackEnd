@@ -532,6 +532,15 @@ namespace ERMS.Infrastructure.Data
                 .WithMany()
                 .HasForeignKey(r => r.ResolvedById)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Report>()
+                .HasIndex(r => new { r.EntityType, r.EntityId });
+
+            builder.Entity<Report>()
+                .HasIndex(r => r.Status);
+
+            builder.Entity<Report>()
+                .HasIndex(r => r.ReportedById);
         }
         public async Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
         {
