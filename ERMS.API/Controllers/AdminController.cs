@@ -57,7 +57,7 @@ namespace ERMS.API.Controllers
             var result = await _sender.Send(command);
             return Ok(new
             {
-                message = "Cap nhat trang thai doanh nghiep thanh cong.",
+                message = "Cập nhật trạng thái doanh nghiệp thành công.",
                 result
             });
         }
