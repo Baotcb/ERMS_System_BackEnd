@@ -30,7 +30,7 @@ public sealed class StartQuizHandler
         if (employee == null)
             throw new Exception("Tài khoản chưa được liên kết với hồ sơ nhân viên. Vui lòng liên hệ HR/Admin.");
 
-        var courseId = _context.Quizzes.FirstOrDefault(x => x.Id == request.QuizId && !x.IsDeleted)?.CourseId
+        var courseId = request.CourseId ?? _context.Quizzes.FirstOrDefault(x => x.Id == request.QuizId && !x.IsDeleted)?.CourseId
             ?? throw new Exception("Thiếu thông tin khóa học.");
 
         var enrollment = await _context.Enrollments
@@ -41,13 +41,18 @@ public sealed class StartQuizHandler
         if (enrollment == null)
             throw new Exception("Người dùng chưa đăng ký khóa học");
 
-        var quiz = await _context.Quizzes
-    .Include(x => x.Questions)
-    .FirstOrDefaultAsync(x =>
-        x.Id == request.QuizId &&
-        x.IsActive &&
-        !x.IsDeleted,
-        cancellationToken);
+        var quizQuery = _context.Quizzes.Include(x => x.Questions).AsQueryable();
+        if (request.QuizId.HasValue)
+        {
+            quizQuery = quizQuery.Where(x => x.Id == request.QuizId);
+        }
+        else
+        {
+            quizQuery = quizQuery.Where(x => x.CourseId == courseId);
+        }
+
+        var quiz = await quizQuery
+            .FirstOrDefaultAsync(x => x.IsActive && !x.IsDeleted, cancellationToken);
 
         if (quiz == null)
             throw new Exception("Không tìm thấy bài kiểm tra");
