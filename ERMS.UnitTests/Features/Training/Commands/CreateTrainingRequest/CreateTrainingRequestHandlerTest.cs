@@ -1,100 +1,157 @@
-﻿using ERMS.Application.Interface;
+﻿using ERMS.Application.Features.Training.Commands.CreateTrainingRequest;
+using ERMS.Application.Interface;
+using ERMS.Domain.Entities.Enterprise;
+using ERMS.Domain.Entities.Organization; // Đảm bảo namespace chứa Enterprise/Department
 using ERMS.Domain.Entities.Training;
-using MediatR;
-using Microsoft.EntityFrameworkCore;
+using ERMS.UnitTests.Helpers;
+using FluentAssertions;
 using Microsoft.Extensions.Logging;
+using Moq;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Xunit;
 
-namespace ERMS.Application.Features.Training.Commands.CreateTrainingRequest
+namespace ERMS.UnitTests.Features.Training.Commands.CreateTrainingRequest
 {
-    public sealed class CreateTrainingRequestHandler
-        : IRequestHandler<CreateTrainingRequestCommand, Guid>
+    public class CreateTrainingRequestHandlerTests
     {
-        private readonly IERMSDbContext _context;
-        private readonly ICurrentUserService _currentUserService;
-        private readonly ILogger<CreateTrainingRequestHandler> _logger;
+        private readonly Mock<IERMSDbContext> _contextMock = new();
+        private readonly Mock<ICurrentUserService> _currentUserServiceMock = new();
+        private readonly Mock<ILogger<CreateTrainingRequestHandler>> _loggerMock = new();
+        private readonly CreateTrainingRequestHandler _handler;
 
-        public CreateTrainingRequestHandler(
-            IERMSDbContext context,
-            ICurrentUserService currentUserService,
-            ILogger<CreateTrainingRequestHandler> logger)
+        public CreateTrainingRequestHandlerTests()
         {
-            _context = context;
-            _currentUserService = currentUserService;
-            _logger = logger;
+            _handler = new CreateTrainingRequestHandler(
+                _contextMock.Object,
+                _currentUserServiceMock.Object,
+                _loggerMock.Object);
         }
 
-        public async Task<Guid> Handle(
-            CreateTrainingRequestCommand request,
-            CancellationToken cancellationToken)
+        [Fact]
+        public async Task Handle_ShouldCreateTrainingRequestSuccessfully()
         {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var enterpriseId = Guid.NewGuid();
+            int departmentId = 101; // Sửa thành int để khớp với Interface ICurrentUserService
 
+            // Setup User Service
+            _currentUserServiceMock.Setup(x => x.UserId).Returns(userId);
+            _currentUserServiceMock.Setup(x => x.GetEnterpriseIdAsync()).ReturnsAsync(enterpriseId);
+            _currentUserServiceMock.Setup(x => x.GetDepartmentIdAsync()).ReturnsAsync(departmentId);
 
-            var userId = _currentUserService.UserId;
-            if (userId == null)
-                throw new UnauthorizedAccessException("Người dùng chưa được xác thực");
-
-            var enterpriseId = await _currentUserService.GetEnterpriseIdAsync();
-            var departmentId = await _currentUserService.GetDepartmentIdAsync();
-
-            // Validate enterprise
-            var enterpriseExists = await _context.Enterprises
-                .AnyAsync(e => e.Id == enterpriseId && !e.IsDeleted, cancellationToken);
-
-            if (!enterpriseExists)
-                throw new Exception("Doanh nghiệp không tồn tại");
-
-            // Validate department
-            var departmentExists = await _context.Departments
-                .AnyAsync(d => d.Id == departmentId
-                            && d.EnterpriseId == enterpriseId
-                            && !d.IsDeleted, cancellationToken);
-
-            if (!departmentExists)
-                throw new Exception("Phòng ban không tồn tại");
-
-            // Validate TrainingPlan nếu có
-            if (request.TrainingPlanId.HasValue)
+            // Mock Enterprise (Bắt buộc phải có để vượt qua bước Validate)
+            var enterprises = new List<Enterprise>
             {
-                var planExists = await _context.TrainingPlans
-                    .AnyAsync(p => p.Id == request.TrainingPlanId.Value
-                                && p.EnterpriseId == enterpriseId
-                                && !p.IsDeleted, cancellationToken);
+                new Enterprise { Id = enterpriseId, IsDeleted = false }
+            }.AsQueryable().BuildMockDbSet();
+            _contextMock.Setup(x => x.Enterprises).Returns(enterprises.Object);
 
-                if (!planExists)
-                    throw new Exception("Kế hoạch đào tạo không tồn tại");
-            }
-
-            var trainingRequest = new TrainingRequest
+            // Mock Department (Lưu ý: Id ở đây cũng phải là int theo logic của bạn)
+            var departments = new List<Department>
             {
-                Id = Guid.CreateVersion7(),
-                EnterpriseId = enterpriseId.Value,
-                TrainingPlanId = request.TrainingPlanId,
-                DepartmentId = departmentId.Value,
-                RequestedById = userId.Value,
-                Subject = request.Subject,
-                Urgency = request.Urgency,
-                Description = request.Description,
-                TargetAudience = request.TargetAudience,
-                EstimatedParticipants = request.EstimatedParticipants,
-                EstimatedBudget = request.EstimatedBudget,
-                Status = "Pending",
-                IsDeleted = false,
-                CreatedAt = DateTime.UtcNow
+                new Department { Id = departmentId, EnterpriseId = enterpriseId, IsDeleted = false }
+            }.AsQueryable().BuildMockDbSet();
+            _contextMock.Setup(x => x.Departments).Returns(departments.Object);
+
+            // Mock TrainingRequests DbSet
+            var trainingRequests = new List<TrainingRequest>().AsQueryable().BuildMockDbSet();
+            _contextMock.Setup(x => x.TrainingRequests).Returns(trainingRequests.Object);
+
+            _contextMock.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(1);
+
+            var command = new CreateTrainingRequestCommand
+            {
+                Subject = "Kỹ năng lập trình .NET 2026",
+                Urgency = "High",
+                Description = "Đào tạo nâng cao",
+                TargetAudience = "Developer",
+                EstimatedParticipants = 10,
+                EstimatedBudget = 1000000
             };
 
-            _context.TrainingRequests.Add(trainingRequest);
-            await _context.SaveChangesAsync(cancellationToken);
+            // Act
+            var result = await _handler.Handle(command, CancellationToken.None);
 
-            _logger.LogInformation(
-                "Created training request {Subject} by user {UserId} in enterprise {EnterpriseId}",
-                trainingRequest.Subject,
-                trainingRequest.RequestedById,
-                trainingRequest.EnterpriseId);
+            // Assert
+            result.Should().NotBeEmpty();
+            _loggerMock.Verify(
+                x => x.Log(
+                    LogLevel.Information,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Created training request")),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                Times.Once);
+        }
 
-            return trainingRequest.Id;
+        [Fact]
+        public async Task Handle_ShouldThrow_WhenUserNotAuthenticated()
+        {
+            _currentUserServiceMock.Setup(x => x.UserId).Returns((Guid?)null);
+            var command = new CreateTrainingRequestCommand();
+
+            Func<Task> act = async () => await _handler.Handle(command, CancellationToken.None);
+
+            await act.Should().ThrowAsync<UnauthorizedAccessException>();
+        }
+        [Fact]
+        public async Task Handle_ShouldThrow_WhenEnterpriseIsDeleted()
+        {
+            // Arrange
+            var enterpriseId = Guid.NewGuid();
+            _currentUserServiceMock.Setup(x => x.UserId).Returns(Guid.NewGuid());
+            _currentUserServiceMock.Setup(x => x.GetEnterpriseIdAsync()).ReturnsAsync(enterpriseId);
+
+            // Setup Enterprise với IsDeleted = true
+            var enterprises = new List<Enterprise>
+    {
+        new Enterprise { Id = enterpriseId, IsDeleted = true }
+    }.AsQueryable().BuildMockDbSet();
+            _contextMock.Setup(x => x.Enterprises).Returns(enterprises.Object);
+
+            var command = new CreateTrainingRequestCommand { Subject = "Test" };
+
+            // Act
+            Func<Task> act = async () => await _handler.Handle(command, CancellationToken.None);
+
+            // Assert
+            await act.Should().ThrowAsync<Exception>().WithMessage("Doanh nghiệp không tồn tại");
+        }
+        [Fact]
+        public async Task Handle_ShouldThrow_WhenDepartmentBelongsToAnotherEnterprise()
+        {
+            // Arrange
+            var myEnterpriseId = Guid.NewGuid();
+            var otherEnterpriseId = Guid.NewGuid();
+            int departmentId = 999;
+
+            _currentUserServiceMock.Setup(x => x.UserId).Returns(Guid.NewGuid());
+            _currentUserServiceMock.Setup(x => x.GetEnterpriseIdAsync()).ReturnsAsync(myEnterpriseId);
+            _currentUserServiceMock.Setup(x => x.GetDepartmentIdAsync()).ReturnsAsync(departmentId);
+
+            _contextMock.Setup(x => x.Enterprises).Returns(new List<Enterprise>
+        { new Enterprise { Id = myEnterpriseId, IsDeleted = false } }.AsQueryable().BuildMockDbSet().Object);
+
+            // Setup Department nhưng EnterpriseId không khớp
+            var departments = new List<Department>
+    {
+        new Department { Id = departmentId, EnterpriseId = otherEnterpriseId, IsDeleted = false }
+    }.AsQueryable().BuildMockDbSet();
+            _contextMock.Setup(x => x.Departments).Returns(departments.Object);
+
+            var command = new CreateTrainingRequestCommand { Subject = "Test" };
+
+            // Act
+            Func<Task> act = async () => await _handler.Handle(command, CancellationToken.None);
+
+            // Assert
+            await act.Should().ThrowAsync<Exception>().WithMessage("Phòng ban không tồn tại");
         }
     }
 }
