@@ -44,13 +44,33 @@ public sealed class StartQuizHandler
         if (enrollment == null)
             throw new Exception("Người dùng chưa đăng ký khóa học");
 
-        var quiz = await _context.Quizzes
-    .Include(x => x.Questions)
-    .FirstOrDefaultAsync(x =>
-        x.Id == request.QuizId &&
-        x.IsActive &&
-        !x.IsDeleted,
-        cancellationToken);
+        Quiz? quiz = null;
+
+        // Ưu tiên QuizId
+        if (request.QuizId != null)
+        {
+            quiz = await _context.Quizzes
+                .Include(x => x.Questions)
+                .FirstOrDefaultAsync(x =>
+                    x.Id == request.QuizId &&
+                    x.IsActive &&
+                    !x.IsDeleted,
+                    cancellationToken);
+        }
+        else if (request.CourseId != null)
+        {
+            quiz = await _context.Quizzes
+                .Include(x => x.Questions)
+                .FirstOrDefaultAsync(x =>
+                    x.CourseId == request.CourseId &&
+                    x.IsActive &&
+                    !x.IsDeleted,
+                    cancellationToken);
+        }
+        else
+        {
+            throw new Exception("Phải cung cấp QuizId hoặc CourseId");
+        }
 
         if (quiz == null)
             throw new Exception("Không tìm thấy bài kiểm tra");
