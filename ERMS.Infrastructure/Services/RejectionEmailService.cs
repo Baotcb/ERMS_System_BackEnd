@@ -159,22 +159,22 @@ namespace ERMS.Infrastructure.Services
             var normalizedText = text.Trim().ToLowerInvariant();
             var areas = new List<string>();
 
-            if (ContainsAny(normalizedText, "kinh nghiem", "experience", "thuc chien", "thuc te", "du an", "project"))
+            if (ContainsAny(normalizedText, "kinh nghiệm", "kinh nghiem", "experience", "thực chiến", "thuc chien", "thực tế", "thuc te", "dự án", "du an", "project"))
             {
                 areas.Add("kinh nghiệm thực tiễn gắn với yêu cầu công việc");
             }
 
-            if (ContainsAny(normalizedText, "giao tiep", "communication", "trinh bay", "dien dat", "collaboration", "teamwork"))
+            if (ContainsAny(normalizedText, "giao tiếp", "giao tiep", "communication", "trình bày", "trinh bay", "diễn đạt", "dien dat", "collaboration", "teamwork"))
             {
                 areas.Add("khả năng giao tiếp và phối hợp trong công việc");
             }
 
-            if (ContainsAny(normalizedText, "problem", "tu duy", "phan tich", "giai quyet"))
+            if (ContainsAny(normalizedText, "problem", "tư duy", "tu duy", "phân tích", "phan tich", "giải quyết", "giai quyet"))
             {
                 areas.Add("tư duy phân tích và giải quyết vấn đề");
             }
 
-            if (ContainsAny(normalizedText, "english", "tieng anh"))
+            if (ContainsAny(normalizedText, "english", "tiếng anh", "tieng anh"))
             {
                 areas.Add("khả năng sử dụng tiếng Anh trong môi trường chuyên môn");
             }

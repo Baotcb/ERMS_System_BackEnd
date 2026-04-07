@@ -27,6 +27,7 @@ public class SubmitApplicationHandlerTests
     private readonly Mock<ICloudinaryService> _cloudinaryServiceMock;
     private readonly Mock<IPdfTextExtractor> _pdfTextExtractorMock;
     private readonly Mock<IBackgroundTaskQueue> _backgroundQueueMock;
+    private readonly Mock<ISubscriptionLimitChecker> _subscriptionLimitCheckerMock;
     private readonly Mock<ILogger<SubmitApplicationHandler>> _loggerMock;
     private readonly SubmitApplicationHandler _handler;
 
@@ -41,6 +42,7 @@ public class SubmitApplicationHandlerTests
         _cloudinaryServiceMock = new Mock<ICloudinaryService>();
         _pdfTextExtractorMock = new Mock<IPdfTextExtractor>();
         _backgroundQueueMock = new Mock<IBackgroundTaskQueue>();
+        _subscriptionLimitCheckerMock = new Mock<ISubscriptionLimitChecker>();
         _loggerMock = new Mock<ILogger<SubmitApplicationHandler>>();
 
         // Setup successful mocks by default for services to avoid null reference in happy paths
@@ -53,12 +55,17 @@ public class SubmitApplicationHandlerTests
             .Setup(x => x.ExtractTextAsync(It.IsAny<Stream>()))
             .ReturnsAsync("John Doe\nSoftware Engineer\n5 years experience in C# and .NET");
 
+        _subscriptionLimitCheckerMock
+            .Setup(x => x.IsProPlanAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
         _handler = new SubmitApplicationHandler(
             _contextMock.Object,
             _currentUserServiceMock.Object,
             _cloudinaryServiceMock.Object,
             _pdfTextExtractorMock.Object,
             _backgroundQueueMock.Object,
+            _subscriptionLimitCheckerMock.Object,
             _loggerMock.Object);
     }
 
@@ -106,6 +113,7 @@ public class SubmitApplicationHandlerTests
         return new JobPosting
         {
             Id = _jobPostingId,
+            EnterpriseId = Guid.NewGuid(),
             JobTitle = "Software Engineer",
             Description = "Looking for a .NET developer",
             Requirements = "[\"C#\", \".NET\", \"SQL\"]",
@@ -464,6 +472,27 @@ public class SubmitApplicationHandlerTests
                     item.JobDescription.Contains(".NET developer")),
                 It.IsAny<CancellationToken>()),
             Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldSkipBackgroundTask_WhenEnterpriseIsFreePlan()
+    {
+        // Arrange
+        SetupAuthenticatedCandidate();
+        SetupFullMocksForSuccess();
+        _subscriptionLimitCheckerMock
+            .Setup(x => x.IsProPlanAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var command = CreateValidCommand();
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        _backgroundQueueMock.Verify(
+            x => x.EnqueueAsync(It.IsAny<CvScoringWorkItem>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]

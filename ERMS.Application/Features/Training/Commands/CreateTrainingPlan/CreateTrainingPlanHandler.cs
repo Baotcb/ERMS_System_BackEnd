@@ -15,15 +15,18 @@ namespace ERMS.Application.Features.Training.Commands.CreateTrainingPlan
         private readonly IERMSDbContext _context;
         private readonly ICurrentUserService _currentUserService;
         private readonly ILogger<CreateTrainingPlanHandler> _logger;
+        private readonly ISubscriptionLimitChecker _subscriptionLimitChecker;
 
         public CreateTrainingPlanHandler(
             IERMSDbContext context,
             ICurrentUserService currentUserService,
-            ILogger<CreateTrainingPlanHandler> logger)
+            ILogger<CreateTrainingPlanHandler> logger,
+            ISubscriptionLimitChecker subscriptionLimitChecker)
         {
             _context = context;
             _currentUserService = currentUserService;
             _logger = logger;
+            _subscriptionLimitChecker = subscriptionLimitChecker;
         }
 
         public async Task<Guid> Handle(
@@ -35,6 +38,12 @@ namespace ERMS.Application.Features.Training.Commands.CreateTrainingPlan
 
             var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
                 ?? throw new Exception("Người dùng không thuộc doanh nghiệp nào");
+
+            var isProPlan = await _subscriptionLimitChecker.IsProPlanAsync(enterpriseId, cancellationToken);
+            if (!isProPlan)
+            {
+                throw new Exception("Tính năng kế hoạch đào tạo chỉ dành cho gói Pro. Vui lòng nâng cấp gói dịch vụ.");
+            }
 
             if (request.EndDate < request.StartDate)
                 throw new Exception("Ngày kết thúc phải sau ngày bắt đầu");

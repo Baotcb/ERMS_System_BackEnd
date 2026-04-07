@@ -912,7 +912,10 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.Property<string>("Currency")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasDefaultValue("VND");
 
                     b.Property<Guid>("EnterpriseId")
                         .HasColumnType("uniqueidentifier");

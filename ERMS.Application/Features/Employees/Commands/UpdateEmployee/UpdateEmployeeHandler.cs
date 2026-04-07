@@ -226,7 +226,7 @@ namespace ERMS.Application.Features.Employees.Commands.UpdateEmployee
                     // Cập nhật IsTrainer flag
                     employee.IsTrainer = string.Equals(normalizedRequestedRole, AppRoles.Trainer, StringComparison.OrdinalIgnoreCase);
 
-                    _logger.LogInformation("Updated role for employee {EmployeeId} to {Role}", employee.Id, normalizedRequestedRole);
+                    _logger.LogInformation("Đã cập nhật vai trò cho nhân viên {EmployeeId} thành {Role}", employee.Id, normalizedRequestedRole);
                 }
 
                 await _context.SaveChangesAsync(cancellationToken);
@@ -238,7 +238,7 @@ namespace ERMS.Application.Features.Employees.Commands.UpdateEmployee
                 throw;
             }
 
-            _logger.LogInformation("Updated employee {EmployeeId}", employee.Id);
+            _logger.LogInformation("Đã cập nhật nhân viên {EmployeeId}", employee.Id);
 
             return true;
         }

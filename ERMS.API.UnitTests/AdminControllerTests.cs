@@ -103,7 +103,7 @@ public class AdminControllerTests
         var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
         okResult.Value.Should().NotBeNull();
         ReadAnonymousProperty<string>(okResult.Value!, "message")
-            .Should().Be("Cap nhat trang thai doanh nghiep thanh cong.");
+            .Should().Be("Cập nhật trạng thái doanh nghiệp thành công.");
         ReadAnonymousProperty<bool>(okResult.Value!, "result").Should().BeTrue();
         _senderMock.Verify(sender => sender.Send(command, It.IsAny<CancellationToken>()), Times.Once);
     }

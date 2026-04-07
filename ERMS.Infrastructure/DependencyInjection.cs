@@ -23,6 +23,7 @@ namespace ERMS.Infrastructure
             // Bind settings using Options Pattern
             services.Configure<CloudinarySettings>(configuration.GetSection("Cloudinary"));
             services.Configure<GeminiSettings>(configuration.GetSection("Gemini"));
+            services.Configure<PayOSSettings>(configuration.GetSection("PayOS"));
 
             // 1. DB Context
             services.AddDbContext<ERMSDbContext>(options =>
@@ -44,6 +45,8 @@ namespace ERMS.Infrastructure
 
 
             services.AddScoped<ICurrentUserService, CurrentUserService>();
+            services.AddScoped<IPayOSService, PayOSService>();
+            services.AddScoped<ISubscriptionLimitChecker, SubscriptionLimitChecker>();
             services.AddSingleton<IAIServiceConfiguration, AIServiceConfiguration>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<ISystemIntegrationStatusService, SystemIntegrationStatusService>();

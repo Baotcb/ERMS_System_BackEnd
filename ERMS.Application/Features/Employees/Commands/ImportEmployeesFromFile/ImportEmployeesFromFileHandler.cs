@@ -268,8 +268,8 @@ namespace ERMS.Application.Features.Employees.Commands.ImportEmployeesFromFile
                         // COMPENSATION: Delete User if Employee creation failed
                         if (user != null)
                         {
-                            _logger.LogWarning("Rolling back user {Email} due to error: {Error}", row.Email, ex.Message);
-                            try { await _userManager.DeleteAsync(user); } catch (Exception delEx) { _logger.LogError(delEx, "Failed to rollback user {Email}", row.Email); }
+                            _logger.LogWarning("Đang hoàn tác người dùng {Email} do lỗi: {Error}", row.Email, ex.Message);
+                            try { await _userManager.DeleteAsync(user); } catch (Exception delEx) { _logger.LogError(delEx, "Không thể hoàn tác người dùng {Email}", row.Email); }
                         }
 
                         result.Errors.Add(new ImportError { RowNumber = row.RowNumber, Email = row.Email, Column = "Import", Message = ex.Message });
@@ -285,17 +285,17 @@ namespace ERMS.Application.Features.Employees.Commands.ImportEmployeesFromFile
                         foreach (var emp in createdEmployees)
                         {
                             try { await SendWelcomeEmailAsync(emp.Email, emp.FullName, emp.Password, enterprise.EnterpriseName); }
-                            catch (Exception ex) { _logger.LogWarning(ex, "Failed email to {Email}", emp.Email); }
+                            catch (Exception ex) { _logger.LogWarning(ex, "Gửi email thất bại đến {Email}", emp.Email); }
                         }
                     });
                 }
 
-                _logger.LogInformation("Imported {SuccessCount}/{TotalRows} employees.", result.SuccessCount, result.TotalRows);
+                _logger.LogInformation("Đã nhập {SuccessCount}/{TotalRows} nhân viên.", result.SuccessCount, result.TotalRows);
                 return result;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error importing employees");
+                _logger.LogError(ex, "Lỗi khi nhập nhân viên");
                 throw;
             }
         }

@@ -26,7 +26,7 @@ public class GeminiAIService : IGeminiAIService
         _settings = options.Value;
 
         if (string.IsNullOrWhiteSpace(_settings.ApiKey))
-            throw new InvalidOperationException("Gemini ApiKey is not configured in appsettings.");
+            throw new InvalidOperationException("Chưa cấu hình Gemini ApiKey trong appsettings.");
             
         var model = string.IsNullOrWhiteSpace(_settings.Model) ? "gemini-2.5-flash" : _settings.Model;
         _geminiApiUrl = $"https://erms-gemini-proxy.baotcq1511.workers.dev/v1beta/models/{model}:generateContent";
@@ -41,7 +41,7 @@ public class GeminiAIService : IGeminiAIService
     {
         var prompt = BuildPrompt(resumeText, jobDescription, requiredSkills, educationLevel, experienceLevel);
 
-        _logger.LogInformation("Sending resume analysis request to Gemini AI");
+        _logger.LogInformation("Đang gửi yêu cầu phân tích CV đến Gemini AI");
 
         var requestBody = new
         {
@@ -71,12 +71,12 @@ public class GeminiAIService : IGeminiAIService
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
-                _logger.LogError("Gemini API error: {StatusCode} - {Error}", response.StatusCode, errorContent);
+                _logger.LogError("Lỗi API Gemini: {StatusCode} - {Error}", response.StatusCode, errorContent);
                 throw new Exception($"Yêu cầu API Gemini thất bại: {response.StatusCode}");
             }
 
             var responseContent = await response.Content.ReadAsStringAsync();
-            _logger.LogDebug("Gemini API response: {Response}", responseContent);
+            _logger.LogDebug("Phản hồi API Gemini: {Response}", responseContent);
             Console.WriteLine("===== RAW GEMINI RESPONSE =====");
             Console.WriteLine(responseContent);
             Console.WriteLine("===============================");
@@ -99,18 +99,18 @@ public class GeminiAIService : IGeminiAIService
 
             result.RawResponse = responseContent;
 
-            _logger.LogInformation("Resume analysis complete. Overall score: {Score}", result.OverallScore);
+            _logger.LogInformation("Phân tích CV hoàn tất. Điểm tổng quan: {Score}", result.OverallScore);
 
             return result;
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogError(ex, "Network error calling Gemini API");
+            _logger.LogError(ex, "Lỗi mạng khi gọi API Gemini");
             throw new Exception("Không thể kết nối đến dịch vụ Gemini AI. Vui lòng thử lại sau.", ex);
         }
         catch (JsonException ex)
         {
-            _logger.LogError(ex, "Failed to parse Gemini AI response as JSON");
+            _logger.LogError(ex, "Không thể phân tích phản hồi Gemini AI dưới dạng JSON");
             throw new Exception("Gemini AI trả về định dạng phản hồi không hợp lệ.", ex);
         }
     }
