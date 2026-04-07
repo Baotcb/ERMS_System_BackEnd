@@ -31,7 +31,7 @@ public sealed class StartQuizHandler
             throw new Exception("Tài khoản chưa được liên kết với hồ sơ nhân viên. Vui lòng liên hệ HR/Admin.");
 
         var courseId = request.CourseId;
-        if (request.CourseId == null) {
+        if (!request.CourseId.HasValue) {
             courseId = _context.Quizzes.FirstOrDefault(x => x.Id == request.QuizId && !x.IsDeleted)?.CourseId
         ?? throw new Exception("Thiếu thông tin khóa học.");
     }
