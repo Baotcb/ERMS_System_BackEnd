@@ -1,6 +1,7 @@
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Recruitment;
 using ERMS.Domain.Constants.Roles;
+using ERMS.Domain.Entities.Recruitment;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -55,6 +56,16 @@ public sealed class PublishJobPostingHandler : IRequestHandler<PublishJobPosting
         jobPosting.PublishedAt = DateTime.UtcNow;
         jobPosting.PublishedById = userId;
         jobPosting.UpdatedAt = DateTime.UtcNow;
+
+        _context.ApprovalHistories.Add(new ApprovalHistory
+        {
+            EntityType = "JobPosting",
+            EntityId = jobPosting.Id,
+            Action = "Published",
+            PreviousStatus = JobPostingStatus.Draft,
+            NewStatus = JobPostingStatus.Published,
+            PerformedById = userId
+        });
 
         await _context.SaveChangesAsync(cancellationToken);
 
