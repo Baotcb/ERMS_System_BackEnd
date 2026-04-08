@@ -3,6 +3,7 @@ using ERMS.Application.Features.Applications.Queries.GetAllApplications;
 using ERMS.Application.Features.Applications.Commands.ConfirmHire;
 using ERMS.Application.Features.Applications.Commands.AssignInterviewer;
 using ERMS.Application.Features.Applications.Commands.ConfirmInterviewSchedule;
+using ERMS.Application.Features.Applications.Commands.CancelOffer;
 using ERMS.Application.Features.Applications.Commands.CreateOffer;
 using ERMS.Application.Features.Applications.Commands.ForwardApplication;
 using ERMS.Application.Features.Applications.Commands.RejectApplication;
@@ -763,6 +764,47 @@ public class ApplicationsController : ControllerBase
         catch (UnauthorizedAccessException ex)
         {
             return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Cancel a job offer (HR Manager only)
+    /// </summary>
+    /// <remarks>
+    /// **Access:** HR Manager only
+    ///
+    /// Allows an HR Manager to cancel an offer that has been sent or accepted.
+    /// The offer must have status "Sent" or "Accepted".
+    /// Upon cancellation, the offer status changes to "Cancelled" and the application stage moves to "Rejected".
+    /// A CancellationReason is required — it is sent to the candidate via email but NOT saved to the database.
+    /// **OfferId and CancellationReason must be provided in the request body.**
+    /// </remarks>
+    /// <param name="command">Cancel command with OfferId and required CancellationReason</param>
+    /// <returns>Updated offer and application status</returns>
+    [HttpPatch("cancel-offer")]
+    [Authorize(Roles = AppRoles.HRManager)]
+    [ProducesResponseType(typeof(CancelOfferResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> CancelOffer([FromBody] CancelOfferCommand command)
+    {
+        try
+        {
+            var result = await _mediator.Send(command);
+            return Ok(new
+            {
+                message = "Offer đã được hủy thành công.",
+                data = result
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
         }
         catch (Exception ex)
         {
