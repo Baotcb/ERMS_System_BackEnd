@@ -3,6 +3,7 @@ using ERMS.Application.Features.JobPostings.Commands.UpdateJobPosting;
 using ERMS.Application.Features.JobPostings.Commands.PublishJobPosting;
 using ERMS.Application.Features.JobPostings.Commands.CloseJobPosting;
 using ERMS.Application.Features.JobPostings.Commands.DeleteJobPosting;
+using ERMS.Application.Features.JobPostings.Commands.GenerateJD;
 using ERMS.Application.Features.JobPostings.Queries.GetJobPostingById;
 using ERMS.Application.Features.JobPostings.Queries.GetJobPostings;
 using ERMS.Domain.Constants.Roles;
@@ -321,6 +322,40 @@ public class JobPostingsController : ControllerBase
                 message = result.Message,
                 data = result
             });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Generate a Job Description using AI based on a PlanDetail
+    /// </summary>
+    /// <remarks>
+    /// **Access:** HRManager only
+    ///
+    /// Calls Gemini AI to generate a structured Vietnamese JD (description, requirements, benefits).
+    /// Response is returned directly to the frontend — nothing is saved to the database.
+    /// </remarks>
+    /// <param name="command">Command with PlanDetailId</param>
+    /// <returns>Generated JD with description, requirements, and benefits</returns>
+    [HttpPost("generate-jd")]
+    [Authorize(Roles = AppRoles.HRManager)]
+    [ProducesResponseType(typeof(GenerateJDResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<GenerateJDResult>> GenerateJD([FromBody] GenerateJDCommand command)
+    {
+        try
+        {
+            var result = await _mediator.Send(command);
+            return Ok(result);
         }
         catch (UnauthorizedAccessException ex)
         {

@@ -1,6 +1,16 @@
 namespace ERMS.Application.Interface;
 
 /// <summary>
+/// DTO for AI-generated Job Description result
+/// </summary>
+public class GenerateJDResultDto
+{
+    public string Description { get; set; } = string.Empty;
+    public string? Requirements { get; set; }
+    public string? Benefits { get; set; }
+}
+
+/// <summary>
 /// DTO for CV screening results from Gemini AI
 /// </summary>
 public class CVScreeningResultDto
@@ -38,4 +48,17 @@ public interface IGeminiAIService
         string requiredSkills,
         string? educationLevel,
         string? experienceLevel);
+
+    /// <summary>
+    /// Generates a professional job description in Vietnamese using Gemini AI
+    /// </summary>
+    Task<GenerateJDResultDto> GenerateJobDescriptionAsync(
+        string positionTitle,
+        string? justification,
+        string? requiredSkills,
+        int? minExperience,
+        int? maxExperience,
+        string? educationLevel,
+        decimal? salaryRangeMin,
+        decimal? salaryRangeMax);
 }
