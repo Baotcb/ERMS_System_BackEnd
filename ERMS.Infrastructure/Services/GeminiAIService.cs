@@ -115,6 +115,140 @@ public class GeminiAIService : IGeminiAIService
         }
     }
 
+    public async Task<GenerateJDResultDto> GenerateJobDescriptionAsync(
+        string positionTitle,
+        string? justification,
+        string? requiredSkills,
+        int? minExperience,
+        int? maxExperience,
+        string? educationLevel,
+        decimal? salaryRangeMin,
+        decimal? salaryRangeMax)
+    {
+        var prompt = BuildJDPrompt(positionTitle, justification, requiredSkills, minExperience, maxExperience, educationLevel, salaryRangeMin, salaryRangeMax);
+
+        _logger.LogInformation("Đang gửi yêu cầu tạo JD đến Gemini AI cho vị trí: {PositionTitle}", positionTitle);
+
+        var requestBody = new
+        {
+            contents = new[]
+            {
+                new
+                {
+                    parts = new[]
+                    {
+                        new { text = prompt }
+                    }
+                }
+            },
+            generationConfig = new
+            {
+                responseMimeType = "application/json",
+                temperature = 0.7
+            }
+        };
+
+        var requestUrl = $"{_geminiApiUrl}?key={_settings.ApiKey}";
+
+        for (var attempt = 1; attempt <= 2; attempt++)
+        {
+            try
+            {
+                using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(30));
+                var response = await _httpClient.PostAsJsonAsync(requestUrl, requestBody, cts.Token);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("Lỗi API Gemini khi tạo JD: {StatusCode} - {Error}", response.StatusCode, errorContent);
+                    throw new Exception($"Yêu cầu API Gemini thất bại: {response.StatusCode}");
+                }
+
+                var responseContent = await response.Content.ReadAsStringAsync();
+                var geminiResponse = JsonSerializer.Deserialize<GeminiResponse>(responseContent);
+                var jsonText = geminiResponse?.Candidates?.FirstOrDefault()?.Content?.Parts?.FirstOrDefault()?.Text;
+
+                if (string.IsNullOrEmpty(jsonText))
+                    throw new Exception("Phản hồi từ Gemini AI trống");
+
+                jsonText = StripMarkdownCodeFences(jsonText);
+
+                var result = JsonSerializer.Deserialize<GenerateJDResultDto>(jsonText, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                }) ?? throw new Exception("Không thể phân tích phản hồi từ Gemini AI");
+
+                _logger.LogInformation("Tạo JD hoàn tất cho vị trí: {PositionTitle}", positionTitle);
+                return result;
+            }
+            catch (HttpRequestException ex) when (attempt < 2)
+            {
+                _logger.LogWarning(ex, "Lỗi mạng khi tạo JD (lần {Attempt}), thử lại...", attempt);
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError(ex, "Lỗi mạng khi gọi Gemini AI để tạo JD");
+                throw new Exception("Không thể tạo JD. Vui lòng thử lại sau.", ex);
+            }
+            catch (Exception ex) when (ex is not InvalidOperationException)
+            {
+                _logger.LogError(ex, "Lỗi khi tạo JD");
+                throw new Exception("Không thể tạo JD. Vui lòng thử lại sau.", ex);
+            }
+        }
+
+        throw new Exception("Không thể tạo JD. Vui lòng thử lại sau.");
+    }
+
+    private static string BuildJDPrompt(
+        string positionTitle,
+        string? justification,
+        string? requiredSkills,
+        int? minExperience,
+        int? maxExperience,
+        string? educationLevel,
+        decimal? salaryRangeMin,
+        decimal? salaryRangeMax)
+    {
+        var experienceText = (minExperience.HasValue || maxExperience.HasValue)
+            ? $"{minExperience ?? 0}-{maxExperience ?? minExperience} năm"
+            : "Không xác định";
+
+        var salaryText = (salaryRangeMin.HasValue || salaryRangeMax.HasValue)
+            ? $"{salaryRangeMin?.ToString("N0") ?? "?"} - {salaryRangeMax?.ToString("N0") ?? "?"} VND"
+            : "Thỏa thuận";
+
+        return $$"""
+            You are an expert HR professional and job description writer.
+            Generate a professional job description in Vietnamese based on the following position details.
+
+            **CRITICAL: ALL output text MUST be written entirely in Vietnamese.**
+
+            ## Position Details:
+            - Position Title: {{positionTitle}}
+            - Justification/Context: {{justification ?? "Không có"}}
+            - Required Skills: {{requiredSkills ?? "Không xác định"}}
+            - Experience: {{experienceText}}
+            - Education Level: {{educationLevel ?? "Không xác định"}}
+            - Salary Range: {{salaryText}}
+
+            ## Instructions:
+            Generate a structured job description with three sections. Be specific, professional, and compelling.
+            - description: 400-800 characters. Company introduction + role overview + key responsibilities.
+            - requirements: 300-600 characters. Technical skills, experience requirements, education, soft skills.
+            - benefits: 200-500 characters. Salary, insurance, training, career growth, work environment.
+
+            **Do not generate discriminatory, illegal, or misleading content.**
+
+            Return your output in the following JSON format ONLY (no additional text):
+            {
+                "description": "...",
+                "requirements": "...",
+                "benefits": "..."
+            }
+            """;
+    }
+
     /// <summary>
     /// Strips markdown code fences from JSON response if present
     /// Handles: ```json {...} ```, ``` {...} ```, or plain {...}
