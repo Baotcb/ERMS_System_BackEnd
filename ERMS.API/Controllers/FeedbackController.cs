@@ -1,9 +1,15 @@
+using ERMS.Application.Features.Feedback.Commands.DeleteReply;
+using ERMS.Application.Features.Feedback.Commands.ReplyFeedback;
 using ERMS.Application.Features.Feedback.Commands.SubmitCourseFeedback;
+using ERMS.Application.Features.Feedback.Commands.UpdateReply;
 using ERMS.Application.Features.Feedback.Queries.GetCourseFeedbacks;
+using ERMS.Application.Features.Feedback.Queries.GetFeedbackReplies;
 using ERMS.Application.Features.Feedback.Queries.GetTrainerFeedbacks;
+using ERMS.Application.Interface;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERMS.API.Controllers
 {
@@ -13,10 +19,14 @@ namespace ERMS.API.Controllers
     public class FeedbackController : ControllerBase
     {
         private readonly IMediator _mediator;
+        private readonly IERMSDbContext _context;
+        private readonly ICurrentUserService _currentUserService;
 
-        public FeedbackController(IMediator mediator)
+        public FeedbackController(IMediator mediator, IERMSDbContext context, ICurrentUserService currentUserService)
         {
             _mediator = mediator;
+            _context = context;
+            _currentUserService = currentUserService;
         }
 
         [HttpPost]
@@ -49,6 +59,95 @@ namespace ERMS.API.Controllers
         {
             var result = await _mediator.Send(new GetTrainerFeedbacksQuery());
             return Ok(result);
+        }
+
+        [HttpGet("check/{courseId}")]
+        public async Task<IActionResult> CheckFeedback(Guid courseId)
+        {
+            var userId = _currentUserService.UserId;
+            if (userId == null) return Ok(new { hasSubmitted = false });
+
+            var employee = await _context.Employees
+                .FirstOrDefaultAsync(x => x.UserId == userId);
+            if (employee == null) return Ok(new { hasSubmitted = false });
+
+            var exists = await _context.CourseFeedbacks
+                .AnyAsync(x => x.CourseId == courseId &&
+                               x.EmployeeId == employee.Id &&
+                               !x.IsDeleted);
+
+            return Ok(new { hasSubmitted = exists });
+        }
+
+        [HttpPost("{feedbackId}/replies")]
+        public async Task<IActionResult> ReplyFeedback(
+    int feedbackId,
+    [FromBody] ReplyFeedbackCommand command)
+        {
+            try
+            {
+                command.FeedbackId = feedbackId;
+
+                var result = await _mediator.Send(command);
+
+                return Ok(new
+                {
+                    replyId = result,
+                    message = "Phản hồi thành công"
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("{feedbackId}/replies")]
+        public async Task<IActionResult> GetReplies(int feedbackId)
+        {
+            var result = await _mediator.Send(new GetFeedbackRepliesQuery
+            {
+                FeedbackId = feedbackId
+            });
+
+            return Ok(result);
+        }
+
+        [HttpPut("replies/{replyId}")]
+        public async Task<IActionResult> UpdateReply(
+    int replyId,
+    [FromBody] UpdateReplyCommand command)
+        {
+            try
+            {
+                command.ReplyId = replyId;
+
+                await _mediator.Send(command);
+
+                return Ok(new { message = "Updated successfully" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpDelete("replies/{replyId}")]
+        public async Task<IActionResult> DeleteReply(int replyId)
+        {
+            try
+            {
+                await _mediator.Send(new DeleteReplyCommand
+                {
+                    ReplyId = replyId
+                });
+
+                return Ok(new { message = "Deleted successfully" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }

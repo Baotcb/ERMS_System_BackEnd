@@ -1,0 +1,160 @@
+using ERMS.Application.Interface;
+using ERMS.Domain.Entities.Training;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+
+namespace ERMS.Application.Features.Quizzes.Commands.StartQuiz;
+
+public sealed class StartQuizHandler
+    : IRequestHandler<StartQuizCommand, StartQuizResult>
+{
+    private readonly IERMSDbContext _context;
+    private readonly ICurrentUserService _currentUserService;
+
+    public StartQuizHandler(
+        IERMSDbContext context,
+        ICurrentUserService currentUserService)
+    {
+        _context = context;
+        _currentUserService = currentUserService;
+    }
+
+    public async Task<StartQuizResult> Handle(StartQuizCommand request, CancellationToken cancellationToken)
+    {
+        var userId = _currentUserService.UserId;
+        if (userId == null)
+            throw new UnauthorizedAccessException("Người dùng chưa được xác thực");
+        var employee = await _context.Employees
+            .FirstOrDefaultAsync(x => x.UserId == userId, cancellationToken);
+
+        if (employee == null)
+            throw new Exception("Tài khoản chưa được liên kết với hồ sơ nhân viên. Vui lòng liên hệ HR/Admin.");
+        var courseId = Guid.Empty;
+
+        if (!request.CourseId.HasValue)
+        {
+            courseId = _context.Quizzes.FirstOrDefault(x => x.Id == request.QuizId && !x.IsDeleted)?.CourseId
+        ?? throw new Exception("Thiếu thông tin khóa học.");
+        }
+        else {
+            courseId = request.CourseId.Value;
+        }
+
+        var enrollment = await _context.Enrollments
+            .FirstOrDefaultAsync(x => x.EmployeeId == employee.Id
+                && x.CourseId == courseId
+                && !x.IsDeleted, cancellationToken);
+
+        if (enrollment == null)
+            throw new Exception("Người dùng chưa đăng ký khóa học");
+
+        Quiz? quiz = null;
+
+        // Ưu tiên QuizId
+        if (request.QuizId != null)
+        {
+            quiz = await _context.Quizzes
+                .Include(x => x.Questions)
+                .FirstOrDefaultAsync(x =>
+                    x.Id == request.QuizId &&
+                    x.IsActive &&
+                    !x.IsDeleted,
+                    cancellationToken);
+        }
+        else if (request.CourseId != null)
+        {
+            quiz = await _context.Quizzes
+                .Include(x => x.Questions)
+                .FirstOrDefaultAsync(x =>
+                    x.CourseId == request.CourseId &&
+                    x.IsActive &&
+                    !x.IsDeleted,
+                    cancellationToken);
+        }
+        else
+        {
+            throw new Exception("Phải cung cấp QuizId hoặc CourseId");
+        }
+
+        if (quiz == null)
+            throw new Exception("Không tìm thấy bài kiểm tra");
+
+
+        // CHECK LESSON COMPLETION
+
+        var totalLessons = await _context.Lessons
+            .CountAsync(x =>
+                x.CourseId == quiz.CourseId &&
+                !x.IsDeleted,
+                cancellationToken);
+
+        var completedLessons = await _context.LessonProgresses
+            .Where(x =>
+                x.EnrollmentId == enrollment.Id &&
+                x.Status == "Completed")
+            .Join(
+                _context.Lessons,
+                p => p.LessonId,
+                l => l.Id,
+                (p, l) => l
+            )
+            .CountAsync(x =>
+                x.CourseId == quiz.CourseId &&
+                !x.IsDeleted,
+                cancellationToken);
+
+        if (totalLessons > 0 && completedLessons < totalLessons)
+        {
+            throw new Exception(
+                $"Bạn phải hoàn thành tất cả các bài học trong khóa học trước khi làm bài kiểm tra");
+        }
+
+        var attemptCount = await _context.QuizAttempts
+            .CountAsync(x => x.QuizId == quiz.Id && x.EnrollmentId == enrollment.Id, cancellationToken);
+
+        var lastAttempt = await _context.QuizAttempts
+    .Where(x => x.QuizId == quiz.Id && x.EnrollmentId == enrollment.Id)
+    .OrderByDescending(x => x.StartedAt)
+    .FirstOrDefaultAsync(cancellationToken);
+
+        if (quiz.MaxAttempts.HasValue && attemptCount >= quiz.MaxAttempts)
+        {
+            if (lastAttempt != null)
+            {
+                var nextAvailableTime = lastAttempt.StartedAt.AddMinutes(quiz.TimeLimitMinutes.Value);
+
+                if (DateTime.UtcNow < nextAvailableTime)
+                {
+                    var remaining = nextAvailableTime - DateTime.UtcNow;
+
+                    throw new Exception(
+                        $"Bạn đã đạt tối đa số lần làm bài. Vui lòng thử lại sau {remaining.Minutes} phút {remaining.Seconds} giây.");
+                }
+            }
+        }
+
+        var attempt = new QuizAttempt
+        {
+            Id = Guid.NewGuid(),
+            QuizId = quiz.Id,
+            EnrollmentId = enrollment.Id,
+            AttemptNumber = attemptCount + 1,
+            TotalQuestions = quiz.Questions.Count,
+            StartedAt = DateTime.UtcNow,
+            Status = "InProgress"
+        };
+
+        _context.QuizAttempts.Add(attempt);
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return new StartQuizResult
+        {
+            AttemptId = attempt.Id,
+            TimeLimitMinutes = quiz.TimeLimitMinutes,
+            MaxAttempts = quiz.MaxAttempts,
+            PassingScore = quiz.PassingScore,
+            TotalQuestions = quiz.Questions.Count
+        };
+    }
+}

@@ -57,7 +57,9 @@ namespace ERMS.Application.Features.Workshop.Commands.ConfirmWorkshop
                 EvidencePhotoUrls = JsonSerializer.Serialize(request.EvidencePhotoUrls),
                 Notes = request.Notes?.Trim(),
                 ConfirmedAt = DateTime.UtcNow,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                IsDeleted = false
+
             };
 
             _context.WorkshopConfirmations.Add(confirmation);

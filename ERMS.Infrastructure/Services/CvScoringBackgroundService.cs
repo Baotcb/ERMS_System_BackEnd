@@ -54,7 +54,7 @@ public sealed class CvScoringBackgroundService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("CV Scoring Background Service is starting.");
+        _logger.LogInformation("Dịch vụ nền tính điểm CV đang khởi động.");
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -65,14 +65,14 @@ public sealed class CvScoringBackgroundService : BackgroundService
                 workItem = await _queue.DequeueAsync(stoppingToken);
 
                 _logger.LogInformation(
-                    "Processing CV scoring for Application {ApplicationId}.",
+                    "Đang xử lý tính điểm CV cho hồ sơ {ApplicationId}.",
                     workItem.ApplicationId);
 
                 using var scope = _scopeFactory.CreateScope();
                 var dbContext = scope.ServiceProvider.GetRequiredService<IERMSDbContext>();
-                var geminiService = scope.ServiceProvider.GetRequiredService<IGeminiAIService>();
+                var aiService = scope.ServiceProvider.GetRequiredService<IAIService>();
 
-                var aiResult = await geminiService.AnalyzeResumeAsync(
+                var aiResult = await aiService.AnalyzeResumeAsync(
                     workItem.ResumeText,
                     workItem.JobDescription,
                     workItem.RequiredSkills,
@@ -95,14 +95,14 @@ public sealed class CvScoringBackgroundService : BackgroundService
                     Summary = aiResult.Summary,
                     RawResponse = aiResult.RawResponse,
                     ProcessedAt = DateTime.UtcNow,
-                    AIModel = "gemini-2.5-flash"
+                    AIModel = "llama-3.3-70b-versatile"
                 };
 
                 dbContext.CVScreeningResults.Add(screeningResult);
                 await dbContext.SaveChangesAsync(CancellationToken.None);
 
                 _logger.LogInformation(
-                    "CV scoring completed for Application {ApplicationId}. Overall Score: {Score}",
+                    "Tính điểm CV hoàn tất cho hồ sơ {ApplicationId}. Điểm tổng quan: {Score}",
                     workItem.ApplicationId, aiResult.OverallScore);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -114,13 +114,13 @@ public sealed class CvScoringBackgroundService : BackgroundService
             {
                 _logger.LogError(
                     ex,
-                    "CV scoring failed for Application {ApplicationId}. The application was already saved — HR can trigger a manual rescore.",
+                    "Tính điểm CV thất bại cho hồ sơ {ApplicationId}. Hồ sơ đã được lưu — HR có thể kích hoạt tính điểm lại thủ công.",
                     workItem?.ApplicationId);
 
                 // Continue processing the next item in the queue
             }
         }
 
-        _logger.LogInformation("CV Scoring Background Service is stopping.");
+        _logger.LogInformation("Dịch vụ nền tính điểm CV đang dừng lại.");
     }
 }

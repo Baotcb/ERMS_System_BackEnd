@@ -8,11 +8,11 @@ using System.Text;
 
 namespace ERMS.Application.Features.Auth.Commands.ResetPassword
 {
-    public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand, string>
+    public class ResetPasswordHandler : IRequestHandler<ResetPasswordCommand, string>
     {
         private readonly UserManager<User> _userManager;
 
-        public ResetPasswordCommandHandler(UserManager<User> userManager)
+        public ResetPasswordHandler(UserManager<User> userManager)
         {
             _userManager = userManager;
         }

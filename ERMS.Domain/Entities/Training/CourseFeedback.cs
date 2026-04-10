@@ -1,4 +1,4 @@
-﻿using ERMS.Domain.Common;
+using ERMS.Domain.Common;
 using ERMS.Domain.Entities.Organization;
 using System;
 using System.Collections.Generic;
@@ -15,8 +15,10 @@ namespace ERMS.Domain.Entities.Training
         public string? Comment { get; set; }
         public bool IsAnonymous { get; set; }
         public bool IsDeleted { get; set; }
+        public DateTime? DeletedAt { get; set; }
 
         public virtual Course Course { get; set; } = null!;
         public virtual Employee Employee { get; set; } = null!;
+        public ICollection<CourseFeedbackReply> Replies { get; set; } = new List<CourseFeedbackReply>();
     }
 }

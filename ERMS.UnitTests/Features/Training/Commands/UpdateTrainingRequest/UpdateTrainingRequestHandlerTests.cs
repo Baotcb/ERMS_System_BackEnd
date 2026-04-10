@@ -130,7 +130,7 @@ namespace ERMS.UnitTests.Features.Training.Commands.UpdateTrainingRequest
                 await _handler.Handle(command, CancellationToken.None);
 
             await act.Should().ThrowAsync<Exception>()
-                .WithMessage("Only requests requiring revision can be updated");
+                .WithMessage("Chỉ có thể cập nhật các yêu cầu đang chờ duyệt, đã bị từ chối hoặc cần chỉnh sửa.");
         }
 
         [Fact]

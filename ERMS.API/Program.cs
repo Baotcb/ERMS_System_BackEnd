@@ -11,6 +11,15 @@ using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+   
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 Env.Load();
 // Add services to the container.
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -20,6 +29,8 @@ builder.Services.AddWebApi(builder.Configuration);
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
+
+app.UseForwardedHeaders();
 
 // Configure the HTTP request pipeline.
 app.UseForwardedHeaders();
@@ -55,7 +66,11 @@ app.UseExceptionHandler(errorApp =>
     });
 });
 
+app.UseCors("AllowFrontend");
 
+app.UseRateLimiter();
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapOpenApi();
 app.MapScalarApiReference(options => {
     options.Title = "ERMS System API";
@@ -63,7 +78,7 @@ app.MapScalarApiReference(options => {
     options.ShowSidebar = true;
 });
 
-app.UseCors("AllowFrontend");
+
 
 
 if (!app.Environment.IsDevelopment())
@@ -71,9 +86,6 @@ if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 
-app.UseRateLimiter(); 
-app.UseAuthentication();
-app.UseAuthorization();
 
 app.MapHealthChecks("/health").AllowAnonymous();
 app.MapMethods("/db-health", new[] { "GET", "HEAD" }, async (IServiceProvider sp) =>

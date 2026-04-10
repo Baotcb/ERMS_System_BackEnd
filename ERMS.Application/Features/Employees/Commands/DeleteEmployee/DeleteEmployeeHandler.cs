@@ -59,7 +59,7 @@ namespace ERMS.Application.Features.Employees.Commands.DeleteEmployee
 
             await _context.SaveChangesAsync(cancellationToken);
 
-            _logger.LogInformation("Deleted employee {EmployeeId}", employee.Id);
+            _logger.LogInformation("Đã xóa nhân viên {EmployeeId}", employee.Id);
 
             return true;
         }

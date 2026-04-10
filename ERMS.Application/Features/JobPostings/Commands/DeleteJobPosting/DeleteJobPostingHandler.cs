@@ -63,7 +63,7 @@ public sealed class DeleteJobPostingHandler : IRequestHandler<DeleteJobPostingCo
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Soft-deleted JobPosting {JobPostingId}", request.Id);
+        _logger.LogInformation("Đã xóa mềm bài tuyển dụng {JobPostingId}", request.Id);
         return Unit.Value;
     }
 }

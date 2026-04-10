@@ -30,7 +30,7 @@ namespace ERMS.Domain.Constants
             },
             ["Position"] = new[] {
                 "position", "job title", "title", "chức vụ",
-                "chuc vu", "vị trí", "vi tri", "chuc danh"
+                "chuc vu", "vị trí", "vi tri", "chức danh", "chuc danh"
             },
             ["Password"] = new[] {
                 "password", "pass", "mật khẩu", "mat khau"

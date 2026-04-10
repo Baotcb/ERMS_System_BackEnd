@@ -14,7 +14,7 @@ namespace ERMS.Application.Features.Enrollments.Commands.AssignEmployeesToCourse
 
     public class AssignEmployeesRequest
     {
-        public string MeetUrl { get; set; } = string.Empty;
+        public string? MeetUrl { get; set; } = string.Empty;
 
         public List<Guid> EmployeeIds { get; set; } = new();
     }

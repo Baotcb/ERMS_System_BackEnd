@@ -24,6 +24,11 @@ public sealed class JobPostingDetailDto
     public int ViewCount { get; set; }
     public int ApplicationCount { get; set; }
     public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+
+    // Creator / publisher names
+    public string? CreatedByName { get; set; }
+    public string? PublishedByName { get; set; }
 
     // Flattened navigation
     public string DepartmentName { get; set; } = null!;
@@ -32,4 +37,20 @@ public sealed class JobPostingDetailDto
     public string? CampaignName { get; set; }
     public int? QuotaUsed { get; set; }
     public int? QuotaTotal { get; set; }
+
+    // Application pipeline breakdown (all 10 stages)
+    public int TotalApplications { get; set; }
+    public int AppliedCount { get; set; }
+    public int ReviewingCount { get; set; }
+    public int ShortlistedCount { get; set; }
+    public int InterviewScheduledCount { get; set; }
+    public int InterviewedCount { get; set; }
+    public int OfferProcessingCount { get; set; }
+    public int OfferedCount { get; set; }
+    public int HiredCount { get; set; }
+    public int RejectedCount { get; set; }
+    public int WithdrawnCount { get; set; }
+
+    // Audit history
+    public List<JobPostingHistoryDto>? History { get; set; }
 }

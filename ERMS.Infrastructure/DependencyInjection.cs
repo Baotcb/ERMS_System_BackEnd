@@ -23,6 +23,8 @@ namespace ERMS.Infrastructure
             // Bind settings using Options Pattern
             services.Configure<CloudinarySettings>(configuration.GetSection("Cloudinary"));
             services.Configure<GeminiSettings>(configuration.GetSection("Gemini"));
+            services.Configure<GroqSettings>(configuration.GetSection("Groq"));
+            services.Configure<PayOSSettings>(configuration.GetSection("PayOS"));
 
             // 1. DB Context
             services.AddDbContext<ERMSDbContext>(options =>
@@ -44,15 +46,27 @@ namespace ERMS.Infrastructure
 
 
             services.AddScoped<ICurrentUserService, CurrentUserService>();
+            services.AddScoped<IPayOSService, PayOSService>();
+            services.AddScoped<ISubscriptionLimitChecker, SubscriptionLimitChecker>();
+            // services.AddSingleton<IAIServiceConfiguration, AIServiceConfiguration>(); // Gemini — kept for reference
+            services.AddSingleton<IAIServiceConfiguration, GroqAIServiceConfiguration>();
             services.AddScoped<ITokenService, TokenService>();
+            services.AddScoped<ISystemIntegrationStatusService, SystemIntegrationStatusService>();
             services.AddTransient<IEmailService, EmailService>();
+            services.AddTransient<IRejectionEmailService, RejectionEmailService>();
             services.AddScoped<IExcelParserService, ExcelParserService>();
             services.AddScoped<IGoogleAuthService, GoogleAuthService>();
+            // services.AddHttpClient<IGeminiProbeService, GeminiProbeService>(client => { client.Timeout = TimeSpan.FromSeconds(10); }); // Gemini — kept for reference
+            services.AddHttpClient<IAIProbeService, GroqProbeService>(client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(10);
+            });
 
             // CV Processing Services
             services.AddScoped<ICloudinaryService, CloudinaryService>();
             services.AddScoped<IPdfTextExtractor, PdfTextExtractor>();
-            services.AddHttpClient<IGeminiAIService, GeminiAIService>();
+            // services.AddHttpClient<IGeminiAIService, GeminiAIService>(); // Gemini — kept for reference
+            services.AddHttpClient<IAIService, GroqAIService>();
 
 
 

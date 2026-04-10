@@ -1,3 +1,4 @@
+using System.Text.Json;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Application;
 using ERMS.Domain.Constants.Roles;
@@ -5,30 +6,34 @@ using ERMS.Domain.Entities.Application;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using ApplicationEntity = ERMS.Domain.Entities.Application.Application;
 
 namespace ERMS.Application.Features.Applications.Commands.SubmitFinalDecision;
 
 /// <summary>
 /// Handler for Stage 2: Department Head submits the final decision on an interview.
 /// Updates Interview status to Completed and triggers the workflow branch:
-/// - Fail → Application.Stage = Rejected
-/// - Passed → Application.Stage = OfferProcessing
-/// - NextRound → Creates new Interview with Round + 1
+/// - Fail -> Application.Stage = Rejected
+/// - Passed -> Application.Stage = OfferProcessing
+/// - NextRound -> Creates new Interview with Round + 1
 /// </summary>
 public sealed class SubmitFinalDecisionHandler : IRequestHandler<SubmitFinalDecisionCommand, SubmitFinalDecisionResult>
 {
     private readonly IERMSDbContext _context;
     private readonly ICurrentUserService _currentUserService;
     private readonly ILogger<SubmitFinalDecisionHandler> _logger;
+    private readonly IRejectionEmailService _rejectionEmailService;
 
     public SubmitFinalDecisionHandler(
         IERMSDbContext context,
         ICurrentUserService currentUserService,
-        ILogger<SubmitFinalDecisionHandler> logger)
+        ILogger<SubmitFinalDecisionHandler> logger,
+        IRejectionEmailService rejectionEmailService)
     {
         _context = context;
         _currentUserService = currentUserService;
         _logger = logger;
+        _rejectionEmailService = rejectionEmailService;
     }
 
     public async Task<SubmitFinalDecisionResult> Handle(SubmitFinalDecisionCommand request, CancellationToken cancellationToken)
@@ -52,10 +57,15 @@ public sealed class SubmitFinalDecisionHandler : IRequestHandler<SubmitFinalDeci
         var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
             ?? throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
 
-        // 5. Load the interview with Application, JobPosting, and Participants
+        // 5. Load the interview with related application data
         var interview = await _context.Interviews
             .Include(i => i.Application)
                 .ThenInclude(a => a.JobPosting)
+            .Include(i => i.Application)
+                .ThenInclude(a => a.Candidate)
+                    .ThenInclude(c => c.User)
+            .Include(i => i.Application)
+                .ThenInclude(a => a.CVScreeningResult)
             .Include(i => i.Participants)
             .FirstOrDefaultAsync(i =>
                 i.Id == request.InterviewId &&
@@ -76,22 +86,27 @@ public sealed class SubmitFinalDecisionHandler : IRequestHandler<SubmitFinalDeci
             throw new UnauthorizedAccessException("Bạn chỉ có thể đưa ra quyết định cho các buổi phỏng vấn trong phòng ban mình.");
         }
 
-        // 8. Validate interview is in 'Scheduled' status
+        // 8. Validate interview is in Scheduled status
         if (!interview.Status.Equals(InterviewStatus.Scheduled, StringComparison.OrdinalIgnoreCase))
         {
             throw new Exception($"Không thể gửi quyết định. Trạng thái phỏng vấn là '{interview.Status}', yêu cầu '{InterviewStatus.Scheduled}'.");
         }
 
-        // BEGIN TRANSACTION
+        var decision = InterviewDecision.ValidDecisions
+            .First(validDecision => validDecision.Equals(request.Decision, StringComparison.OrdinalIgnoreCase));
+
+        var overallFeedback = request.OverallFeedback?.Trim();
+        var note = request.Note?.Trim();
+
         await using var transaction = await _context.BeginTransactionAsync(cancellationToken);
 
         try
         {
-            // 9. Update Interview fields
-            interview.Decision = request.Decision;
+            // 9. Update interview fields
+            interview.Decision = decision;
             interview.OverallRating = request.OverallRating;
-            interview.OverallFeedback = request.OverallFeedback?.Trim();
-            interview.Note = request.Note?.Trim();
+            interview.OverallFeedback = overallFeedback;
+            interview.Note = note;
             interview.CompletedAt = DateTime.UtcNow;
             interview.Status = InterviewStatus.Completed;
             interview.UpdatedAt = DateTime.UtcNow;
@@ -100,12 +115,13 @@ public sealed class SubmitFinalDecisionHandler : IRequestHandler<SubmitFinalDeci
             Guid? newInterviewId = null;
             var application = interview.Application;
 
-            switch (request.Decision)
+            switch (decision)
             {
                 case InterviewDecision.Fail:
                     application.Stage = ApplicationStage.Rejected;
                     application.RejectedAt = DateTime.UtcNow;
                     application.RejectedById = userId;
+                    application.RejectionReason = overallFeedback;
                     break;
 
                 case InterviewDecision.Passed:
@@ -125,7 +141,6 @@ public sealed class SubmitFinalDecisionHandler : IRequestHandler<SubmitFinalDeci
                         CreatedAt = DateTime.UtcNow
                     };
 
-                    // Determine which interviewers to use
                     var customInterviewersProvided = request.NextRoundInterviewerIds != null && request.NextRoundInterviewerIds.Count > 0;
                     var interviewerIdsToUse = customInterviewersProvided
                         ? request.NextRoundInterviewerIds!
@@ -133,7 +148,6 @@ public sealed class SubmitFinalDecisionHandler : IRequestHandler<SubmitFinalDeci
 
                     if (customInterviewersProvided)
                     {
-                        // Validate the newly provided interviewers exist and belong to the same enterprise
                         var validEmployeeIds = await _context.Employees
                             .Where(e => request.NextRoundInterviewerIds!.Contains(e.Id) && e.EnterpriseId == enterpriseId && !e.IsDeleted)
                             .Select(e => e.Id)
@@ -141,16 +155,18 @@ public sealed class SubmitFinalDecisionHandler : IRequestHandler<SubmitFinalDeci
 
                         if (validEmployeeIds.Count != request.NextRoundInterviewerIds!.Count)
                         {
-                            var missingIds = request.NextRoundInterviewerIds.Where(id => !validEmployeeIds.Contains(id)).ToList();
+                            var missingIds = request.NextRoundInterviewerIds
+                                .Where(id => !validEmployeeIds.Contains(id))
+                                .ToList();
+
                             throw new Exception($"Một số người phỏng vấn mới không được tìm thấy hoặc không thuộc doanh nghiệp của bạn: {string.Join(", ", missingIds)}");
                         }
                     }
 
-                    // Assign participants
                     foreach (var employeeId in interviewerIdsToUse)
                     {
                         var existingParticipant = interview.Participants.FirstOrDefault(p => p.EmployeeId == employeeId);
-                        
+
                         nextInterview.Participants.Add(new InterviewParticipant
                         {
                             Id = Guid.CreateVersion7(),
@@ -173,14 +189,23 @@ public sealed class SubmitFinalDecisionHandler : IRequestHandler<SubmitFinalDeci
             await _context.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
+            if (decision == InterviewDecision.Fail)
+            {
+                await TrySendRejectionEmailAsync(application, overallFeedback ?? string.Empty, cancellationToken);
+            }
+
             _logger.LogInformation(
                 "Final decision '{Decision}' submitted for Interview {InterviewId}, Application {ApplicationId} by DeptHead {UserId}. New Stage: {Stage}",
-                request.Decision, interview.Id, application.Id, userId, application.Stage);
+                decision,
+                interview.Id,
+                application.Id,
+                userId,
+                application.Stage);
 
             return new SubmitFinalDecisionResult
             {
                 InterviewId = interview.Id,
-                Decision = request.Decision,
+                Decision = decision,
                 ApplicationStage = application.Stage,
                 NewInterviewId = newInterviewId
             };
@@ -188,8 +213,56 @@ public sealed class SubmitFinalDecisionHandler : IRequestHandler<SubmitFinalDeci
         catch (Exception ex)
         {
             await transaction.RollbackAsync(cancellationToken);
-            _logger.LogError(ex, "Failed to submit final decision for Interview {InterviewId}", request.InterviewId);
+            _logger.LogError(ex, "Không thể gửi quyết định cuối cùng cho cuộc phỏng vấn {InterviewId}", request.InterviewId);
             throw;
+        }
+    }
+
+    private async Task TrySendRejectionEmailAsync(ApplicationEntity application, string rejectionReason, CancellationToken cancellationToken)
+    {
+        var candidateUser = application.Candidate?.User;
+        if (candidateUser == null || string.IsNullOrWhiteSpace(candidateUser.Email))
+        {
+            _logger.LogWarning(
+                "Skipped rejection email for Application {ApplicationId} because candidate email is missing.",
+                application.Id);
+            return;
+        }
+
+        try
+        {
+            await _rejectionEmailService.SendRejectionEmailAsync(
+                new RejectionEmailContext
+                {
+                    CandidateEmail = candidateUser.Email,
+                    CandidateName = candidateUser.FullName,
+                    JobTitle = application.JobPosting.JobTitle,
+                    RejectionReason = rejectionReason,
+                    SkillGaps = ParseJsonArray(application.CVScreeningResult?.MissingSkills),
+                    Concerns = ParseJsonArray(application.CVScreeningResult?.Concerns)
+                },
+                cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Không thể gửi email từ chối cho hồ sơ {ApplicationId}", application.Id);
+        }
+    }
+
+    private static string[]? ParseJsonArray(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return null;
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<string[]>(json);
+        }
+        catch
+        {
+            return null;
         }
     }
 }

@@ -22,7 +22,7 @@ namespace ERMS.Application.Features.Enterprises.Commands.ViewPaymentHistoryEnter
         public string PlanName { get; set; } = null!;
         public string? PreviousPlanName { get; set; }
         public decimal Amount { get; set; }
-        public string Currency { get; set; } = "USD";
+        public string Currency { get; set; } = "VND";
         public string? PaymentMethod { get; set; }
         public DateTime PeriodStartDate { get; set; }
         public DateTime PeriodEndDate { get; set; }

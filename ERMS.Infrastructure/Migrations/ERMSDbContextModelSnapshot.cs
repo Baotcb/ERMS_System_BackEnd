@@ -800,6 +800,96 @@ namespace ERMS.Infrastructure.Migrations
                     b.ToTable("OwnershipTransfers");
                 });
 
+            modelBuilder.Entity("ERMS.Domain.Entities.Enterprise.PaymentOrder", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CheckoutUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasDefaultValue("VND");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasDefaultValue("");
+
+                    b.Property<Guid>("EnterpriseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long>("OrderCode")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("PaidAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PayOSReference")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("PaymentLinkId")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid?>("PreviousPlanId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("Pending");
+
+                    b.Property<Guid>("SubscriptionPlanId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("EnterpriseId");
+
+                    b.HasIndex("OrderCode")
+                        .IsUnique();
+
+                    b.HasIndex("PaymentLinkId");
+
+                    b.HasIndex("PreviousPlanId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("SubscriptionPlanId");
+
+                    b.ToTable("PaymentOrders");
+                });
+
             modelBuilder.Entity("ERMS.Domain.Entities.Enterprise.SubscriptionHistory", b =>
                 {
                     b.Property<Guid>("Id")
@@ -822,7 +912,10 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.Property<string>("Currency")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasDefaultValue("VND");
 
                     b.Property<Guid>("EnterpriseId")
                         .HasColumnType("uniqueidentifier");
@@ -1080,9 +1173,6 @@ namespace ERMS.Infrastructure.Migrations
                     b.Property<int?>("DepartmentId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("DepartmentId1")
-                        .HasColumnType("int");
-
                     b.Property<string>("EmployeeCode")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -1132,8 +1222,6 @@ namespace ERMS.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DepartmentId");
-
-                    b.HasIndex("DepartmentId1");
 
                     b.HasIndex("EnterpriseId");
 
@@ -1750,6 +1838,60 @@ namespace ERMS.Infrastructure.Migrations
                     b.ToTable("Notifications");
                 });
 
+            modelBuilder.Entity("ERMS.Domain.Entities.System.Report", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ActionTaken")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("AdminNote")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("EntityId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("ReportedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("ResolvedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReportedById");
+
+                    b.HasIndex("ResolvedById");
+
+                    b.ToTable("Reports");
+                });
+
             modelBuilder.Entity("ERMS.Domain.Entities.Training.Course", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1758,6 +1900,9 @@ namespace ERMS.Infrastructure.Migrations
 
                     b.Property<string>("CompletionCriteria")
                         .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ContentManagerEmail")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CourseCode")
@@ -1860,6 +2005,9 @@ namespace ERMS.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<Guid>("EmployeeId")
                         .HasColumnType("uniqueidentifier");
 
@@ -1867,7 +2015,9 @@ namespace ERMS.Infrastructure.Migrations
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<int>("TrainerRating")
                         .HasColumnType("int");
@@ -1882,6 +2032,54 @@ namespace ERMS.Infrastructure.Migrations
                     b.HasIndex("EmployeeId");
 
                     b.ToTable("CourseFeedbacks");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.CourseFeedbackReply", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("FeedbackId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsAnonymous")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("ParentReplyId")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ReplyBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ReplyByAvatarUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReplyByName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReplyContent")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FeedbackId");
+
+                    b.HasIndex("ParentReplyId");
+
+                    b.ToTable("CourseFeedbackReplies");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.CourseSkill", b =>
@@ -2454,6 +2652,9 @@ namespace ERMS.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("EvidencePhotoUrls")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -2461,7 +2662,9 @@ namespace ERMS.Infrastructure.Migrations
                         .HasDefaultValue("[]");
 
                     b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("Notes")
                         .HasColumnType("nvarchar(max)");
@@ -2870,6 +3073,40 @@ namespace ERMS.Infrastructure.Migrations
                     b.Navigation("ToUser");
                 });
 
+            modelBuilder.Entity("ERMS.Domain.Entities.Enterprise.PaymentOrder", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Enterprise.Enterprise", "Enterprise")
+                        .WithMany()
+                        .HasForeignKey("EnterpriseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Enterprise.SubscriptionPlan", "PreviousPlan")
+                        .WithMany()
+                        .HasForeignKey("PreviousPlanId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERMS.Domain.Entities.Enterprise.SubscriptionPlan", "SubscriptionPlan")
+                        .WithMany()
+                        .HasForeignKey("SubscriptionPlanId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Enterprise");
+
+                    b.Navigation("PreviousPlan");
+
+                    b.Navigation("SubscriptionPlan");
+                });
+
             modelBuilder.Entity("ERMS.Domain.Entities.Enterprise.SubscriptionHistory", b =>
                 {
                     b.HasOne("ERMS.Domain.Entities.Enterprise.Enterprise", "Enterprise")
@@ -2931,13 +3168,9 @@ namespace ERMS.Infrastructure.Migrations
             modelBuilder.Entity("ERMS.Domain.Entities.Organization.Employee", b =>
                 {
                     b.HasOne("ERMS.Domain.Entities.Organization.Department", "Department")
-                        .WithMany()
+                        .WithMany("Employees")
                         .HasForeignKey("DepartmentId")
                         .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("ERMS.Domain.Entities.Organization.Department", null)
-                        .WithMany("Employees")
-                        .HasForeignKey("DepartmentId1");
 
                     b.HasOne("ERMS.Domain.Entities.Enterprise.Enterprise", "Enterprise")
                         .WithMany()
@@ -3178,6 +3411,24 @@ namespace ERMS.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("ERMS.Domain.Entities.System.Report", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "ReportedBy")
+                        .WithMany()
+                        .HasForeignKey("ReportedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "ResolvedBy")
+                        .WithMany()
+                        .HasForeignKey("ResolvedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ReportedBy");
+
+                    b.Navigation("ResolvedBy");
+                });
+
             modelBuilder.Entity("ERMS.Domain.Entities.Training.Course", b =>
                 {
                     b.HasOne("ERMS.Domain.Entities.Enterprise.Enterprise", "Enterprise")
@@ -3212,6 +3463,24 @@ namespace ERMS.Infrastructure.Migrations
                     b.Navigation("Course");
 
                     b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.CourseFeedbackReply", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Training.CourseFeedback", "Feedback")
+                        .WithMany("Replies")
+                        .HasForeignKey("FeedbackId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Training.CourseFeedbackReply", "ParentReply")
+                        .WithMany("ChildReplies")
+                        .HasForeignKey("ParentReplyId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Feedback");
+
+                    b.Navigation("ParentReply");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.CourseSkill", b =>
@@ -3572,6 +3841,16 @@ namespace ERMS.Infrastructure.Migrations
                     b.Navigation("Quiz");
 
                     b.Navigation("WorkshopConfirmation");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.CourseFeedback", b =>
+                {
+                    b.Navigation("Replies");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.CourseFeedbackReply", b =>
+                {
+                    b.Navigation("ChildReplies");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.Enrollment", b =>

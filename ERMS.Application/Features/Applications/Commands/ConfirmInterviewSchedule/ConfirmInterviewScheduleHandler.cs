@@ -91,12 +91,12 @@ public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInt
                 }, cancellationToken);
 
                 meetingLink = zoomMeeting.JoinUrl;
-                _logger.LogInformation("Auto-created Zoom meeting {MeetingId} for Interview {InterviewId}", 
+                _logger.LogInformation("Đã tự động tạo cuộc họ p Zoom {MeetingId} cho cuộc phỏng vấn {InterviewId}", 
                     zoomMeeting.MeetingId, interview.Id);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to auto-create Zoom meeting for Interview {InterviewId}", interview.Id);
+                _logger.LogError(ex, "Không thể tự động tạo cuộc họ p Zoom cho cuộc phỏng vấn {InterviewId}", interview.Id);
                 throw new Exception("Không thể tạo cuộc họp Zoom. Vui lòng thử lại hoặc cung cấp link họp thủ công.", ex);
             }
         }
@@ -142,7 +142,7 @@ public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInt
         catch (Exception ex)
         {
             await transaction.RollbackAsync(cancellationToken);
-            _logger.LogError(ex, "Failed to confirm interview schedule for Application {ApplicationId}", request.ApplicationId);
+            _logger.LogError(ex, "Không thể xác nhận lịch phỏng vấn cho hồ sơ {ApplicationId}", request.ApplicationId);
             throw;
         }
     }
@@ -227,11 +227,11 @@ public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInt
             try
             {
                 await _emailService.SendEmailWithAttachmentAsync(candidateEmail, subject, emailBody, attachments);
-                _logger.LogInformation("Interview confirmation email with calendar invite sent to candidate: {Email}", candidateEmail);
+                _logger.LogInformation("Đã gửi email xác nhận phỏng vấn kèm lời mời lịch cho ứng viên: {Email}", candidateEmail);
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to send interview confirmation email to candidate: {Email}", candidateEmail);
+                _logger.LogWarning(ex, "Không thể gửi email xác nhận phỏng vấn cho ứng viên: {Email}", candidateEmail);
             }
         }
 
@@ -244,11 +244,11 @@ public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInt
             try
             {
                 await _emailService.SendEmailWithAttachmentAsync(interviewerEmail, subject, emailBody, attachments);
-                _logger.LogInformation("Interview confirmation email with calendar invite sent to interviewer: {Email}", interviewerEmail);
+                _logger.LogInformation("Đã gửi email xác nhận phỏng vấn kèm lời mời lịch cho người phỏng vấn: {Email}", interviewerEmail);
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to send interview confirmation email to interviewer: {Email}", interviewerEmail);
+                _logger.LogWarning(ex, "Không thể gửi email xác nhận phỏng vấn cho người phỏng vấn: {Email}", interviewerEmail);
             }
         }
     }

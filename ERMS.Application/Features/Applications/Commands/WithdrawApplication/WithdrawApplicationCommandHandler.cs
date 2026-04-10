@@ -75,6 +75,12 @@ public sealed class WithdrawApplicationCommandHandler : IRequestHandler<Withdraw
         application.Stage = ApplicationStage.Withdrawn;
         application.StageUpdatedAt = DateTime.UtcNow;
         application.Status = "Withdrawn";
+
+        if (!string.IsNullOrWhiteSpace(request.Reason))
+        {
+            application.RejectionReason = request.Reason.Trim();
+        }
+
         application.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync(cancellationToken);

@@ -1,11 +1,9 @@
-using ERMS.Application.Features.Employees.Commands.BulkCreateEmployees;
 using ERMS.Application.Features.Employees.Commands.CreateEmployee;
 using ERMS.Application.Features.Employees.Commands.DeleteEmployee;
 using ERMS.Application.Features.Employees.Commands.ImportEmployeesFromFile;
 using ERMS.Application.Features.Employees.Commands.UpdateEmployee;
 using ERMS.Application.Features.Employees.Queries.GetAllEmployees;
 using ERMS.Application.Features.Employees.Queries.GetEmployeeDetail;
-using ERMS.Application.Features.Employees.Queries.GetEmployeeById;
 using ERMS.Domain.Constants.Roles;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -94,33 +92,6 @@ namespace ERMS.API.Controllers
         }
 
         /// <summary>
-        /// Lấy thông tin chi tiết nhân viên theo ID
-        /// </summary>
-        [HttpGet("{id:guid}")]
-        [Authorize(Roles = AppRoles.HRManager + "," + AppRoles.Director)]
-        public async Task<IActionResult> GetById(Guid id)
-        {
-            try
-            {
-                var query = new GetEmployeeByIdQuery { Id = id };
-                var result = await _mediator.Send(query);
-                return Ok(result);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
-
-        /// <summary>
         /// Cập nhật nhân viên
         /// </summary>
         /// <remarks>ID must be provided in the request body.</remarks>
@@ -154,27 +125,6 @@ namespace ERMS.API.Controllers
             {
                 await _mediator.Send(command);
                 return Ok(new { message = "Xóa nhân viên thành công" });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
-
-        /// <summary>
-        /// Import nhân viên hàng loạt (từ Excel - JSON input)
-        /// </summary>
-        [HttpPost("bulk")]
-        [Authorize(Roles = "HRManager,Director")]
-        public async Task<IActionResult> BulkCreate([FromBody] BulkCreateEmployeesCommand command)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            try
-            {
-                var result = await _mediator.Send(command);
-                return Ok(result);
             }
             catch (Exception ex)
             {

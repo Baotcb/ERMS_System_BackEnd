@@ -14,7 +14,7 @@ public sealed class RejectOfferCommand : IRequest<RejectOfferResult>
     public Guid OfferId { get; set; }
 
     /// <summary>
-    /// Optional note from the candidate explaining the rejection
+    /// Required note from the candidate explaining the rejection
     /// </summary>
-    public string? CandidateNote { get; set; }
+    public string CandidateNote { get; set; } = null!;
 }

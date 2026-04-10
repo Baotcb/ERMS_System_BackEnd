@@ -1,4 +1,4 @@
-﻿using ERMS.Domain.Common;
+using ERMS.Domain.Common;
 using ERMS.Domain.Entities.Identity;
 using System;
 using System.Collections.Generic;
@@ -14,6 +14,7 @@ namespace ERMS.Domain.Entities.Training
         public string? Notes { get; set; }
         public DateTime ConfirmedAt { get; set; } = DateTime.UtcNow;
         public bool IsDeleted { get; set; }
+        public DateTime? DeletedAt { get; set; }
 
         public virtual Course Course { get; set; } = null!;
         public virtual User ConfirmedByUser { get; set; } = null!;

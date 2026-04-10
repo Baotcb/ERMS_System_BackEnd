@@ -13,6 +13,7 @@ namespace ERMS.Domain.Entities.Training
         public string CourseCode { get; set; } = null!;
         public string? Description { get; set; }
         public string TrainerEmail { get; set; } = null!;
+        public string? ContentManagerEmail { get; set; }
         public string? Location { get; set; }
         public DateTime StartTime { get; set; }
         public bool IsOnline { get; set; }
