@@ -68,7 +68,8 @@ namespace ERMS.Application.Features.Feedback.Commands.SubmitCourseFeedback
                 TrainerRating = request.TrainerRating,
                 Comment = request.Comment?.Trim(),
                 IsAnonymous = request.IsAnonymous,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                IsDeleted = false
             };
 
             _context.CourseFeedbacks.Add(feedback);
