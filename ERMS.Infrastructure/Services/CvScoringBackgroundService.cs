@@ -70,9 +70,9 @@ public sealed class CvScoringBackgroundService : BackgroundService
 
                 using var scope = _scopeFactory.CreateScope();
                 var dbContext = scope.ServiceProvider.GetRequiredService<IERMSDbContext>();
-                var geminiService = scope.ServiceProvider.GetRequiredService<IGeminiAIService>();
+                var aiService = scope.ServiceProvider.GetRequiredService<IAIService>();
 
-                var aiResult = await geminiService.AnalyzeResumeAsync(
+                var aiResult = await aiService.AnalyzeResumeAsync(
                     workItem.ResumeText,
                     workItem.JobDescription,
                     workItem.RequiredSkills,
@@ -95,7 +95,7 @@ public sealed class CvScoringBackgroundService : BackgroundService
                     Summary = aiResult.Summary,
                     RawResponse = aiResult.RawResponse,
                     ProcessedAt = DateTime.UtcNow,
-                    AIModel = "gemini-2.5-flash"
+                    AIModel = "llama-3.3-70b-versatile"
                 };
 
                 dbContext.CVScreeningResults.Add(screeningResult);

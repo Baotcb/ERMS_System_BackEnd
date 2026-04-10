@@ -21,7 +21,7 @@ public sealed class SystemIntegrationStatusService : ISystemIntegrationStatusSer
 
         return Task.FromResult(new GetSystemIntegrationsResponse
         {
-            BuildIntegration("Gemini", "AI", _aiServiceConfiguration.HasApiKey, checkedAt)
+            BuildIntegration("Groq", "AI", _aiServiceConfiguration.HasApiKey, checkedAt)
         });
     }
 
