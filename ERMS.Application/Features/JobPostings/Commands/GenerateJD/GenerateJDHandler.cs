@@ -11,18 +11,18 @@ public sealed class GenerateJDHandler : IRequestHandler<GenerateJDCommand, Gener
 {
     private readonly IERMSDbContext _context;
     private readonly ICurrentUserService _currentUserService;
-    private readonly IGeminiAIService _geminiAIService;
+    private readonly IAIService _aiService;
     private readonly ILogger<GenerateJDHandler> _logger;
 
     public GenerateJDHandler(
         IERMSDbContext context,
         ICurrentUserService currentUserService,
-        IGeminiAIService geminiAIService,
+        IAIService aiService,
         ILogger<GenerateJDHandler> logger)
     {
         _context = context;
         _currentUserService = currentUserService;
-        _geminiAIService = geminiAIService;
+        _aiService = aiService;
         _logger = logger;
     }
 
@@ -54,7 +54,7 @@ public sealed class GenerateJDHandler : IRequestHandler<GenerateJDCommand, Gener
         // 5. Call Gemini AI to generate JD
         try
         {
-            var jdResult = await _geminiAIService.GenerateJobDescriptionAsync(
+            var jdResult = await _aiService.GenerateJobDescriptionAsync(
                 planDetail.PositionTitle,
                 planDetail.Justification,
                 planDetail.RequiredSkills,

@@ -13,7 +13,7 @@ public class CvScoringBackgroundServiceTests
 {
     private readonly BackgroundTaskQueue _queue;
     private readonly Mock<IERMSDbContext> _contextMock;
-    private readonly Mock<IGeminiAIService> _geminiServiceMock;
+    private readonly Mock<IAIService> _aiServiceMock;
     private readonly Mock<ILogger<CvScoringBackgroundService>> _loggerMock;
     private readonly CvScoringBackgroundService _service;
 
@@ -21,14 +21,14 @@ public class CvScoringBackgroundServiceTests
     {
         _queue = new BackgroundTaskQueue();
         _contextMock = new Mock<IERMSDbContext>();
-        _geminiServiceMock = new Mock<IGeminiAIService>();
+        _aiServiceMock = new Mock<IAIService>();
         _loggerMock = new Mock<ILogger<CvScoringBackgroundService>>();
 
         var scopeMock = new Mock<IServiceScope>();
         var providerMock = new Mock<IServiceProvider>();
 
         providerMock.Setup(p => p.GetService(typeof(IERMSDbContext))).Returns(_contextMock.Object);
-        providerMock.Setup(p => p.GetService(typeof(IGeminiAIService))).Returns(_geminiServiceMock.Object);
+        providerMock.Setup(p => p.GetService(typeof(IAIService))).Returns(_aiServiceMock.Object);
         scopeMock.Setup(s => s.ServiceProvider).Returns(providerMock.Object);
 
         var scopeFactoryMock = new Mock<IServiceScopeFactory>();
@@ -93,7 +93,7 @@ public class CvScoringBackgroundServiceTests
         var workItem = CreateWorkItem(appId);
         var aiResult = CreateAIResult();
 
-        _geminiServiceMock
+        _aiServiceMock
             .Setup(x => x.AnalyzeResumeAsync(
                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
                 It.IsAny<string?>(), It.IsAny<string?>()))
@@ -119,7 +119,7 @@ public class CvScoringBackgroundServiceTests
         try { await _service.StopAsync(CancellationToken.None); } catch (OperationCanceledException) { }
 
         // Assert
-        _geminiServiceMock.Verify(x => x.AnalyzeResumeAsync(
+        _aiServiceMock.Verify(x => x.AnalyzeResumeAsync(
             workItem.ResumeText, workItem.JobDescription, workItem.RequiredSkills,
             workItem.EducationLevel, workItem.ExperienceLevel), Times.Once);
 
@@ -136,11 +136,11 @@ public class CvScoringBackgroundServiceTests
         // Arrange
         var workItem = CreateWorkItem();
 
-        _geminiServiceMock
+        _aiServiceMock
             .Setup(x => x.AnalyzeResumeAsync(
                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
                 It.IsAny<string?>(), It.IsAny<string?>()))
-            .ThrowsAsync(new Exception("Gemini AI unavailable"));
+            .ThrowsAsync(new Exception("Groq AI unavailable"));
 
         await _queue.EnqueueAsync(workItem);
 
@@ -173,7 +173,7 @@ public class CvScoringBackgroundServiceTests
         var failItem = CreateWorkItem();
         var successItem = CreateWorkItem();
 
-        _geminiServiceMock
+        _aiServiceMock
             .SetupSequence(x => x.AnalyzeResumeAsync(
                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
                 It.IsAny<string?>(), It.IsAny<string?>()))
@@ -196,7 +196,7 @@ public class CvScoringBackgroundServiceTests
         try { await _service.StopAsync(CancellationToken.None); } catch (OperationCanceledException) { }
 
         // Assert - AI service should have been called twice (once for fail, once for success)
-        _geminiServiceMock.Verify(x => x.AnalyzeResumeAsync(
+        _aiServiceMock.Verify(x => x.AnalyzeResumeAsync(
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<string?>(), It.IsAny<string?>()), Times.Exactly(2));
 

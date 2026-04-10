@@ -18,7 +18,7 @@ public class SystemIntegrationStatusServiceTests
         var result = await service.GetSystemIntegrationsAsync(CancellationToken.None);
 
         result.Should().ContainSingle();
-        result[0].Name.Should().Be("Gemini");
+        result[0].Name.Should().Be("Groq");
         result[0].Category.Should().Be("AI");
         result[0].Status.Should().Be("Configured");
         result[0].EnvironmentScope.Should().Be("System");
