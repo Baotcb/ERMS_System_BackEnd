@@ -63,6 +63,7 @@ namespace ERMS.Infrastructure
             services.AddScoped<ICloudinaryService, CloudinaryService>();
             services.AddScoped<IPdfTextExtractor, PdfTextExtractor>();
             services.AddHttpClient<IGeminiAIService, GeminiAIService>();
+            services.AddHttpClient<ICvInfoExtractorService, CvInfoExtractorService>();
 
 
 

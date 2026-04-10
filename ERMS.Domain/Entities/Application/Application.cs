@@ -10,7 +10,7 @@ namespace ERMS.Domain.Entities.Application
     public class Application : BaseEntity
     {
         public Guid JobPostingId { get; set; }
-        public Guid CandidateId { get; set; }
+        public Guid? CandidateId { get; set; }
         public Guid? ResumeId { get; set; }
         public string? CoverLetter { get; set; }
         public decimal? ExpectedSalary { get; set; }
@@ -29,8 +29,15 @@ namespace ERMS.Domain.Entities.Application
         public bool IsDeleted { get; set; }
         public DateTime? DeletedAt { get; set; }
 
+        // External candidate fields (when HR adds CV directly — no system account)
+        public bool IsExternal { get; set; }
+        public string? ExternalCandidateName { get; set; }
+        public string? ExternalCandidateEmail { get; set; }
+        public string? ExternalCandidatePhone { get; set; }
+        public string? ExternalResumeUrl { get; set; }
+
         public virtual JobPosting JobPosting { get; set; } = null!;
-        public virtual Candidate.Candidate Candidate { get; set; } = null!;
+        public virtual Candidate.Candidate? Candidate { get; set; }
         public virtual Candidate.Resume? Resume { get; set; }
         public virtual Employee? ReferredBy { get; set; }
         public virtual Identity.User? RejectedBy { get; set; }

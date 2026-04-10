@@ -26,6 +26,8 @@ namespace ERMS.Domain.Entities.Application
         public Guid? SentById { get; set; }
         public DateTime? RespondedAt { get; set; }
         public string? CandidateNote { get; set; }
+        public Guid? ResponseToken { get; set; }
+        public DateTime? TokenExpiresAt { get; set; }
         public bool IsDeleted { get; set; }
         public DateTime? DeletedAt { get; set; }
 

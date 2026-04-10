@@ -19,7 +19,7 @@ public sealed record GetShortlistedApplicationsResponse
 public sealed record ShortlistedApplicationDto
 {
     public Guid ApplicationId { get; init; }
-    public Guid CandidateId { get; init; }
+    public Guid? CandidateId { get; init; }
     public string CandidateName { get; init; } = string.Empty;
     public string? CandidateEmail { get; init; }
     public string? CandidatePhone { get; init; }

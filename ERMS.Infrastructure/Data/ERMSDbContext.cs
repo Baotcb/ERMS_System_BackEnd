@@ -389,7 +389,22 @@ namespace ERMS.Infrastructure.Data
                 .HasOne(a => a.Candidate)
                 .WithMany(c => c.Applications)
                 .HasForeignKey(a => a.CandidateId)
+                .IsRequired(false)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ApplicationEntities.Application>()
+                .Property(a => a.ExternalCandidateName).HasMaxLength(200);
+            builder.Entity<ApplicationEntities.Application>()
+                .Property(a => a.ExternalCandidateEmail).HasMaxLength(200);
+            builder.Entity<ApplicationEntities.Application>()
+                .Property(a => a.ExternalCandidatePhone).HasMaxLength(20);
+            builder.Entity<ApplicationEntities.Application>()
+                .Property(a => a.ExternalResumeUrl).HasMaxLength(500);
+
+            builder.Entity<ApplicationEntities.Offer>()
+                .HasIndex(o => o.ResponseToken)
+                .IsUnique()
+                .HasFilter("[ResponseToken] IS NOT NULL");
 
             builder.Entity<Course>()
                 .Property(c => c.TrainerEmail)

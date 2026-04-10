@@ -20,7 +20,7 @@ public sealed class GetApplicationsByJobResponse
 public sealed class ApplicationListDto
 {
     public Guid ApplicationId { get; set; }
-    public Guid CandidateId { get; set; }
+    public Guid? CandidateId { get; set; }
     public string CandidateName { get; set; } = null!;
     public string? CandidateEmail { get; set; }
     public string? CandidatePhone { get; set; }
@@ -29,6 +29,8 @@ public sealed class ApplicationListDto
     public string Status { get; set; } = null!;
     public DateTime AppliedAt { get; set; }
     public string? HRNote { get; set; }
+    public bool IsExternal { get; set; }
+    public string? Source { get; set; }
 
     // CV Screening Result
     public decimal? OverallScore { get; set; }

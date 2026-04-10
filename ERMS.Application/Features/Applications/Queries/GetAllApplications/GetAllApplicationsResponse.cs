@@ -24,7 +24,7 @@ public sealed class EnterpriseApplicationDto
     public DateTime AppliedAt { get; set; }
 
     // Candidate info
-    public Guid CandidateId { get; set; }
+    public Guid? CandidateId { get; set; }
     public string CandidateName { get; set; } = null!;
     public string? CandidateEmail { get; set; }
     public string? CandidatePhone { get; set; }

@@ -9,9 +9,12 @@ using ERMS.Application.Features.Admin.Queries.GetEnterpriseList;
 using ERMS.Application.Features.Admin.Queries.GetGlobalPaymentHistory;
 using ERMS.Application.Features.Admin.Queries.GetPlatformStats;
 using ERMS.Application.Features.Admin.Queries.GetSystemIntegrations;
+using ERMS.Domain.Constants.Roles;
 using FluentAssertions;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Moq;
 
 namespace ERMS.API.UnitTests;
@@ -221,6 +224,32 @@ public class AdminControllerTests
         _senderMock.Verify(
             sender => sender.Send(It.IsAny<GetSystemIntegrationsQuery>(), It.IsAny<CancellationToken>()),
             Times.Once);
+    }
+
+    [Test]
+    public void AdminController_ShouldRequireAdminRole_AndUseAdminFixedRateLimit()
+    {
+        var authorizeAttribute = typeof(AdminController).GetCustomAttribute<AuthorizeAttribute>();
+        var rateLimitAttribute = typeof(AdminController).GetCustomAttribute<EnableRateLimitingAttribute>();
+
+        authorizeAttribute.Should().NotBeNull();
+        authorizeAttribute!.Roles.Should().Be(AppRoles.Admin);
+        rateLimitAttribute.Should().NotBeNull();
+        rateLimitAttribute!.PolicyName.Should().Be("admin-fixed");
+    }
+
+    [Test]
+    public void GetSystemIntegrations_ShouldExposeLegacyAndPrimaryHttpGetRoutes()
+    {
+        var method = typeof(AdminController).GetMethod(nameof(AdminController.GetSystemIntegrations));
+
+        method.Should().NotBeNull();
+        var routes = method!
+            .GetCustomAttributes<HttpGetAttribute>()
+            .Select(attribute => attribute.Template)
+            .ToArray();
+
+        routes.Should().BeEquivalentTo(new[] { "system-integrations", "integrations" });
     }
 
     private static T ReadAnonymousProperty<T>(object instance, string propertyName)

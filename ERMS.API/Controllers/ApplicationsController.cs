@@ -1,4 +1,7 @@
 using ERMS.Application.Features.Applications.Commands.AcceptOffer;
+using ERMS.Application.Features.Applications.Commands.AddExternalApplication;
+using ERMS.Application.Features.Applications.Commands.ExtractCvInfo;
+using ERMS.Application.Features.Applications.Commands.RespondOfferByToken;
 using ERMS.Application.Features.Applications.Queries.GetAllApplications;
 using ERMS.Application.Features.Applications.Commands.ConfirmHire;
 using ERMS.Application.Features.Applications.Commands.AssignInterviewer;
@@ -937,6 +940,81 @@ public class ApplicationsController : ControllerBase
         catch (UnauthorizedAccessException ex)
         {
             return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Upload a CV and extract candidate contact info (name, email, phone) using AI.
+    /// Step 1 of the HR-add-external-candidate flow.
+    /// </summary>
+    [HttpPost("extract-cv-info")]
+    [Authorize(Roles = AppRoles.HRManager)]
+    [Consumes("multipart/form-data")]
+    [ProducesResponseType(typeof(ExtractCvInfoResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> ExtractCvInfo([FromForm] ExtractCvInfoCommand command)
+    {
+        try
+        {
+            var result = await _mediator.Send(command);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// HR adds an external candidate (no system account) directly to a job posting.
+    /// Step 2 of the HR-add-external-candidate flow — call after extract-cv-info.
+    /// </summary>
+    [HttpPost("add-external")]
+    [Authorize(Roles = AppRoles.HRManager)]
+    [ProducesResponseType(typeof(AddExternalApplicationResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> AddExternalApplication([FromBody] AddExternalApplicationCommand command)
+    {
+        try
+        {
+            var result = await _mediator.Send(command);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Public endpoint for external candidates to accept or reject an offer via email token link.
+    /// No authentication required — token acts as the credential.
+    /// </summary>
+    [HttpPost("offer-response/{token:guid}")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(RespondOfferByTokenResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> RespondOfferByToken(Guid token, [FromQuery] string action)
+    {
+        try
+        {
+            var command = new RespondOfferByTokenCommand { Token = token, Action = action ?? string.Empty };
+            var result = await _mediator.Send(command);
+            return Ok(result);
         }
         catch (Exception ex)
         {

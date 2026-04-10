@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Linq;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -71,11 +72,11 @@ namespace ERMS.Application.Features.Applications.Commands.CreateOffer
                 throw new Exception("Đơn ứng tuyển phải ở trạng thái 'OfferProcessing' để tạo offer.");
             }
 
-            if(_currentUserService.GetEnterpriseIdAsync== null)
+            var enterpriseId = await _currentUserService.GetEnterpriseIdAsync();
+            if (enterpriseId == null)
             {
                 throw new UnauthorizedAccessException("Không tìm thấy thông tin doanh nghiệp.");
             }
-            var enterpriseId = await _currentUserService.GetEnterpriseIdAsync();
             if (application.JobPosting.EnterpriseId != enterpriseId.Value)
             {
                 throw new UnauthorizedAccessException("Bạn không có quyền tạo offer cho đơn ứng tuyển này.");
@@ -130,10 +131,20 @@ namespace ERMS.Application.Features.Applications.Commands.CreateOffer
             application.UpdatedAt = DateTime.UtcNow;
 
   
+            // For external candidates: generate secure response token
+            if (application.IsExternal)
+            {
+                offer.ResponseToken = Guid.NewGuid();
+                offer.TokenExpiresAt = offer.ExpirationDate;
+            }
+
             await _context.Offers.AddAsync(offer, cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
 
-            await SendOfferEmailAsync(offer, application, cancellationToken);
+            if (application.IsExternal)
+                await SendExternalOfferEmailAsync(offer, application);
+            else
+                await SendOfferEmailAsync(offer, application, cancellationToken);
 
             return offer.Id;
         }
@@ -162,10 +173,87 @@ namespace ERMS.Application.Features.Applications.Commands.CreateOffer
             return $"{prefix}{nextNumber:D4}";
         }
 
+        private async Task SendExternalOfferEmailAsync(Offer offer, Domain.Entities.Application.Application application)
+        {
+            var candidateName = WebUtility.HtmlEncode(application.ExternalCandidateName ?? "Bạn");
+            var candidateEmail = application.ExternalCandidateEmail!;
+            var safePosition = WebUtility.HtmlEncode(offer.Position ?? string.Empty);
+            var safeOfferCode = WebUtility.HtmlEncode(offer.OfferCode ?? string.Empty);
+            var safeSalaryFrequency = WebUtility.HtmlEncode(offer.SalaryFrequency ?? string.Empty);
+
+            var frontendUrl = _configuration["AppSettings:FrontendUrl"]?.TrimEnd('/') ?? "https://app.erms.vn";
+            var acceptUrl = $"{frontendUrl}/offer-response/{offer.ResponseToken}?action=accept";
+            var rejectUrl = $"{frontendUrl}/offer-response/{offer.ResponseToken}?action=reject";
+
+            var emailSubject = $"🎉 Thư mời nhận việc - {safePosition}";
+
+            var bonusText = !string.IsNullOrWhiteSpace(offer.Bonus)
+                ? $"<p><strong>Thưởng:</strong> {WebUtility.HtmlEncode(offer.Bonus)}</p>"
+                : "";
+
+            var benefitsText = !string.IsNullOrWhiteSpace(offer.Benefits)
+                ? $"<p><strong>Phúc lợi:</strong> {WebUtility.HtmlEncode(offer.Benefits)}</p>"
+                : "";
+
+            var emailBody = $@"
+<!DOCTYPE html>
+<html>
+<head><style>
+  body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+  .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+  .header {{ background-color: #4CAF50; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }}
+  .content {{ background-color: #f9f9f9; padding: 30px; border-radius: 0 0 5px 5px; }}
+  .offer-details {{ background-color: white; padding: 20px; margin: 20px 0; border-left: 4px solid #4CAF50; }}
+  .actions {{ text-align: center; margin: 30px 0; }}
+  .btn-accept {{ background-color: #4CAF50; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; margin-right: 16px; display: inline-block; }}
+  .btn-reject {{ background-color: #f44336; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; }}
+  .footer {{ text-align: center; margin-top: 20px; font-size: 12px; color: #666; }}
+</style></head>
+<body>
+  <div class='container'>
+    <div class='header'>
+      <h1>🎉 Chúc mừng!</h1>
+      <p>Bạn đã nhận được thư mời nhận việc</p>
+    </div>
+    <div class='content'>
+      <p>Xin chào <strong>{candidateName}</strong>,</p>
+      <p>Chúng tôi rất vui mừng thông báo rằng bạn đã được chọn cho vị trí <strong>{safePosition}</strong> tại công ty chúng tôi.</p>
+      <div class='offer-details'>
+        <h3>📋 Chi tiết đề nghị:</h3>
+        <p><strong>Mã offer:</strong> {safeOfferCode}</p>
+        <p><strong>Vị trí:</strong> {safePosition}</p>
+        <p><strong>Mức lương:</strong> {offer.Salary:N0} VNĐ / {safeSalaryFrequency}</p>
+        {bonusText}
+        {benefitsText}
+        <p><strong>Ngày bắt đầu:</strong> {offer.StartDate:dd/MM/yyyy}</p>
+        <p><strong>Hạn phản hồi:</strong> <span style='color:#f44336;font-weight:bold;'>{offer.ExpirationDate:dd/MM/yyyy HH:mm}</span></p>
+      </div>
+      <div class='actions'>
+        <a href='{acceptUrl}' class='btn-accept'>✅ Chấp nhận Offer</a>
+        <a href='{rejectUrl}' class='btn-reject'>❌ Từ chối Offer</a>
+      </div>
+      <p style='color:#666;font-size:13px;text-align:center;'>Vui lòng phản hồi trước ngày <strong>{offer.ExpirationDate:dd/MM/yyyy HH:mm}</strong>.</p>
+    </div>
+    <div class='footer'>
+      <p>📧 Email này được gửi tự động từ hệ thống ERMS. Vui lòng không trả lời trực tiếp email này.</p>
+    </div>
+  </div>
+</body></html>";
+
+            try
+            {
+                await _emailService.SendEmailAsync(candidateEmail, emailSubject, emailBody);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to send external offer email: {ex.Message}");
+            }
+        }
+
         private async Task SendOfferEmailAsync(Offer offer, Domain.Entities.Application.Application application, CancellationToken cancellationToken)
         {
             var candidate = application.Candidate;
-            var candidateUser = candidate.User;
+            var candidateUser = candidate!.User;
             var jobTitle = application.JobPosting.Description;
 
             var emailSubject = $"🎉 Thư mời nhận việc - {offer.Position}";

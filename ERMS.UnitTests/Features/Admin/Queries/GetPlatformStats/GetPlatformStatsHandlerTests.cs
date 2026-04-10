@@ -653,4 +653,321 @@ public class GetPlatformStatsHandlerTests
         result.IntegrationHealth.Warning.Should().Be(1);
         result.IntegrationHealth.Error.Should().Be(2);
     }
+
+    [Fact]
+    public async Task Handle_ShouldReturnZeroedResponse_WhenThereAreNoEnterprises()
+    {
+        _mockContext.Setup(x => x.Enterprises).Returns(new List<Enterprise>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.Employees).Returns(new List<Employee>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.SubscriptionHistories).Returns(new List<SubscriptionHistory>().AsQueryable().BuildMockDbSet().Object);
+
+        var result = await _handler.Handle(new GetPlatformStatsQuery(), CancellationToken.None);
+
+        result.TotalEnterprises.Should().Be(0);
+        result.ActiveEnterprises.Should().Be(0);
+        result.LockedEnterprises.Should().Be(0);
+        result.SuspendedEnterprises.Should().Be(0);
+        result.InactiveEnterprises.Should().Be(0);
+        result.MrrCurrentMonth.Should().Be(0);
+        result.RenewalRate.Should().Be(0);
+        result.StatusDistribution.Should().HaveCount(4);
+        result.StatusDistribution.Should().OnlyContain(item => item.Count == 0);
+        result.SubscriptionMix.Should().ContainSingle(item => item.TierName == "Free" && item.Count == 0);
+        result.SubscriptionMix.Should().ContainSingle(item => item.TierName == "Pro" && item.Count == 0);
+        result.TopEnterprises.Should().BeEmpty();
+        result.ChurnWatchlist.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Handle_ShouldClassifyProPlans_CaseInsensitively_AndIgnoreNullPlanFields()
+    {
+        var now = DateTime.UtcNow;
+        var nameMatchedPlan = new SubscriptionPlan
+        {
+            Id = Guid.NewGuid(),
+            PlanName = "PRO Max",
+            PlanCode = null!,
+            PriceMonthly = 2100000
+        };
+        var codeMatchedPlan = new SubscriptionPlan
+        {
+            Id = Guid.NewGuid(),
+            PlanName = "Starter",
+            PlanCode = "team-pro-2026",
+            PriceMonthly = 1800000
+        };
+        var nullPlan = new SubscriptionPlan
+        {
+            Id = Guid.NewGuid(),
+            PlanName = null!,
+            PlanCode = null!,
+            PriceMonthly = 9000000
+        };
+
+        var enterprises = new List<Enterprise>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                EnterpriseName = "Name Match Co",
+                Status = EnterpriseStatus.Active,
+                SubscriptionPlan = nameMatchedPlan,
+                SubscriptionPlanId = nameMatchedPlan.Id,
+                SubscriptionEndDate = now.AddDays(30),
+                IsDeleted = false
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                EnterpriseName = "Code Match Co",
+                Status = EnterpriseStatus.Active,
+                SubscriptionPlan = codeMatchedPlan,
+                SubscriptionPlanId = codeMatchedPlan.Id,
+                SubscriptionEndDate = now.AddDays(45),
+                IsDeleted = false
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                EnterpriseName = "Null Plan Co",
+                Status = EnterpriseStatus.Active,
+                SubscriptionPlan = nullPlan,
+                SubscriptionPlanId = nullPlan.Id,
+                SubscriptionEndDate = now.AddDays(60),
+                IsDeleted = false
+            }
+        };
+
+        _mockContext.Setup(x => x.Enterprises).Returns(enterprises.AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.Employees).Returns(new List<Employee>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.SubscriptionHistories).Returns(new List<SubscriptionHistory>().AsQueryable().BuildMockDbSet().Object);
+
+        var result = await _handler.Handle(new GetPlatformStatsQuery(), CancellationToken.None);
+
+        result.SubscriptionMix.Should().ContainSingle(item => item.TierName == "Pro" && item.Count == 2);
+        result.SubscriptionMix.Should().ContainSingle(item => item.TierName == "Free" && item.Count == 1);
+        result.MrrCurrentMonth.Should().Be(3900000);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldIncludeOnlyEnterprises_ExpiringWithinThirtyDays_InChurnWatchlist()
+    {
+        var now = DateTime.UtcNow;
+        var plan = new SubscriptionPlan { Id = Guid.NewGuid(), PlanName = "Pro", PlanCode = "PRO", PriceMonthly = 1000000 };
+        var thresholdEnterpriseId = Guid.NewGuid();
+        var outsideThresholdEnterpriseId = Guid.NewGuid();
+        var enterprises = new List<Enterprise>
+        {
+            new()
+            {
+                Id = thresholdEnterpriseId,
+                EnterpriseName = "Threshold Co",
+                Status = EnterpriseStatus.Active,
+                SubscriptionPlan = plan,
+                SubscriptionPlanId = plan.Id,
+                SubscriptionEndDate = now.AddDays(30),
+                IsDeleted = false
+            },
+            new()
+            {
+                Id = outsideThresholdEnterpriseId,
+                EnterpriseName = "Outside Threshold Co",
+                Status = EnterpriseStatus.Active,
+                SubscriptionPlan = plan,
+                SubscriptionPlanId = plan.Id,
+                SubscriptionEndDate = now.AddDays(31),
+                IsDeleted = false
+            }
+        };
+
+        _mockContext.Setup(x => x.Enterprises).Returns(enterprises.AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.Employees).Returns(new List<Employee>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.SubscriptionHistories).Returns(new List<SubscriptionHistory>().AsQueryable().BuildMockDbSet().Object);
+
+        var result = await _handler.Handle(new GetPlatformStatsQuery(), CancellationToken.None);
+
+        result.ChurnWatchlist.Should().ContainSingle(item => item.EnterpriseId == thresholdEnterpriseId);
+        result.ChurnWatchlist.Should().NotContain(item => item.EnterpriseId == outsideThresholdEnterpriseId);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldUseDistinctDueEnterpriseIds_WhenMultipleDueHistoriesBelongToSameEnterprise()
+    {
+        var now = DateTime.UtcNow;
+        var plan = new SubscriptionPlan
+        {
+            Id = Guid.NewGuid(),
+            PlanName = "Pro",
+            PlanCode = "PRO",
+            PriceMonthly = 1000000
+        };
+        var enterpriseId = Guid.NewGuid();
+        var enterprises = new List<Enterprise>
+        {
+            new()
+            {
+                Id = enterpriseId,
+                EnterpriseName = "Renewed Co",
+                Status = EnterpriseStatus.Active,
+                SubscriptionPlan = plan,
+                SubscriptionPlanId = plan.Id,
+                SubscriptionEndDate = now.AddDays(20),
+                IsDeleted = false
+            }
+        };
+
+        var histories = new List<SubscriptionHistory>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                EnterpriseId = enterpriseId,
+                Enterprise = enterprises[0],
+                SubscriptionPlanId = plan.Id,
+                SubscriptionPlan = plan,
+                ActionType = "Subscribe",
+                PeriodEndDate = now.AddDays(-8),
+                CreatedAt = now.AddDays(-40)
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                EnterpriseId = enterpriseId,
+                Enterprise = enterprises[0],
+                SubscriptionPlanId = plan.Id,
+                SubscriptionPlan = plan,
+                ActionType = "Upgrade",
+                PeriodEndDate = now.AddDays(-5),
+                CreatedAt = now.AddDays(-20)
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                EnterpriseId = enterpriseId,
+                Enterprise = enterprises[0],
+                SubscriptionPlanId = plan.Id,
+                SubscriptionPlan = plan,
+                ActionType = "Renew",
+                PeriodEndDate = now.AddDays(-2),
+                CreatedAt = now.AddDays(-1)
+            }
+        };
+
+        _mockContext.Setup(x => x.Enterprises).Returns(enterprises.AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.Employees).Returns(new List<Employee>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.SubscriptionHistories).Returns(histories.AsQueryable().BuildMockDbSet().Object);
+
+        var result = await _handler.Handle(new GetPlatformStatsQuery(), CancellationToken.None);
+
+        result.RenewalRate.Should().Be(100);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldCountOnlyRenewActions_InsideRenewalWindow()
+    {
+        var now = DateTime.UtcNow;
+        var plan = new SubscriptionPlan
+        {
+            Id = Guid.NewGuid(),
+            PlanName = "Pro",
+            PlanCode = "PRO",
+            PriceMonthly = 1000000
+        };
+        var includedEnterpriseId = Guid.NewGuid();
+        var excludedEnterpriseId = Guid.NewGuid();
+        var enterprises = new List<Enterprise>
+        {
+            new()
+            {
+                Id = includedEnterpriseId,
+                EnterpriseName = "Included Renew Co",
+                Status = EnterpriseStatus.Active,
+                SubscriptionPlan = plan,
+                SubscriptionPlanId = plan.Id,
+                SubscriptionEndDate = now.AddDays(15),
+                IsDeleted = false
+            },
+            new()
+            {
+                Id = excludedEnterpriseId,
+                EnterpriseName = "Excluded Renew Co",
+                Status = EnterpriseStatus.Active,
+                SubscriptionPlan = plan,
+                SubscriptionPlanId = plan.Id,
+                SubscriptionEndDate = now.AddDays(18),
+                IsDeleted = false
+            }
+        };
+
+        var histories = new List<SubscriptionHistory>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                EnterpriseId = includedEnterpriseId,
+                Enterprise = enterprises[0],
+                SubscriptionPlanId = plan.Id,
+                SubscriptionPlan = plan,
+                ActionType = "Renew",
+                PeriodEndDate = now.AddDays(-5),
+                CreatedAt = now.AddDays(-30).AddMinutes(1)
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                EnterpriseId = excludedEnterpriseId,
+                Enterprise = enterprises[1],
+                SubscriptionPlanId = plan.Id,
+                SubscriptionPlan = plan,
+                ActionType = "Renew",
+                PeriodEndDate = now.AddDays(-6),
+                CreatedAt = now.AddDays(-30).AddMinutes(-1)
+            }
+        };
+
+        _mockContext.Setup(x => x.Enterprises).Returns(enterprises.AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.Employees).Returns(new List<Employee>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.SubscriptionHistories).Returns(histories.AsQueryable().BuildMockDbSet().Object);
+
+        var result = await _handler.Handle(new GetPlatformStatsQuery(), CancellationToken.None);
+
+        result.RenewalRate.Should().Be(50);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldUseZeroDayRiskReason_WhenSubscriptionEndsLaterToday()
+    {
+        var plan = new SubscriptionPlan
+        {
+            Id = Guid.NewGuid(),
+            PlanName = "Pro",
+            PlanCode = "PRO",
+            PriceMonthly = 1000000
+        };
+        var enterpriseId = Guid.NewGuid();
+        var enterprises = new List<Enterprise>
+        {
+            new()
+            {
+                Id = enterpriseId,
+                EnterpriseName = "Today Expiry Co",
+                Status = EnterpriseStatus.Active,
+                SubscriptionPlan = plan,
+                SubscriptionPlanId = plan.Id,
+                SubscriptionEndDate = DateTime.UtcNow.Date.AddHours(23).AddMinutes(59),
+                IsDeleted = false
+            }
+        };
+
+        _mockContext.Setup(x => x.Enterprises).Returns(enterprises.AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.Employees).Returns(new List<Employee>().AsQueryable().BuildMockDbSet().Object);
+        _mockContext.Setup(x => x.SubscriptionHistories).Returns(new List<SubscriptionHistory>().AsQueryable().BuildMockDbSet().Object);
+
+        var result = await _handler.Handle(new GetPlatformStatsQuery(), CancellationToken.None);
+
+        result.ChurnWatchlist.Should().ContainSingle(item => item.EnterpriseId == enterpriseId);
+        result.ChurnWatchlist
+            .Single(item => item.EnterpriseId == enterpriseId)
+            .RiskReason.Should().Contain("0");
+    }
 }

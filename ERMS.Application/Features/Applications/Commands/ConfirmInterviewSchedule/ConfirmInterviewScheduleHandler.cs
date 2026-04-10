@@ -80,7 +80,7 @@ public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInt
         {
             try
             {
-                var candidateFullName = interview.Application.Candidate.User?.FullName ?? "Candidate";
+                var (candidateFullName, _) = GetCandidateInfo(interview.Application);
                 var zoomMeeting = await _zoomService.CreateMeetingAsync(new ZoomMeetingRequest
                 {
                     Topic = $"Interview for {interview.Application.JobPosting.JobTitle}",
@@ -177,7 +177,7 @@ public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInt
 
         // Create calendar event
         var attendees = new List<string>();
-        var candidateEmail = interview.Application.Candidate.User?.Email;
+        var (_, candidateEmail) = GetCandidateInfo(interview.Application);
         if (!string.IsNullOrEmpty(candidateEmail))
         {
             attendees.Add(candidateEmail);
@@ -252,4 +252,9 @@ public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInt
             }
         }
     }
+
+    private static (string Name, string? Email) GetCandidateInfo(Domain.Entities.Application.Application app) =>
+        app.IsExternal
+            ? (app.ExternalCandidateName ?? "Candidate", app.ExternalCandidateEmail)
+            : (app.Candidate?.User?.FullName ?? "Candidate", app.Candidate?.User?.Email);
 }
