@@ -15,7 +15,7 @@ namespace ERMS.Application.Features.Feedback.Commands.SubmitCourseFeedback
 
     public class SubmitCourseFeedbackResult
     {
-        public int FeedbackId { get; set; }
+        public string FeedbackId { get; set; } = "";
         public string Message { get; set; } = "";
     }
 
@@ -68,7 +68,8 @@ namespace ERMS.Application.Features.Feedback.Commands.SubmitCourseFeedback
                 TrainerRating = request.TrainerRating,
                 Comment = request.Comment?.Trim(),
                 IsAnonymous = request.IsAnonymous,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                IsDeleted = false
             };
 
             _context.CourseFeedbacks.Add(feedback);
@@ -76,7 +77,7 @@ namespace ERMS.Application.Features.Feedback.Commands.SubmitCourseFeedback
 
             return new SubmitCourseFeedbackResult
             {
-                FeedbackId = feedback.Id,
+                FeedbackId = feedback.Id.ToString(),
                 Message = "Đã gửi đánh giá thành công!"
             };
         }

@@ -45,7 +45,7 @@ namespace ERMS.Application.Features.Auth.Commands.ResendConfirmation
                 var clientUrl = _config["ClientSettings:Url"];
                 if (string.IsNullOrWhiteSpace(clientUrl) || !Uri.TryCreate(clientUrl, UriKind.Absolute, out var clientUri))
                 {
-                    _logger.LogError("Cannot send email confirmation because ClientSettings:Url is invalid: {ClientUrl}", clientUrl);
+                    _logger.LogError("Không thể gửi xác nhận email vì ClientSettings:Url không hợp lệ: {ClientUrl}", clientUrl);
                     return false;
                 }
 
@@ -58,12 +58,12 @@ namespace ERMS.Application.Features.Auth.Commands.ResendConfirmation
 
                 await _emailService.SendEmailAsync(user.Email!, subject, body);
 
-                _logger.LogInformation("Email confirmation sent successfully to: {Email}", user.Email);
+                _logger.LogInformation("Đã gửi xác nhận email thành công đến: {Email}", user.Email);
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error sending email confirmation to: {Email}", request.Email);
+                _logger.LogError(ex, "Lỗi khi gửi xác nhận email đến: {Email}", request.Email);
                 return false;
             }
         }

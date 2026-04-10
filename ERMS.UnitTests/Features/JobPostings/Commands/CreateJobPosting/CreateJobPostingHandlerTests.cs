@@ -19,6 +19,7 @@ public class CreateJobPostingHandlerTests
 {
     private readonly Mock<IERMSDbContext> _contextMock;
     private readonly Mock<ICurrentUserService> _currentUserServiceMock;
+    private readonly Mock<ISubscriptionLimitChecker> _subscriptionLimitCheckerMock;
     private readonly Mock<ILogger<CreateJobPostingHandler>> _loggerMock;
     private readonly CreateJobPostingHandler _handler;
 
@@ -31,11 +32,22 @@ public class CreateJobPostingHandlerTests
     {
         _contextMock = new Mock<IERMSDbContext>();
         _currentUserServiceMock = new Mock<ICurrentUserService>();
+        _subscriptionLimitCheckerMock = new Mock<ISubscriptionLimitChecker>();
         _loggerMock = new Mock<ILogger<CreateJobPostingHandler>>();
+
+        _subscriptionLimitCheckerMock
+            .Setup(x => x.CheckJobPostingLimitAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SubscriptionLimitResult
+            {
+                IsAllowed = true,
+                CurrentCount = 0,
+                MaxAllowed = 20
+            });
 
         _handler = new CreateJobPostingHandler(
             _contextMock.Object,
             _currentUserServiceMock.Object,
+            _subscriptionLimitCheckerMock.Object,
             _loggerMock.Object);
     }
 
@@ -364,6 +376,69 @@ public class CreateJobPostingHandlerTests
 
         // Assert
         result.Should().NotBe(Guid.Empty);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldThrowException_WhenEnterpriseReachedJobPostingLimit()
+    {
+        // Arrange
+        SetupCurrentUser();
+
+        _subscriptionLimitCheckerMock
+            .Setup(x => x.CheckJobPostingLimitAsync(_enterpriseId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SubscriptionLimitResult
+            {
+                IsAllowed = false,
+                CurrentCount = 2,
+                MaxAllowed = 2,
+                Message = "Đã đạt giới hạn 2 tin tuyển dụng."
+            });
+
+        var planDetail = CreateApprovedPlanDetail(quantity: 10); // keep recruitment quota high
+
+        var planDetailsData = new List<PlanDetail> { planDetail }.AsQueryable();
+        var planDetailsMockSet = CreateMockDbSet(planDetailsData);
+        _contextMock.Setup(c => c.PlanDetails).Returns(planDetailsMockSet.Object);
+
+        var applicationsData = new List<ApplicationEntity>().AsQueryable();
+        var applicationsMockSet = CreateMockDbSet(applicationsData);
+        _contextMock.Setup(c => c.Applications).Returns(applicationsMockSet.Object);
+
+        // Simulate enterprise already has 2 postings (Free limit)
+        var jobPostingsData = new List<JobPosting>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                EnterpriseId = _enterpriseId,
+                DepartmentId = 1,
+                JobTitle = "Existing 1",
+                Description = "Desc",
+                CreatedById = _userId,
+                Status = JobPostingStatus.Published,
+                IsDeleted = false
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                EnterpriseId = _enterpriseId,
+                DepartmentId = 1,
+                JobTitle = "Existing 2",
+                Description = "Desc",
+                CreatedById = _userId,
+                Status = JobPostingStatus.Published,
+                IsDeleted = false
+            }
+        }.AsQueryable();
+        var jobPostingsMockSet = CreateMockDbSet(jobPostingsData);
+        _contextMock.Setup(c => c.JobPostings).Returns(jobPostingsMockSet.Object);
+
+        var command = CreateValidCommand();
+
+        // Act & Assert
+        await _handler.Invoking(h => h.Handle(command, CancellationToken.None))
+            .Should().ThrowAsync<Exception>()
+            .WithMessage("*giới hạn*");
     }
 
     #endregion

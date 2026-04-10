@@ -1,5 +1,6 @@
 ﻿using ERMS.Application.Features.Training.Commands.ConfirmTrainingRequest;
 using ERMS.Application.Features.Training.Commands.CreateTrainingRequest;
+using ERMS.Application.Features.Training.Commands.DeleteTrainingRequest;
 using ERMS.Application.Features.Training.Commands.UpdateTrainingRequest;
 using ERMS.Application.Features.Training.Queries.GetAllTrainingRequests;
 using ERMS.Domain.Constants.Roles;
@@ -68,7 +69,7 @@ namespace ERMS.API.Controllers
 
             return Ok(new
             {
-                message = "Training request reject successfully",
+                message = "Đã từ chối yêu cầu đào tạo",
                 success = result
             });
         }
@@ -79,9 +80,37 @@ namespace ERMS.API.Controllers
             var result = await _mediator.Send(command);
             return Ok(new
             {
-                message = "Training request updated successfully",
+                message = "Cập nhật yêu cầu đào tạo thành công",
                 success = result
             });
+        }
+
+        [Authorize(Roles = AppRoles.DepartmentHead)]
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            try
+            {
+                var result = await _mediator.Send(new DeleteTrainingRequestCommand
+                {
+                    Id = id
+                });
+
+                if (!result)
+                {
+                    return NotFound(new { message = "Yêu cầu đào tạo không tìm thấy hoặc đã được xóa" });
+                }
+
+                return Ok(new
+                {
+                    message = "Xóa yêu cầu đào tạo thành công",
+                    success = true
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }

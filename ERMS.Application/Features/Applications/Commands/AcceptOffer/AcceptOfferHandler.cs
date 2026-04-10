@@ -11,16 +11,16 @@ namespace ERMS.Application.Features.Applications.Commands.AcceptOffer;
 /// Handler for accepting a job offer.
 /// Only the owning Candidate can accept their own offer.
 /// </summary>
-public sealed class AcceptOfferCommandHandler : IRequestHandler<AcceptOfferCommand, AcceptOfferResult>
+public sealed class AcceptOfferHandler : IRequestHandler<AcceptOfferCommand, AcceptOfferResult>
 {
     private readonly IERMSDbContext _context;
     private readonly ICurrentUserService _currentUserService;
-    private readonly ILogger<AcceptOfferCommandHandler> _logger;
+    private readonly ILogger<AcceptOfferHandler> _logger;
 
-    public AcceptOfferCommandHandler(
+    public AcceptOfferHandler(
         IERMSDbContext context,
         ICurrentUserService currentUserService,
-        ILogger<AcceptOfferCommandHandler> logger)
+        ILogger<AcceptOfferHandler> logger)
     {
         _context = context;
         _currentUserService = currentUserService;

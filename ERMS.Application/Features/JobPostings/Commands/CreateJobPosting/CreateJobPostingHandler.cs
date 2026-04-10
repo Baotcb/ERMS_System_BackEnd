@@ -13,15 +13,18 @@ public sealed class CreateJobPostingHandler : IRequestHandler<CreateJobPostingCo
 {
     private readonly IERMSDbContext _context;
     private readonly ICurrentUserService _currentUserService;
+    private readonly ISubscriptionLimitChecker _subscriptionLimitChecker;
     private readonly ILogger<CreateJobPostingHandler> _logger;
 
     public CreateJobPostingHandler(
         IERMSDbContext context,
         ICurrentUserService currentUserService,
+        ISubscriptionLimitChecker subscriptionLimitChecker,
         ILogger<CreateJobPostingHandler> logger)
     {
         _context = context;
         _currentUserService = currentUserService;
+        _subscriptionLimitChecker = subscriptionLimitChecker;
         _logger = logger;
     }
 
@@ -40,6 +43,13 @@ public sealed class CreateJobPostingHandler : IRequestHandler<CreateJobPostingCo
         // 2. Get enterprise context
         var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
             ?? throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
+
+        // 2.1. Subscription limit check for number of job postings
+        var jobPostingLimit = await _subscriptionLimitChecker.CheckJobPostingLimitAsync(enterpriseId, cancellationToken);
+        if (!jobPostingLimit.IsAllowed)
+        {
+            throw new InvalidOperationException(jobPostingLimit.Message ?? "Đã đạt giới hạn số tin tuyển dụng.");
+        }
 
         // 3. Load PlanDetail with RecruitmentPlan
         var planDetail = await _context.PlanDetails

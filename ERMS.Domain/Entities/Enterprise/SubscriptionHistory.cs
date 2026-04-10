@@ -11,7 +11,7 @@ namespace ERMS.Domain.Entities.Enterprise
         public string ActionType { get; set; } = null!; // Subscribe, Upgrade...
         public Guid? PreviousPlanId { get; set; }
         public decimal Amount { get; set; }
-        public string Currency { get; set; } = "USD";
+        public string Currency { get; set; } = "VND";
         public string? PaymentMethod { get; set; }
         public string? PaymentReference { get; set; }
         public DateTime PeriodStartDate { get; set; }

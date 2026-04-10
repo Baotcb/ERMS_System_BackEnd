@@ -81,7 +81,7 @@ namespace ERMS.Application.Features.Departments.Commands.CreateDepartment
             _context.Departments.Add(department);
             await _context.SaveChangesAsync(cancellationToken);
 
-            _logger.LogInformation("Created department {DepartmentName} (ID: {DepartmentId}) for enterprise {EnterpriseId}",
+            _logger.LogInformation("Đã tạo phòng ban {DepartmentName} (ID: {DepartmentId}) cho doanh nghiệp {EnterpriseId}",
                 department.DepartmentName, department.Id, department.EnterpriseId);
 
             return department.Id;

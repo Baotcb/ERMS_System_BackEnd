@@ -1,6 +1,7 @@
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Recruitment;
 using ERMS.Domain.Constants.Roles;
+using ERMS.Domain.Entities.Recruitment;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -54,9 +55,19 @@ public sealed class CloseJobPostingHandler : IRequestHandler<CloseJobPostingComm
         jobPosting.ClosedAt = DateTime.UtcNow;
         jobPosting.UpdatedAt = DateTime.UtcNow;
 
+        _context.ApprovalHistories.Add(new ApprovalHistory
+        {
+            EntityType = "JobPosting",
+            EntityId = jobPosting.Id,
+            Action = "Closed",
+            PreviousStatus = JobPostingStatus.Published,
+            NewStatus = JobPostingStatus.Closed,
+            PerformedById = userId
+        });
+
         await _context.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Closed JobPosting {JobPostingId}", request.Id);
+        _logger.LogInformation("Đã đóng bài tuyển dụng {JobPostingId}", request.Id);
         return Unit.Value;
     }
 }

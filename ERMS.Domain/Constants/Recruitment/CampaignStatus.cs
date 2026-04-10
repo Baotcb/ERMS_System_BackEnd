@@ -13,7 +13,7 @@ namespace ERMS.Domain.Constants.Recruitment
         public const string Draft = "Draft";
 
         /// <summary>
-        /// ✅ Open: Đang nhận đề xuất kế hoạch, đang tuyển dụng
+        ///   Open: Đang nhận đề xuất kế hoạch, đang tuyển dụng
         /// </summary>
         public const string Open = "Open";
 

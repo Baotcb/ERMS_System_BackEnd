@@ -80,7 +80,7 @@ namespace ERMS.Application.Features.Departments.Commands.UpdateDepartment
 
             await _context.SaveChangesAsync(cancellationToken);
 
-            _logger.LogInformation("Updated department {DepartmentId}", department.Id);
+            _logger.LogInformation("Đã cập nhật phòng ban {DepartmentId}", department.Id);
 
             return true;
         }

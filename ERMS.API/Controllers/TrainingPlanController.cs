@@ -1,10 +1,12 @@
 ﻿using ERMS.Application.Features.Training.Commands.ApproveTrainingPlan;
+using ERMS.Application.Features.Training.Commands.CloseTrainingPlan;
 using ERMS.Application.Features.Training.Commands.CreateTrainingPlan;
 using ERMS.Application.Features.Training.Commands.CreateTrainingRequest;
 using ERMS.Application.Features.Training.Commands.RejectTrainingPlan;
 using ERMS.Application.Features.Training.Commands.UpdateTrainingPlan;
 using ERMS.Application.Features.Training.Queries.GetAllTrainingPlans;
 using ERMS.Application.Features.Training.Queries.GetAllTrainingRequests;
+using ERMS.Application.Features.Training.Queries.GetDepartmentTrainingSummary;
 using ERMS.Application.Features.Training.Queries.GetTrainingPlanDetail;
 using ERMS.Domain.Constants.Roles;
 using MediatR;
@@ -127,6 +129,34 @@ namespace ERMS.API.Controllers
                 message = "Training plan rejected successfully",
                 success = result
             });
+        }
+        [Authorize(Roles = AppRoles.HRManager + "," + AppRoles.Director)]
+        [HttpPut("close")]
+        public async Task<IActionResult> Close(
+    [FromBody] CloseTrainingPlanCommand command)
+        {
+            try
+            {
+                var result = await _mediator.Send(command);
+
+                return Ok(new
+                {
+                    message = "Training plan closed successfully",
+                    success = result
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [Authorize(Roles = AppRoles.DepartmentHead)]
+        [HttpGet("department-training-summary")]
+        public async Task<IActionResult> GetDepartmentTrainingSummary()
+        {
+            var result = await _mediator.Send(new GetDepartmentTrainingSummaryQuery());
+            return Ok(result);
         }
     }
 }

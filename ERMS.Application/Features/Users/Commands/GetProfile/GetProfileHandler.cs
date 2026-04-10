@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Features.Users.DTO;
+using ERMS.Application.Features.Users.DTO;
 using ERMS.Application.Interface;
 using ERMS.Domain.Entities;
 using ERMS.Domain.Entities.Identity;
@@ -34,7 +34,7 @@ namespace ERMS.Application.Features.Users.Commands.GetProfile
 
      
             var user = await _userManager.Users
-                .Include(u => u.Department)
+                .Include(u => u.Department).ThenInclude(d => d.Enterprise)
                 .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
 
             if (user == null)
@@ -52,6 +52,8 @@ namespace ERMS.Application.Features.Users.Commands.GetProfile
                 Phones = user.PhoneNumber,
                 DepartmentId = user.DepartmentId,
                 DepartmentName = user.Department?.DepartmentName,
+                EnterpriseName = user.Department?.Enterprise?.EnterpriseName,
+                EnterpriseLogoUrl = user.Department?.Enterprise?.LogoUrl,
                 AvatarUrl = user.AvatarUrl,
                 DateJoined = user.DateJoined
             };

@@ -160,7 +160,7 @@ public sealed class AssignInterviewerHandler : IRequestHandler<AssignInterviewer
         catch (Exception ex)
         {
             await transaction.RollbackAsync(cancellationToken);
-            _logger.LogError(ex, "Failed to assign interviewers for Application {ApplicationId}", request.ApplicationId);
+            _logger.LogError(ex, "Không thể chỉ định người phỏng vấn cho hồ sơ {ApplicationId}", request.ApplicationId);
             throw;
         }
     }

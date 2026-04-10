@@ -26,6 +26,7 @@ namespace ERMS.Application.Interface
         DbSet<Enterprise> Enterprises { get; set; }
         DbSet<SubscriptionHistory> SubscriptionHistories { get; set; }
         DbSet<OwnershipTransfer> OwnershipTransfers { get; set; }
+        DbSet<PaymentOrder> PaymentOrders { get; set; }
 
       
         DbSet<Department> Departments { get; set; }
@@ -72,11 +73,13 @@ namespace ERMS.Application.Interface
         DbSet<QuizAttempt> QuizAttempts { get; set; }
         DbSet<QuizAnswer> QuizAnswers { get; set; }
         DbSet<CourseFeedback> CourseFeedbacks { get; set; }
+        DbSet<CourseFeedbackReply> CourseFeedbackReplies { get; set; }
         DbSet<WorkshopConfirmation> WorkshopConfirmations { get; set; }
 
 
       
         DbSet<Notification> Notifications { get; set; }
+        DbSet<Report> Reports { get; set; }
 
         
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
