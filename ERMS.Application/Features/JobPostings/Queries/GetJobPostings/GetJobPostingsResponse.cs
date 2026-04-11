@@ -12,6 +12,7 @@ public sealed class GetJobPostingsResponse
 public sealed class JobPostingListDto
 {
     public Guid Id { get; set; }
+    public Guid? PlanDetailId { get; set; }
     public string JobTitle { get; set; } = null!;
     public string? JobCode { get; set; }
     public string Status { get; set; } = null!;

@@ -15,11 +15,11 @@ namespace ERMS.API.Controllers;
 [EnableRateLimiting("fixed")]
 public sealed class AdminDiagnosticsController : ControllerBase
 {
-    private readonly IGeminiProbeService _geminiProbeService;
+    private readonly IAIProbeService _aiProbeService;
 
-    public AdminDiagnosticsController(IGeminiProbeService geminiProbeService)
+    public AdminDiagnosticsController(IAIProbeService aiProbeService)
     {
-        _geminiProbeService = geminiProbeService;
+        _aiProbeService = aiProbeService;
     }
 
     /// <summary>
@@ -33,7 +33,7 @@ public sealed class AdminDiagnosticsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetGeminiProbe(CancellationToken cancellationToken)
     {
-        var result = await _geminiProbeService.ProbeAsync(cancellationToken);
+        var result = await _aiProbeService.ProbeAsync(cancellationToken);
         return Ok(result);
     }
 }

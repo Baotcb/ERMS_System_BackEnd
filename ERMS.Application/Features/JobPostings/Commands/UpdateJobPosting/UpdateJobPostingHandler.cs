@@ -1,5 +1,7 @@
 using ERMS.Application.Interface;
+using ERMS.Domain.Constants.Recruitment;
 using ERMS.Domain.Constants.Roles;
+using ERMS.Domain.Entities.Recruitment;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -29,9 +31,7 @@ public sealed class UpdateJobPostingHandler : IRequestHandler<UpdateJobPostingCo
 
         var userRoles = _currentUserService.Roles;
         if (userRoles == null || !userRoles.Contains(AppRoles.HRManager))
-        {
             throw new UnauthorizedAccessException("Chỉ HR Manager mới có quyền cập nhật tin tuyển dụng.");
-        }
 
         var enterpriseId = await _currentUserService.GetEnterpriseIdAsync()
             ?? throw new UnauthorizedAccessException("Người dùng không thuộc doanh nghiệp nào.");
@@ -44,27 +44,135 @@ public sealed class UpdateJobPostingHandler : IRequestHandler<UpdateJobPostingCo
                 cancellationToken)
             ?? throw new Exception($"Không tìm thấy tin tuyển dụng với ID {request.Id}.");
 
-        // Update only allowed fields
-        if (request.Description != null)
-            jobPosting.Description = request.Description.Trim();
+        // Kiểm tra trạng thái cho phép chỉnh sửa
+        if (jobPosting.Status == JobPostingStatus.Closed || jobPosting.Status == JobPostingStatus.Archived)
+            throw new Exception($"Không thể chỉnh sửa tin tuyển dụng có trạng thái '{jobPosting.Status}'.");
 
-        if (request.Benefits != null)
+        // Trạng thái Published: từ chối các trường bị hạn chế
+        if (JobPostingStatus.IsPublished(jobPosting.Status))
+        {
+            var restrictedFields = new List<string>();
+            if (!string.IsNullOrWhiteSpace(request.JobTitle)) restrictedFields.Add("JobTitle");
+            if (!string.IsNullOrWhiteSpace(request.Requirements)) restrictedFields.Add("Requirements");
+            if (!string.IsNullOrWhiteSpace(request.EmploymentType)) restrictedFields.Add("EmploymentType");
+            if (!string.IsNullOrWhiteSpace(request.ExperienceLevel)) restrictedFields.Add("ExperienceLevel");
+            if (!string.IsNullOrWhiteSpace(request.EducationLevel)) restrictedFields.Add("EducationLevel");
+
+            if (restrictedFields.Count > 0)
+                throw new Exception($"Không thể chỉnh sửa các trường sau khi tin đã được đăng: {string.Join(", ", restrictedFields)}.");
+        }
+
+        // Áp dụng thay đổi — null/rỗng nghĩa là không thay đổi
+        var updatedFields = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(request.JobTitle))
+        {
+            jobPosting.JobTitle = request.JobTitle.Trim();
+            updatedFields.Add("JobTitle");
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Description))
+        {
+            jobPosting.Description = request.Description.Trim();
+            updatedFields.Add("Description");
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Requirements))
+        {
+            jobPosting.Requirements = request.Requirements.Trim();
+            updatedFields.Add("Requirements");
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Benefits))
+        {
             jobPosting.Benefits = request.Benefits.Trim();
+            updatedFields.Add("Benefits");
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.EmploymentType))
+        {
+            jobPosting.EmploymentType = request.EmploymentType.Trim();
+            updatedFields.Add("EmploymentType");
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.ExperienceLevel))
+        {
+            jobPosting.ExperienceLevel = request.ExperienceLevel.Trim();
+            updatedFields.Add("ExperienceLevel");
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.EducationLevel))
+        {
+            jobPosting.EducationLevel = request.EducationLevel.Trim();
+            updatedFields.Add("EducationLevel");
+        }
+
+        if (request.SalaryRangeMin.HasValue)
+        {
+            jobPosting.SalaryRangeMin = request.SalaryRangeMin.Value;
+            updatedFields.Add("SalaryRangeMin");
+        }
+
+        if (request.SalaryRangeMax.HasValue)
+        {
+            jobPosting.SalaryRangeMax = request.SalaryRangeMax.Value;
+            updatedFields.Add("SalaryRangeMax");
+        }
+
+        if (request.ShowSalary.HasValue)
+        {
+            jobPosting.ShowSalary = request.ShowSalary.Value;
+            updatedFields.Add("ShowSalary");
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Location))
+        {
+            jobPosting.Location = request.Location.Trim();
+            updatedFields.Add("Location");
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.RemoteOption))
+        {
+            jobPosting.RemoteOption = request.RemoteOption.Trim();
+            updatedFields.Add("RemoteOption");
+        }
+
+        if (request.Quantity.HasValue)
+        {
+            jobPosting.Quantity = request.Quantity.Value;
+            updatedFields.Add("Quantity");
+        }
 
         if (request.ApplicationDeadline.HasValue)
         {
             if (request.ApplicationDeadline.Value <= DateTime.UtcNow)
                 throw new Exception("Hạn nộp hồ sơ phải trong tương lai.");
             jobPosting.ApplicationDeadline = request.ApplicationDeadline.Value;
+            updatedFields.Add("ApplicationDeadline");
         }
 
-        if (request.Location != null)
-            jobPosting.Location = request.Location.Trim();
+        // Kiểm tra chéo mức lương sau khi đã áp dụng tất cả thay đổi
+        if (jobPosting.SalaryRangeMin.HasValue && jobPosting.SalaryRangeMax.HasValue
+            && jobPosting.SalaryRangeMax.Value < jobPosting.SalaryRangeMin.Value)
+        {
+            throw new Exception("Mức lương tối đa phải >= mức lương tối thiểu.");
+        }
 
-        if (request.RemoteOption != null)
-            jobPosting.RemoteOption = request.RemoteOption.Trim();
+        if (updatedFields.Count > 0)
+        {
+            jobPosting.UpdatedAt = DateTime.UtcNow;
+            _context.ApprovalHistories.Add(new ApprovalHistory
+            {
+                EntityType = "JobPosting",
+                EntityId = jobPosting.Id,
+                Action = "Updated",
+                PreviousStatus = jobPosting.Status,
+                NewStatus = jobPosting.Status,
+                PerformedById = userId,
+                Note = $"Đã cập nhật: {string.Join(", ", updatedFields)}"
+            });
+        }
 
-        jobPosting.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Đã cập nhật bài tuyển dụng {JobPostingId}", request.Id);
