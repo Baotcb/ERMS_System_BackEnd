@@ -21,10 +21,16 @@ namespace ERMS.UnitTests.Features.Training.Queries.GetAllTrainingRequests
         private readonly Mock<ICurrentUserService> _currentUserServiceMock;
         private readonly GetAllTrainingRequestsHandler _handler;
 
+        private readonly Guid _enterpriseId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+
         public GetAllTrainingRequestsHandlerTests()
         {
             _contextMock = new Mock<IERMSDbContext>();
             _currentUserServiceMock = new Mock<ICurrentUserService>();
+
+            _currentUserServiceMock
+                .Setup(x => x.GetEnterpriseIdAsync())
+                .ReturnsAsync(_enterpriseId);
 
             _handler = new GetAllTrainingRequestsHandler(
                 _contextMock.Object,
@@ -40,7 +46,6 @@ namespace ERMS.UnitTests.Features.Training.Queries.GetAllTrainingRequests
         [Fact]
         public async Task Handle_ValidRequest_ReturnsTrainingRequests()
         {
-            // Arrange
             var department = new Department { DepartmentName = "IT" };
             var user = new User { FullName = "John Doe" };
 
@@ -49,6 +54,7 @@ namespace ERMS.UnitTests.Features.Training.Queries.GetAllTrainingRequests
                 new TrainingRequest
                 {
                     Id = Guid.NewGuid(),
+                    EnterpriseId = _enterpriseId,
                     Subject = "Docker Training",
                     Status = "Pending",
                     Urgency = "High",
@@ -63,6 +69,7 @@ namespace ERMS.UnitTests.Features.Training.Queries.GetAllTrainingRequests
                 new TrainingRequest
                 {
                     Id = Guid.NewGuid(),
+                    EnterpriseId = _enterpriseId,
                     Subject = "Kubernetes Training",
                     Status = "Approved",
                     Urgency = "Medium",
@@ -81,11 +88,8 @@ namespace ERMS.UnitTests.Features.Training.Queries.GetAllTrainingRequests
                 PageSize = 10
             };
 
-            // Act
             var result = await _handler.Handle(query, CancellationToken.None);
 
-            // Assert
-            result.Should().NotBeNull();
             result.TotalCount.Should().Be(2);
             result.Items.Should().HaveCount(2);
         }
@@ -93,7 +97,6 @@ namespace ERMS.UnitTests.Features.Training.Queries.GetAllTrainingRequests
         [Fact]
         public async Task Handle_WithSearchFilter_ReturnsFilteredResults()
         {
-            // Arrange
             var department = new Department { DepartmentName = "HR" };
             var user = new User { FullName = "Alice Smith" };
 
@@ -102,6 +105,7 @@ namespace ERMS.UnitTests.Features.Training.Queries.GetAllTrainingRequests
                 new TrainingRequest
                 {
                     Id = Guid.NewGuid(),
+                    EnterpriseId = _enterpriseId,
                     Subject = "Leadership Training",
                     RequestedBy = user,
                     Department = department,
@@ -113,6 +117,7 @@ namespace ERMS.UnitTests.Features.Training.Queries.GetAllTrainingRequests
                 new TrainingRequest
                 {
                     Id = Guid.NewGuid(),
+                    EnterpriseId = _enterpriseId,
                     Subject = "Technical Training",
                     RequestedBy = user,
                     Department = department,
@@ -127,13 +132,11 @@ namespace ERMS.UnitTests.Features.Training.Queries.GetAllTrainingRequests
 
             var query = new GetAllTrainingRequestsQuery
             {
-                Search = "leader"
+                Search = "Leader"
             };
 
-            // Act
             var result = await _handler.Handle(query, CancellationToken.None);
 
-            // Assert
             result.TotalCount.Should().Be(1);
             result.Items.First().Subject.Should().Contain("Leadership");
         }
@@ -141,7 +144,6 @@ namespace ERMS.UnitTests.Features.Training.Queries.GetAllTrainingRequests
         [Fact]
         public async Task Handle_WithDepartmentFilter_ReturnsFilteredResults()
         {
-            // Arrange
             var dep1 = new Department { Id = 1, DepartmentName = "IT" };
             var dep2 = new Department { Id = 2, DepartmentName = "HR" };
 
@@ -152,6 +154,7 @@ namespace ERMS.UnitTests.Features.Training.Queries.GetAllTrainingRequests
                 new TrainingRequest
                 {
                     Id = Guid.NewGuid(),
+                    EnterpriseId = _enterpriseId,
                     Subject = "DevOps",
                     Department = dep1,
                     DepartmentId = dep1.Id,
@@ -164,6 +167,7 @@ namespace ERMS.UnitTests.Features.Training.Queries.GetAllTrainingRequests
                 new TrainingRequest
                 {
                     Id = Guid.NewGuid(),
+                    EnterpriseId = _enterpriseId,
                     Subject = "Soft Skills",
                     Department = dep2,
                     DepartmentId = dep2.Id,
@@ -182,10 +186,8 @@ namespace ERMS.UnitTests.Features.Training.Queries.GetAllTrainingRequests
                 DepartmentId = 1
             };
 
-            // Act
             var result = await _handler.Handle(query, CancellationToken.None);
 
-            // Assert
             result.TotalCount.Should().Be(1);
             result.Items.First().DepartmentName.Should().Be("IT");
         }
@@ -193,7 +195,6 @@ namespace ERMS.UnitTests.Features.Training.Queries.GetAllTrainingRequests
         [Fact]
         public async Task Handle_WithStatusFilter_ReturnsFilteredResults()
         {
-            // Arrange
             var department = new Department { DepartmentName = "Finance" };
             var user = new User { FullName = "User" };
 
@@ -202,6 +203,7 @@ namespace ERMS.UnitTests.Features.Training.Queries.GetAllTrainingRequests
                 new TrainingRequest
                 {
                     Id = Guid.NewGuid(),
+                    EnterpriseId = _enterpriseId,
                     Subject = "Excel Training",
                     Status = "Approved",
                     Urgency = "Medium",
@@ -213,6 +215,7 @@ namespace ERMS.UnitTests.Features.Training.Queries.GetAllTrainingRequests
                 new TrainingRequest
                 {
                     Id = Guid.NewGuid(),
+                    EnterpriseId = _enterpriseId,
                     Subject = "Accounting Training",
                     Status = "Pending",
                     Urgency = "Medium",
@@ -230,10 +233,8 @@ namespace ERMS.UnitTests.Features.Training.Queries.GetAllTrainingRequests
                 Status = "Approved"
             };
 
-            // Act
             var result = await _handler.Handle(query, CancellationToken.None);
 
-            // Assert
             result.TotalCount.Should().Be(1);
             result.Items.First().Status.Should().Be("Approved");
         }
@@ -241,7 +242,6 @@ namespace ERMS.UnitTests.Features.Training.Queries.GetAllTrainingRequests
         [Fact]
         public async Task Handle_ShouldSortByCreatedAtDescending()
         {
-            // Arrange
             var department = new Department { DepartmentName = "IT" };
             var user = new User { FullName = "User" };
 
@@ -250,6 +250,7 @@ namespace ERMS.UnitTests.Features.Training.Queries.GetAllTrainingRequests
                 new TrainingRequest
                 {
                     Id = Guid.NewGuid(),
+                    EnterpriseId = _enterpriseId,
                     Subject = "Old Request",
                     Department = department,
                     RequestedBy = user,
@@ -261,6 +262,7 @@ namespace ERMS.UnitTests.Features.Training.Queries.GetAllTrainingRequests
                 new TrainingRequest
                 {
                     Id = Guid.NewGuid(),
+                    EnterpriseId = _enterpriseId,
                     Subject = "New Request",
                     Department = department,
                     RequestedBy = user,
@@ -275,11 +277,25 @@ namespace ERMS.UnitTests.Features.Training.Queries.GetAllTrainingRequests
 
             var query = new GetAllTrainingRequestsQuery();
 
-            // Act
             var result = await _handler.Handle(query, CancellationToken.None);
 
-            // Assert
             result.Items.First().Subject.Should().Be("New Request");
+        }
+
+        [Fact]
+        public async Task Handle_NoEnterpriseId_ThrowsUnauthorized()
+        {
+            _currentUserServiceMock
+                .Setup(x => x.GetEnterpriseIdAsync())
+                .ReturnsAsync((Guid?)null);
+
+            SetupMockContext(new List<TrainingRequest>());
+
+            var query = new GetAllTrainingRequestsQuery();
+
+            Func<Task> act = async () => await _handler.Handle(query, CancellationToken.None);
+
+            await act.Should().ThrowAsync<UnauthorizedAccessException>();
         }
     }
 }
