@@ -1,4 +1,5 @@
 using ERMS.Application.Features.Lessons.Commands.CreateLesson;
+using ERMS.Application.Features.Lessons.Commands.DeleteLesson;
 using ERMS.Application.Features.Lessons.Commands.UpdateLesson;
 using ERMS.Application.Features.Lessons.Commands.UpdateLessonProgress;
 using ERMS.Application.Features.Lessons.Queries.GetLessonProgress;
@@ -158,6 +159,19 @@ namespace ERMS.API.Controllers
         public class UpdateDocumentUrlRequest
         {
             public string? DocumentUrl { get; set; }
+        }
+
+        [HttpDelete("{lessonId}")]
+        public async Task<IActionResult> DeleteLesson(Guid lessonId)
+        {
+            var command = new DeleteLessonCommand
+            {
+                Id = lessonId
+            };
+
+            var result = await _mediator.Send(command);
+
+            return Ok(result);
         }
     }
 }
