@@ -1,6 +1,7 @@
 using ERMS.Application.Features.Certifications.Queries;
 using ERMS.Application.Features.Certifications.Queries.GetMyCertifications;
 using ERMS.Application.Features.Courses.Commands.CreateCourse;
+using ERMS.Application.Features.Courses.Commands.DeleteCourse;
 using ERMS.Application.Features.Courses.Commands.PublishCourse;
 using ERMS.Application.Features.Courses.Commands.UpdateCourse;
 using ERMS.Application.Features.Courses.Queries.GetAllCourses;
@@ -121,6 +122,18 @@ namespace ERMS.API.Controllers
             return Ok(result);
         }
 
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteCourse(Guid id)
+        {
+            var command = new DeleteCourseCommand
+            {
+                Id = id
+            };
+
+            var result = await _mediator.Send(command);
+
+            return Ok(result);
+        }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(Guid id, UpdateCourseCommand command)
