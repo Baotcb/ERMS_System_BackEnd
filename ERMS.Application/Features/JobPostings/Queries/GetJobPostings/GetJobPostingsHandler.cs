@@ -49,6 +49,7 @@ public sealed class GetJobPostingsHandler : IRequestHandler<GetJobPostingsQuery,
             .Select(jp => new JobPostingListDto
             {
                 Id = jp.Id,
+                PlanDetailId = jp.PlanDetailId,
                 JobTitle = jp.JobTitle,
                 JobCode = jp.JobCode,
                 Status = jp.Status,

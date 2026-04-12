@@ -13,6 +13,7 @@ using ERMS.Application.Features.Applications.Commands.SubmitFinalDecision;
 using ERMS.Application.Features.Applications.Commands.SubmitInterviewFeedback;
 using ERMS.Application.Features.Applications.Commands.WithdrawApplication;
 using ERMS.Application.Features.Applications.Queries.GetAllOfferByHR;
+using ERMS.Application.Features.Applications.Queries.GetApplicationResumeDownload;
 using ERMS.Application.Features.Applications.Queries.GetApplicationsByJob;
 using ERMS.Application.Features.Applications.Queries.GetMyApplications;
 using ERMS.Application.Features.Applications.Queries.GetMyOffers;
@@ -174,6 +175,38 @@ public class ApplicationsController : ControllerBase
         catch (UnauthorizedAccessException ex)
         {
             return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get a time-limited download URL for an application's resume.
+    /// </summary>
+    /// <remarks>
+    /// **Access:** Candidate owner, HR Manager, Director, Department Head in same department
+    /// </remarks>
+    [HttpGet("{applicationId}/resume/download")]
+    [ProducesResponseType(StatusCodes.Status302Found)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> DownloadResume(Guid applicationId)
+    {
+        try
+        {
+            var result = await _mediator.Send(new GetApplicationResumeDownloadQuery
+            {
+                ApplicationId = applicationId
+            });
+
+            return Redirect(result.DownloadUrl);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
         }
         catch (Exception ex)
         {

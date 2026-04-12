@@ -662,6 +662,40 @@ public class CreateJobPostingHandlerTests
         capturedJobPosting.Quantity.Should().Be(3);
     }
 
+    [Fact]
+    public async Task Handle_ShouldUseSalaryOverrides_WhenProvided()
+    {
+        // Arrange
+        SetupCurrentUser();
+
+        var planDetail = CreateApprovedPlanDetail(quantity: 3);
+        SetupFullMocks(planDetail);
+
+        JobPosting? capturedJobPosting = null;
+        var jobPostingsMockSet = CreateMockDbSet(new List<JobPosting>().AsQueryable());
+        _contextMock.Setup(c => c.JobPostings).Returns(jobPostingsMockSet.Object);
+        jobPostingsMockSet.Setup(m => m.Add(It.IsAny<JobPosting>()))
+            .Callback<JobPosting>(jp => capturedJobPosting = jp);
+
+        var command = new CreateJobPostingCommand
+        {
+            PlanDetailId = _planDetailId,
+            ApplicationDeadline = DateTime.UtcNow.AddMonths(1),
+            SalaryRangeMin = 50_000_000,
+            SalaryRangeMax = 100_000_000,
+            ShowSalary = false
+        };
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        capturedJobPosting.Should().NotBeNull();
+        capturedJobPosting!.SalaryRangeMin.Should().Be(50_000_000);
+        capturedJobPosting.SalaryRangeMax.Should().Be(100_000_000);
+        capturedJobPosting.ShowSalary.Should().BeFalse();
+    }
+
     #endregion
 
     #region Helper Methods for Mocking

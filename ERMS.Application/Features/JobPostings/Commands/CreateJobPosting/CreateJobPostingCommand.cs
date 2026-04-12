@@ -11,4 +11,7 @@ public sealed class CreateJobPostingCommand : IRequest<Guid>
     public string? Benefits { get; set; }
     public string? Location { get; set; }
     public string? RemoteOption { get; set; }
+    public decimal? SalaryRangeMin { get; set; }
+    public decimal? SalaryRangeMax { get; set; }
+    public bool? ShowSalary { get; set; }
 }
