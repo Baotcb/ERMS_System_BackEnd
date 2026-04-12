@@ -104,4 +104,86 @@ public class CloudinaryService : ICloudinaryService
             durationMinutes
         );
     }
+
+    public string GetAuthenticatedDownloadUrl(string fileUrl, string fileName, TimeSpan? expiresIn = null)
+    {
+        var asset = ParseAsset(fileUrl, fileName);
+        var expiresAt = DateTimeOffset.UtcNow
+            .Add(expiresIn ?? TimeSpan.FromHours(1))
+            .ToUnixTimeSeconds();
+
+        return _cloudinary.DownloadPrivate(
+            asset.PublicId,
+            true,
+            asset.Format,
+            asset.DeliveryType,
+            expiresAt,
+            asset.ResourceType);
+    }
+
+    private static CloudinaryAsset ParseAsset(string fileUrl, string fileName)
+    {
+        if (!Uri.TryCreate(fileUrl, UriKind.Absolute, out var uri))
+        {
+            throw new ArgumentException("Cloudinary URL không hợp lệ.", nameof(fileUrl));
+        }
+
+        if (!uri.Host.Contains("cloudinary.com", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ArgumentException("Chỉ hỗ trợ tải tệp từ Cloudinary.", nameof(fileUrl));
+        }
+
+        var parts = uri.AbsolutePath
+            .Split('/', StringSplitOptions.RemoveEmptyEntries);
+
+        if (parts.Length < 5)
+        {
+            throw new ArgumentException("Cloudinary URL không có đủ thông tin để tạo link tải.", nameof(fileUrl));
+        }
+
+        var resourceType = parts[1];
+        var deliveryType = parts[2];
+        var assetStartIndex = 3;
+
+        if (parts[3].StartsWith("v", StringComparison.OrdinalIgnoreCase)
+            && parts[3].Length > 1
+            && parts[3][1..].All(char.IsDigit))
+        {
+            assetStartIndex = 4;
+        }
+
+        if (assetStartIndex >= parts.Length)
+        {
+            throw new ArgumentException("Cloudinary URL không chứa public_id.", nameof(fileUrl));
+        }
+
+        var assetPath = Uri.UnescapeDataString(string.Join("/", parts.Skip(assetStartIndex)));
+        if (resourceType.Equals("raw", StringComparison.OrdinalIgnoreCase))
+        {
+            // Raw resources commonly require extension as part of public_id.
+            return new CloudinaryAsset(resourceType, deliveryType, assetPath, null);
+        }
+
+        var extension = Path.GetExtension(assetPath);
+        var format = !string.IsNullOrWhiteSpace(extension)
+            ? extension.TrimStart('.')
+            : Path.GetExtension(fileName).TrimStart('.');
+
+        if (string.IsNullOrWhiteSpace(format))
+        {
+            throw new ArgumentException("Không xác định được định dạng tệp cần tải.", nameof(fileName));
+        }
+
+        var publicId = !string.IsNullOrWhiteSpace(extension)
+            ? assetPath[..^extension.Length]
+            : assetPath;
+
+        return new CloudinaryAsset(resourceType, deliveryType, publicId, format);
+    }
+
+    private sealed record CloudinaryAsset(
+        string ResourceType,
+        string DeliveryType,
+        string PublicId,
+        string? Format);
 }

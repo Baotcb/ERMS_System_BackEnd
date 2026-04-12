@@ -14,7 +14,12 @@ public sealed class GetMyOffersResponse
 public sealed class CandidateOfferDto
 {
     public Guid OfferId { get; set; }
+    public Guid ApplicationId { get; set; }
+    public Guid JobPostingId { get; set; }
+    public Guid EnterpriseId { get; set; }
     public string? OfferCode { get; set; }
+    public string EnterpriseName { get; set; } = null!;
+    public string? EnterpriseLogoUrl { get; set; }
     public string Position { get; set; } = null!;
     public string DepartmentName { get; set; } = null!;
     public string JobTitle { get; set; } = null!;
