@@ -48,6 +48,7 @@ public sealed class GetMyOffersHandler : IRequestHandler<GetMyOffersQuery, GetMy
         var query = _context.Offers
             .Include(o => o.Application)
                 .ThenInclude(a => a.JobPosting)
+                    .ThenInclude(j => j.Enterprise)
             .Include(o => o.Department)
             .Where(o => o.Application.CandidateId == candidate.Id
                      && !o.IsDeleted
@@ -64,7 +65,12 @@ public sealed class GetMyOffersHandler : IRequestHandler<GetMyOffersQuery, GetMy
             .Select(o => new CandidateOfferDto
             {
                 OfferId = o.Id,
+                ApplicationId = o.ApplicationId,
+                JobPostingId = o.Application.JobPostingId,
+                EnterpriseId = o.Application.JobPosting.EnterpriseId,
                 OfferCode = o.OfferCode,
+                EnterpriseName = o.Application.JobPosting.Enterprise.EnterpriseName,
+                EnterpriseLogoUrl = o.Application.JobPosting.Enterprise.LogoUrl,
                 Position = o.Position,
                 DepartmentName = o.Department.DepartmentName,
                 JobTitle = o.Application.JobPosting.JobTitle,
