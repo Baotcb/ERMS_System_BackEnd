@@ -275,10 +275,10 @@ dotnet run --project ERMS.API
 ```
 
 Ứng dụng sẽ chạy tại:
-- **API:** `http://localhost:5000` hoặc `https://localhost:5001`
-- **API Documentation (Scalar):** `http://localhost:5000/scalar/v1`
-- **Health Check:** `http://localhost:5000/health`
-- **Database Health:** `http://localhost:5000/db-health`
+- **API:** `http://localhost:5129` hoặc `https://localhost:7229`
+- **API Documentation (Scalar):** `https://localhost:7229/scalar/v1`
+- **Health Check:** `https://localhost:7229/health`
+- **Database Health:** `https://localhost:7229/db-health`
 
 ---
 
