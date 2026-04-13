@@ -42,15 +42,53 @@ namespace ERMS.Application.Features.Enrollments.Commands.AssignEmployeesToCourse
             if (course.Status != "Published")
                 throw new InvalidOperationException("Khóa học không ở trạng thái công khai.");
 
-            // 2. Xử lý ghi danh (Enrollment) - Tránh trùng lặp
+            // 1. Lấy DepartmentId từ TrainingRequest
+            var departmentIds = await _context.TrainingRequests
+     .Where(tr => tr.TrainingPlanId == course.TrainingPlanId && !tr.IsDeleted)
+     .Select(tr => tr.DepartmentId)
+     .Distinct()
+     .ToListAsync(cancellationToken);
+
+            if (!departmentIds.Any())
+            {
+                throw new InvalidOperationException("Không tìm thấy phòng ban cho khóa học.");
+            }
+
+            // 2.  LỌC employee hợp lệ (QUAN TRỌNG NHẤT)
+            var validEmployeeIds = await _context.Employees
+    .Where(e => request.EmployeeIds.Contains(e.Id)
+        && e.EnterpriseId == enterpriseId
+        && departmentIds.Contains(e.DepartmentId.Value))
+    .Select(e => e.Id)
+    .ToListAsync(cancellationToken);
+
+            // employee sai phòng ban / không tồn tại
+            var invalidEmployeeIds = request.EmployeeIds
+                .Except(validEmployeeIds)
+                .ToList();
+
+            // (OPTIONAL) nếu muốn chặn luôn
+            if (invalidEmployeeIds.Any())
+            {
+                throw new InvalidOperationException("Có nhân viên không thuộc phòng ban của khóa học.");
+            }
+
+            // 3. Lấy danh sách đã enroll
             var existingEmployeeIds = await _context.Enrollments
                 .Where(e => e.CourseId == request.CourseId)
                 .Select(e => e.EmployeeId)
                 .ToListAsync(cancellationToken);
 
-            var newEmployeeIds = request.EmployeeIds.Distinct().Except(existingEmployeeIds).ToList();
-            var skippedIds = request.EmployeeIds.Distinct().Intersect(existingEmployeeIds).ToList();
+            // 4.  CHỈ xử lý trên validEmployeeIds
+            var newEmployeeIds = validEmployeeIds
+                .Except(existingEmployeeIds)
+                .ToList();
 
+            var skippedIds = request.EmployeeIds
+                .Except(newEmployeeIds)
+                .ToList();
+
+            // 5. Insert
             foreach (var empId in newEmployeeIds)
             {
                 _context.Enrollments.Add(new Enrollment
@@ -62,6 +100,7 @@ namespace ERMS.Application.Features.Enrollments.Commands.AssignEmployeesToCourse
                     Status = "NotStarted"
                 });
             }
+
             await _context.SaveChangesAsync(cancellationToken);
 
             // 3. Chuẩn bị hạ tầng Online (Zoom) nếu cần
