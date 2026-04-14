@@ -128,9 +128,10 @@ if (app.Environment.IsDevelopment())
 
 using (var scope = app.Services.CreateScope())
 {
-    RecurringJob.AddOrUpdate<ERMS.Application.Interface.IDatabaseSyncJob>(
+    var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+    recurringJobManager.AddOrUpdate(
         "database-sync-job",
-        job => job.ExecuteSyncAsync(CancellationToken.None),
+        Hangfire.Common.Job.FromExpression<ERMS.Application.Interface.IDatabaseSyncJob>(job => job.ExecuteSyncAsync(CancellationToken.None)),
         "0 2 * * *", 
         new RecurringJobOptions { TimeZone = TimeZoneInfo.Local });
 }
