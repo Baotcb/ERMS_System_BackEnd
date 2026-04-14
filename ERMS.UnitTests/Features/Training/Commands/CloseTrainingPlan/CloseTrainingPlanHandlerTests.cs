@@ -167,7 +167,7 @@ namespace ERMS.UnitTests.Features.Training.Commands.CloseTrainingPlan
 
         //   Happy path
         [Fact]
-        public async Task Handle_ValidRequest_ShouldClosePlan_AndCompleteRequests()
+        public async Task Handle_ValidRequest_ShouldClosePlan_AndCompleteRequests_AndCloseCourses()
         {
             var enterpriseId = Guid.NewGuid();
             var userId = Guid.NewGuid();
@@ -188,28 +188,48 @@ namespace ERMS.UnitTests.Features.Training.Commands.CloseTrainingPlan
             };
 
             var requests = new List<TrainingRequest>
-            {
-                new TrainingRequest
-                {
-                    Id = Guid.NewGuid(),
-                    TrainingPlanId = planId,
-                    Status = TrainingRequestStatus.Pending,
-                    IsDeleted = false
-                },
-                new TrainingRequest
-                {
-                    Id = Guid.NewGuid(),
-                    TrainingPlanId = planId,
-                    Status = TrainingRequestStatus.Completed,
-                    IsDeleted = false
-                }
-            };
+    {
+        new TrainingRequest
+        {
+            Id = Guid.NewGuid(),
+            TrainingPlanId = planId,
+            Status = TrainingRequestStatus.Pending,
+            IsDeleted = false
+        },
+        new TrainingRequest
+        {
+            Id = Guid.NewGuid(),
+            TrainingPlanId = planId,
+            Status = TrainingRequestStatus.Completed,
+            IsDeleted = false
+        }
+    };
+
+            var courses = new List<Course>
+    {
+        new Course
+        {
+            Id = Guid.NewGuid(),
+            TrainingPlanId = planId,
+            Status = "Published",
+            IsDeleted = false
+        },
+        new Course
+        {
+            Id = Guid.NewGuid(),
+            TrainingPlanId = planId,
+            Status = "Closed",
+            IsDeleted = false
+        }
+    };
 
             SetupPlans(new List<TrainingPlan> { plan });
             SetupRequests(requests);
 
-            _contextMock.Setup(x =>
-                x.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            _contextMock.Setup(x => x.Courses)
+                .Returns(courses.AsQueryable().BuildMockDbSet().Object);
+
+            _contextMock.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(1);
 
             var command = new CloseTrainingPlanCommand
@@ -221,15 +241,15 @@ namespace ERMS.UnitTests.Features.Training.Commands.CloseTrainingPlan
 
             result.Should().BeTrue();
 
-            //  Plan closed
             plan.Status.Should().Be("Closed");
 
-            //  Requests updated
             requests[0].Status.Should().Be(TrainingRequestStatus.Completed);
             requests[0].UpdatedAt.Should().NotBeNull();
 
-            // request đã completed thì giữ nguyên
             requests[1].Status.Should().Be(TrainingRequestStatus.Completed);
+
+            courses[0].Status.Should().Be("Closed");
+            courses[1].Status.Should().Be("Closed");
 
             _contextMock.Verify(x =>
                 x.SaveChangesAsync(It.IsAny<CancellationToken>()),

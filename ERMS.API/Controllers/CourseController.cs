@@ -100,16 +100,24 @@ namespace ERMS.API.Controllers
     
     [FromBody] AssignEmployeesRequest request)
         {
-            var command = new AssignEmployeesToCourseCommand
+            try
             {
-                CourseId = courseId,
-                MeetUrl = request.MeetUrl,
-                EmployeeIds = request.EmployeeIds
-            };
+                var command = new AssignEmployeesToCourseCommand
+                {
+                    CourseId = courseId,
+                    MeetUrl = request.MeetUrl,
+                    EmployeeIds = request.EmployeeIds
+                };
 
-            var result = await _mediator.Send(command);
+                var result = await _mediator.Send(command);
 
-            return Ok(result);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+
         }
 
         [HttpGet("{courseId}/enrolled-employees")]
