@@ -8,6 +8,7 @@ using Scalar.AspNetCore;
 using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.HttpOverrides;
+using Hangfire;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -114,5 +115,24 @@ app.MapMethods("/db-health", new[] { "GET", "HEAD" }, async (IServiceProvider sp
 }).AllowAnonymous();
 
 app.MapControllers();
+
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseHangfireDashboard("/hangfire", new Hangfire.DashboardOptions 
+    { 
+        Authorization = new[] { new Hangfire.Dashboard.LocalRequestsOnlyAuthorizationFilter() }
+    });
+}
+
+
+using (var scope = app.Services.CreateScope())
+{
+    RecurringJob.AddOrUpdate<ERMS.Application.Interface.IDatabaseSyncJob>(
+        "database-sync-job",
+        job => job.ExecuteSyncAsync(CancellationToken.None),
+        "0 2 * * *", 
+        new RecurringJobOptions { TimeZone = TimeZoneInfo.Local });
+}
 
 app.Run();
