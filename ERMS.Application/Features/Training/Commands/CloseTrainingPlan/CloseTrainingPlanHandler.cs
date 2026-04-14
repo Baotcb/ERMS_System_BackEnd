@@ -28,8 +28,8 @@ namespace ERMS.Application.Features.Training.Commands.CloseTrainingPlan
         }
 
         public async Task<bool> Handle(
-            CloseTrainingPlanCommand request,
-            CancellationToken cancellationToken)
+    CloseTrainingPlanCommand request,
+    CancellationToken cancellationToken)
         {
             var userId = _currentUserService.UserId;
 
@@ -55,11 +55,10 @@ namespace ERMS.Application.Features.Training.Commands.CloseTrainingPlan
             if (plan.Status != "Approved")
                 throw new Exception("Chỉ có thể đóng kế hoạch đã được phê duyệt");
 
-            // 1. Close plan
+            // ===== 1. Close plan =====
             plan.Status = "Closed";
-           
 
-            // 2. Complete all related Training Requests
+            // ===== 2. Complete Training Requests =====
             var requests = await _context.TrainingRequests
                 .Where(r =>
                     r.TrainingPlanId == plan.Id &&
@@ -73,13 +72,27 @@ namespace ERMS.Application.Features.Training.Commands.CloseTrainingPlan
                 req.UpdatedAt = DateTime.UtcNow;
             }
 
+            // ===== 3. Close related Courses =====
+            var courses = await _context.Courses
+                .Where(c =>
+                    c.TrainingPlanId == plan.Id &&
+                    !c.IsDeleted &&
+                    c.Status != "Closed")
+                .ToListAsync(cancellationToken);
+
+            foreach (var course in courses)
+            {
+                course.Status = "Closed";
+            }
+
             await _context.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation(
-                "TrainingPlan {PlanId} closed by {UserId}. {Count} requests completed",
+                "TrainingPlan {PlanId} closed by {UserId}. {RequestCount} requests completed, {CourseCount} courses closed",
                 plan.Id,
                 userId,
-                requests.Count);
+                requests.Count,
+                courses.Count);
 
             return true;
         }
