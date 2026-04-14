@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Text;
 using Microsoft.AspNetCore.Http;
 using ERMS.Domain.Entities.Identity;
+using Hangfire;
 
 using ERMS.Infrastructure.Configuration;
 
@@ -85,6 +86,16 @@ namespace ERMS.Infrastructure
                 client.BaseAddress = new Uri("http://ip-api.com/");
                 client.Timeout = TimeSpan.FromSeconds(5);
             });
+
+            // Hangfire setup
+            services.AddHangfire(configurationHangfire => configurationHangfire
+                .SetDataCompatibilityLevel(Hangfire.CompatibilityLevel.Version_180)
+                .UseSimpleAssemblyNameTypeSerializer()
+                .UseRecommendedSerializerSettings()
+                .UseSqlServerStorage(configuration.GetConnectionString("DefaultConnection")));
+
+            services.AddHangfireServer();
+            services.AddScoped<IDatabaseSyncJob, DatabaseSyncJob>();
 
             return services;
         }
