@@ -40,6 +40,7 @@ public sealed class GetAllApplicationsHandler : IRequestHandler<GetAllApplicatio
         var query = _context.Applications
             .Include(a => a.Candidate)
                 .ThenInclude(c => c.User)
+            .Include(a => a.ExternalCandidate)
             .Include(a => a.JobPosting)
             .Include(a => a.Resume)
             .Include(a => a.CVScreeningResult)
@@ -68,9 +69,17 @@ public sealed class GetAllApplicationsHandler : IRequestHandler<GetAllApplicatio
                 Status = a.Status,
                 AppliedAt = a.AppliedAt,
                 CandidateId = a.CandidateId,
-                CandidateName = a.Candidate.User.FullName,
-                CandidateEmail = a.Candidate.User.Email,
-                CandidatePhone = a.Candidate.User.PhoneNumber,
+                CandidateName = a.ExternalCandidateId != null && a.ExternalCandidate != null
+                    ? a.ExternalCandidate.FullName
+                    : a.Candidate.User.FullName,
+                CandidateEmail = a.ExternalCandidateId != null && a.ExternalCandidate != null
+                    ? a.ExternalCandidate.Email
+                    : a.Candidate.User.Email,
+                CandidatePhone = a.ExternalCandidateId != null && a.ExternalCandidate != null
+                    ? a.ExternalCandidate.PhoneNumber
+                    : a.Candidate.User.PhoneNumber,
+                IsExternal = a.ExternalCandidateId != null,
+                Source = a.Source,
                 JobPostingId = a.JobPostingId,
                 JobTitle = a.JobPosting.JobTitle,
                 ResumeUrl = a.Resume != null ? a.Resume.FileUrl : null,

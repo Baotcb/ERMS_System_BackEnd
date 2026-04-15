@@ -20,12 +20,18 @@ public sealed class GroqAIService : IAIService
     private readonly HttpClient _httpClient;
     private readonly ILogger<GroqAIService> _logger;
     private readonly GroqSettings _settings;
+    private readonly GroqModelSettings _modelSettings;
 
-    public GroqAIService(HttpClient httpClient, ILogger<GroqAIService> logger, IOptions<GroqSettings> options)
+    public GroqAIService(
+        HttpClient httpClient,
+        ILogger<GroqAIService> logger,
+        IOptions<GroqSettings> options,
+        IOptions<GroqModelSettings> modelOptions)
     {
         _httpClient = httpClient;
         _logger = logger;
         _settings = options.Value;
+        _modelSettings = modelOptions.Value;
 
         if (string.IsNullOrWhiteSpace(_settings.ApiKey))
             throw new InvalidOperationException("Chưa cấu hình Groq ApiKey trong appsettings.");
@@ -44,7 +50,7 @@ public sealed class GroqAIService : IAIService
 
         try
         {
-            var jsonText = await SendChatCompletionAsync(prompt, temperature: 0.2);
+            var jsonText = await SendChatCompletionAsync(prompt, temperature: 0.2, preferredModel: _modelSettings.CvScoring);
             jsonText = StripMarkdownCodeFences(jsonText);
 
             var result = JsonSerializer.Deserialize<CVScreeningResultDto>(jsonText, new JsonSerializerOptions
@@ -90,7 +96,11 @@ public sealed class GroqAIService : IAIService
             try
             {
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-                var jsonText = await SendChatCompletionAsync(prompt, temperature: 0.7, cts.Token);
+                var jsonText = await SendChatCompletionAsync(
+                    prompt,
+                    temperature: 0.7,
+                    preferredModel: _modelSettings.JobDescription,
+                    cancellationToken: cts.Token);
                 jsonText = StripMarkdownCodeFences(jsonText);
 
                 var result = JsonSerializer.Deserialize<GenerateJDResultDto>(jsonText, new JsonSerializerOptions
@@ -123,9 +133,10 @@ public sealed class GroqAIService : IAIService
     private async Task<string> SendChatCompletionAsync(
         string prompt,
         double temperature,
+        string? preferredModel,
         CancellationToken cancellationToken = default)
     {
-        var model = string.IsNullOrWhiteSpace(_settings.Model) ? "llama-3.3-70b-versatile" : _settings.Model;
+        var model = ResolveModel(preferredModel);
 
         var requestBody = new
         {
@@ -159,6 +170,16 @@ public sealed class GroqAIService : IAIService
             throw new Exception("Phản hồi từ Groq AI trống");
 
         return content;
+    }
+
+    private string ResolveModel(string? preferredModel)
+    {
+        if (!string.IsNullOrWhiteSpace(preferredModel))
+        {
+            return preferredModel.Trim();
+        }
+
+        throw new InvalidOperationException("Thiếu cấu hình model Groq trong GroqModels.");
     }
 
     private static string BuildJDPrompt(

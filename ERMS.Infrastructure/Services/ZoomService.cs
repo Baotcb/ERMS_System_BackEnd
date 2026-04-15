@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Interface;
+using ERMS.Application.Interface;
 using Microsoft.Extensions.Configuration;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -81,6 +81,6 @@ public class ZoomService : IZoomService
         response.EnsureSuccessStatusCode();
 
         var result = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: cancellationToken);
-        return result.GetProperty("access_token").GetString() ?? throw new Exception("Failed to get access token");
+        return result.GetProperty("access_token").GetString() ?? throw new Exception("Không lấy được access token");
     }
 }

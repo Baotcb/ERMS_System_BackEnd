@@ -29,7 +29,7 @@ namespace ERMS.Infrastructure.Services
 
         public async Task ExecuteSyncAsync(CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Starting Database Sync Job (Full Backup)...");
+            _logger.LogInformation("Đang bắt đầu Đồng bộ Database (Full Backup)...");
             
             var backupOptions = new DbContextOptionsBuilder<ERMSDbContext>()
                 .UseSqlServer(_configuration.GetConnectionString("SecondaryConnection"))
@@ -71,7 +71,7 @@ namespace ERMS.Infrastructure.Services
             // 3. Bật lại ràng buộc khóa ngoại
             await backupContext.Database.ExecuteSqlRawAsync("EXEC sp_MSforeachtable 'ALTER TABLE ? WITH CHECK CHECK CONSTRAINT all'");
 
-            _logger.LogInformation("Database Sync Job completed successfully.");
+            _logger.LogInformation("Đồng bộ Database thành công.");
         }
 
         private async Task SyncTableAsync<T>(ERMSDbContext backupContext, CancellationToken cancellationToken) where T : class

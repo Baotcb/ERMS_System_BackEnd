@@ -28,6 +28,8 @@ public sealed class EnterpriseApplicationDto
     public string CandidateName { get; set; } = null!;
     public string? CandidateEmail { get; set; }
     public string? CandidatePhone { get; set; }
+    public bool IsExternal { get; set; }
+    public string? Source { get; set; }
 
     // Job info
     public Guid JobPostingId { get; set; }

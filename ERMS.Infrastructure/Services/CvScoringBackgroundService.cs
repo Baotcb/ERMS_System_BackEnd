@@ -1,10 +1,12 @@
+using System.Text.Json;
 using System.Threading.Channels;
 using ERMS.Application.Interface;
 using ERMS.Domain.Entities.Application;
+using ERMS.Infrastructure.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System.Text.Json;
+using Microsoft.Extensions.Options;
 
 namespace ERMS.Infrastructure.Services;
 
@@ -33,28 +35,42 @@ public sealed class BackgroundTaskQueue : IBackgroundTaskQueue
 }
 
 /// <summary>
-/// Background service that dequeues CV scoring work items and processes them
-/// using Gemini AI. Runs for the entire application lifetime.
+/// Background service that dequeues CV scoring work items and processes them.
 /// </summary>
 public sealed class CvScoringBackgroundService : BackgroundService
 {
     private readonly IBackgroundTaskQueue _queue;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<CvScoringBackgroundService> _logger;
+    private readonly GroqModelSettings _groqModelSettings;
+
+    public CvScoringBackgroundService(
+        IBackgroundTaskQueue queue,
+        IServiceScopeFactory scopeFactory,
+        ILogger<CvScoringBackgroundService> logger,
+        IOptions<GroqModelSettings> groqModelOptions)
+    {
+        _queue = queue;
+        _scopeFactory = scopeFactory;
+        _logger = logger;
+        _groqModelSettings = groqModelOptions.Value;
+    }
 
     public CvScoringBackgroundService(
         IBackgroundTaskQueue queue,
         IServiceScopeFactory scopeFactory,
         ILogger<CvScoringBackgroundService> logger)
+        : this(
+            queue,
+            scopeFactory,
+            logger,
+            Microsoft.Extensions.Options.Options.Create(new GroqModelSettings()))
     {
-        _queue = queue;
-        _scopeFactory = scopeFactory;
-        _logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Dịch vụ nền tính điểm CV đang khởi động.");
+        _logger.LogInformation("Background service chấm điểm CV đang khởi động.");
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -65,7 +81,7 @@ public sealed class CvScoringBackgroundService : BackgroundService
                 workItem = await _queue.DequeueAsync(stoppingToken);
 
                 _logger.LogInformation(
-                    "Đang xử lý tính điểm CV cho hồ sơ {ApplicationId}.",
+                    "Đang xử lý chấm điểm CV cho đơn ứng tuyển {ApplicationId}.",
                     workItem.ApplicationId);
 
                 using var scope = _scopeFactory.CreateScope();
@@ -95,32 +111,39 @@ public sealed class CvScoringBackgroundService : BackgroundService
                     Summary = aiResult.Summary,
                     RawResponse = aiResult.RawResponse,
                     ProcessedAt = DateTime.UtcNow,
-                    AIModel = "llama-3.3-70b-versatile"
+                    AIModel = ResolveScoringModel()
                 };
 
                 dbContext.CVScreeningResults.Add(screeningResult);
                 await dbContext.SaveChangesAsync(CancellationToken.None);
 
                 _logger.LogInformation(
-                    "Tính điểm CV hoàn tất cho hồ sơ {ApplicationId}. Điểm tổng quan: {Score}",
+                    "Hoàn tất chấm điểm CV cho đơn ứng tuyển {ApplicationId}. Điểm tổng: {Score}",
                     workItem.ApplicationId, aiResult.OverallScore);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
-                // Graceful shutdown — exit the loop
                 break;
             }
             catch (Exception ex)
             {
                 _logger.LogError(
                     ex,
-                    "Tính điểm CV thất bại cho hồ sơ {ApplicationId}. Hồ sơ đã được lưu — HR có thể kích hoạt tính điểm lại thủ công.",
+                    "Lỗi khi chấm điểm CV cho đơn ứng tuyển {ApplicationId}.",
                     workItem?.ApplicationId);
-
-                // Continue processing the next item in the queue
             }
         }
 
-        _logger.LogInformation("Dịch vụ nền tính điểm CV đang dừng lại.");
+        _logger.LogInformation("Background service chấm điểm CV đang dừng.");
+    }
+
+    private string ResolveScoringModel()
+    {
+        if (!string.IsNullOrWhiteSpace(_groqModelSettings.CvScoring))
+        {
+            return _groqModelSettings.CvScoring.Trim();
+        }
+
+        throw new InvalidOperationException("Thiếu cấu hình model cho CV scoring (GroqModels:CvScoring).");
     }
 }

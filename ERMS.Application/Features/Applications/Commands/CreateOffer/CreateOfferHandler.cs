@@ -1,4 +1,5 @@
-﻿using ERMS.Application.Interface;
+using ERMS.Application.Exceptions;
+using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Application;
 using ERMS.Domain.Constants.Roles;
 using ERMS.Domain.Entities.Application;
@@ -36,76 +37,89 @@ namespace ERMS.Application.Features.Applications.Commands.CreateOffer
             _userManager = userManager;
         }
 
-        public async Task<Guid> Handle(CreateOfferCommand request, CancellationToken cancellationToken)
+                public async Task<Guid> Handle(CreateOfferCommand request, CancellationToken cancellationToken)
         {
-           
             var currentUserId = _currentUserService.UserId;
             if (currentUserId == null)
             {
                 throw new UnauthorizedAccessException("Không tìm thấy thông tin người dùng.");
             }
-           if(!_currentUserService.Roles.Contains(AppRoles.HRManager))
+
+            if (!_currentUserService.Roles.Contains(AppRoles.HRManager))
             {
                 throw new UnauthorizedAccessException("Bạn không có quyền tạo offer.");
             }
-           
+
             var application = await _context.Applications
                 .Include(a => a.Candidate)
                     .ThenInclude(c => c.User)
+                .Include(a => a.ExternalCandidate)
                 .Include(a => a.JobPosting)
                 .Include(a => a.Offer)
                 .FirstOrDefaultAsync(a => a.Id == request.ApplicationId && !a.IsDeleted, cancellationToken);
 
             if (application == null)
             {
-                throw new Exception("Không tìm thấy đơn ứng tuyển.");
+                throw new BusinessException("Không tìm thấy đơn ứng tuyển.");
             }
 
             if (application.Offer != null && !application.Offer.IsDeleted)
             {
-                throw new Exception("Đơn ứng tuyển này đã có offer.");
+                throw new BusinessException("Đơn ứng tuyển này đã có offer.");
             }
 
             if (application.Stage != ApplicationStage.OfferProcessing)
             {
-                throw new Exception("Đơn ứng tuyển phải ở trạng thái 'OfferProcessing' để tạo offer.");
+                throw new BusinessException("Đơn ứng tuyển phải ở trạng thái 'OfferProcessing' để tạo offer.");
             }
 
-            if(_currentUserService.GetEnterpriseIdAsync== null)
+            var enterpriseId = await _currentUserService.GetEnterpriseIdAsync();
+            if (enterpriseId == null)
             {
                 throw new UnauthorizedAccessException("Không tìm thấy thông tin doanh nghiệp.");
             }
-            var enterpriseId = await _currentUserService.GetEnterpriseIdAsync();
+
             if (application.JobPosting.EnterpriseId != enterpriseId.Value)
             {
                 throw new UnauthorizedAccessException("Bạn không có quyền tạo offer cho đơn ứng tuyển này.");
             }
+
             var department = await _currentUserService.GetDepartmentIdAsync();
-            if(department == null)
+            if (department == null)
             {
                 throw new UnauthorizedAccessException("Không tìm thấy thông tin phòng ban.");
             }
 
-   
             if (request.StartDate < DateTime.UtcNow.Date)
             {
-                throw new Exception("Ngày bắt đầu phải từ hôm nay trở đi.");
+                throw new BusinessException("Ngày bắt đầu phải từ hôm nay trở đi.");
             }
 
             if (request.ExpirationDate <= DateTime.UtcNow)
             {
-                throw new Exception("Ngày hết hạn phải sau thời điểm hiện tại.");
+                throw new BusinessException("Ngày hết hạn phải sau thời điểm hiện tại.");
             }
 
+            if (request.ExpirationDate >= request.StartDate)
+            {
+                throw new BusinessException("Hạn phản hồi offer phải trước ngày bắt đầu làm việc.");
+            }
 
             var offerCode = await GenerateOfferCodeAsync(cancellationToken);
+            var isExternalApplication = application.ExternalCandidateId != null && application.ExternalCandidate != null;
+            var isNewOffer = application.Offer == null;
+            var isReusingSoftDeletedOffer = !isNewOffer && application.Offer!.IsDeleted;
+            var now = DateTime.UtcNow;
+            var responseToken = isExternalApplication ? Guid.NewGuid().ToString("N") : null;
+            var resolvedOfferCode = isReusingSoftDeletedOffer && !string.IsNullOrWhiteSpace(application!.Offer!.OfferCode)
+                ? application.Offer!.OfferCode!
+                : offerCode;
 
-    
-            var offer = new Offer
+            var offerToSend = new Offer
             {
-                Id = Guid.NewGuid(),
+                Id = isReusingSoftDeletedOffer ? application!.Offer!.Id : Guid.NewGuid(),
                 ApplicationId = request.ApplicationId,
-                OfferCode = offerCode,
+                OfferCode = resolvedOfferCode,
                 Position = request.Position,
                 DepartmentId = application.JobPosting.DepartmentId,
                 Salary = request.Salary,
@@ -116,26 +130,100 @@ namespace ERMS.Application.Features.Applications.Commands.CreateOffer
                 ExpirationDate = request.ExpirationDate,
                 OfferLetterUrl = request.OfferLetterUrl,
                 Status = OfferStatus.Sent,
-                CreatedById = currentUserId.Value,
+                CreatedById = isReusingSoftDeletedOffer && application!.Offer!.CreatedById != Guid.Empty
+                    ? application.Offer!.CreatedById
+                    : currentUserId.Value,
+                CreatedAt = isReusingSoftDeletedOffer && application!.Offer!.CreatedAt != default
+                    ? application.Offer!.CreatedAt
+                    : now,
                 SentById = currentUserId.Value,
-                SentAt = DateTime.UtcNow,
+                SentAt = now,
                 IsDeleted = false,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                DeletedAt = null,
+                UpdatedAt = now,
+                ResponseToken = responseToken,
+                TokenExpiresAt = isExternalApplication ? request.ExpirationDate : null
             };
 
+            try
+            {
+                await SendOfferEmailAsync(offerToSend, application, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                if (ex is BusinessException)
+                {
+                    throw;
+                }
 
-            application.Stage = ApplicationStage.Offered;
-            application.StageUpdatedAt = DateTime.UtcNow;
-            application.UpdatedAt = DateTime.UtcNow;
+                throw new BusinessException($"Gửi email offer thất bại: {ex.Message}", ex);
+            }
 
-  
-            await _context.Offers.AddAsync(offer, cancellationToken);
-            await _context.SaveChangesAsync(cancellationToken);
+            await using var transaction = await _context.BeginTransactionAsync(cancellationToken);
 
-            await SendOfferEmailAsync(offer, application, cancellationToken);
+            try
+            {
+                Offer offerToPersist;
 
-            return offer.Id;
+                if (isReusingSoftDeletedOffer)
+                {
+                    offerToPersist = application.Offer!;
+                    offerToPersist.ApplicationId = offerToSend.ApplicationId;
+                    offerToPersist.OfferCode = offerToSend.OfferCode;
+                    offerToPersist.Position = offerToSend.Position;
+                    offerToPersist.DepartmentId = offerToSend.DepartmentId;
+                    offerToPersist.Salary = offerToSend.Salary;
+                    offerToPersist.SalaryFrequency = offerToSend.SalaryFrequency;
+                    offerToPersist.Bonus = offerToSend.Bonus;
+                    offerToPersist.Benefits = offerToSend.Benefits;
+                    offerToPersist.StartDate = offerToSend.StartDate;
+                    offerToPersist.ExpirationDate = offerToSend.ExpirationDate;
+                    offerToPersist.OfferLetterUrl = offerToSend.OfferLetterUrl;
+                    offerToPersist.Status = offerToSend.Status;
+                    offerToPersist.CreatedById = offerToPersist.CreatedById == Guid.Empty
+                        ? offerToSend.CreatedById
+                        : offerToPersist.CreatedById;
+                    if (offerToPersist.CreatedAt == default)
+                    {
+                        offerToPersist.CreatedAt = offerToSend.CreatedAt;
+                    }
+
+                    offerToPersist.SentById = offerToSend.SentById;
+                    offerToPersist.SentAt = offerToSend.SentAt;
+                    offerToPersist.IsDeleted = false;
+                    offerToPersist.DeletedAt = null;
+                    offerToPersist.UpdatedAt = offerToSend.UpdatedAt;
+                    offerToPersist.ResponseToken = offerToSend.ResponseToken;
+                    offerToPersist.TokenExpiresAt = offerToSend.TokenExpiresAt;
+                }
+                else
+                {
+                    offerToPersist = offerToSend;
+                    application.Offer = offerToPersist;
+                    await _context.Offers.AddAsync(offerToPersist, cancellationToken);
+                }
+
+                var stageUpdatedAt = DateTime.UtcNow;
+                application.Stage = ApplicationStage.Offered;
+                application.StageUpdatedAt = stageUpdatedAt;
+                application.UpdatedAt = stageUpdatedAt;
+
+                await _context.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+
+                return offerToPersist.Id;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+
+                if (ex is BusinessException)
+                {
+                    throw;
+                }
+
+                throw new BusinessException($"Tạo offer thất bại sau khi gửi email: {ex.Message}", ex);
+            }
         }
 
         private async Task<string> GenerateOfferCodeAsync(CancellationToken cancellationToken)
@@ -149,11 +237,11 @@ namespace ERMS.Application.Features.Applications.Commands.CreateOffer
                 .OrderByDescending(o => o.OfferCode)
                 .FirstOrDefaultAsync(cancellationToken);
 
-            int nextNumber = 1;
+            var nextNumber = 1;
             if (lastOffer != null && !string.IsNullOrEmpty(lastOffer.OfferCode))
             {
                 var lastNumberStr = lastOffer.OfferCode.Substring(prefix.Length);
-                if (int.TryParse(lastNumberStr, out int lastNumber))
+                if (int.TryParse(lastNumberStr, out var lastNumber))
                 {
                     nextNumber = lastNumber + 1;
                 }
@@ -164,8 +252,15 @@ namespace ERMS.Application.Features.Applications.Commands.CreateOffer
 
         private async Task SendOfferEmailAsync(Offer offer, Domain.Entities.Application.Application application, CancellationToken cancellationToken)
         {
-            var candidate = application.Candidate;
-            var candidateUser = candidate.User;
+            var candidateUser = application.Candidate?.User;
+            var externalCandidate = application.ExternalCandidate;
+            var isExternalApplication = application.ExternalCandidateId != null && externalCandidate != null;
+            var recipientName = isExternalApplication
+                ? externalCandidate!.FullName
+                : candidateUser?.FullName;
+            var recipientEmail = isExternalApplication
+                ? externalCandidate!.Email
+                : candidateUser?.Email;
             var jobTitle = application.JobPosting.Description;
 
             var emailSubject = $"🎉 Thư mời nhận việc - {offer.Position}";
@@ -176,6 +271,17 @@ namespace ERMS.Application.Features.Applications.Commands.CreateOffer
 
             var benefitsText = !string.IsNullOrWhiteSpace(offer.Benefits)
                 ? $"<p><strong>Phúc lợi:</strong> {offer.Benefits}</p>"
+                : "";
+
+            var clientUrl = (_configuration["ClientSettings:Url"] ?? string.Empty).TrimEnd('/');
+            var responseActionsHtml = isExternalApplication &&
+                                      !string.IsNullOrWhiteSpace(offer.ResponseToken) &&
+                                      !string.IsNullOrWhiteSpace(clientUrl)
+                ? $@"
+            <div style='margin: 24px 0; text-align: center;'>
+                <a href='{clientUrl}/offer-response/{offer.ResponseToken}?action=accept' style='display: inline-block; margin: 0 8px; padding: 12px 24px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 4px;'>Chấp nhận offer</a>
+                <a href='{clientUrl}/offer-response/{offer.ResponseToken}?action=reject' style='display: inline-block; margin: 0 8px; padding: 12px 24px; background-color: #f44336; color: white; text-decoration: none; border-radius: 4px;'>Từ chối offer</a>
+            </div>"
                 : "";
 
             var emailBody = $@"
@@ -198,7 +304,7 @@ namespace ERMS.Application.Features.Applications.Commands.CreateOffer
             <p>Bạn đã nhận được thư mời nhận việc</p>
         </div>
         <div class='content'>
-            <p>Xin chào <strong>{candidateUser.FullName}</strong>,</p>
+            <p>Xin chào <strong>{recipientName}</strong>,</p>
             
             <p>Chúng tôi rất vui mừng thông báo rằng bạn đã được chọn cho vị trí <strong>{offer.Position}</strong> 
             tại công ty chúng tôi sau quá trình phỏng vấn cho công việc <strong>{jobTitle}</strong>.</p>
@@ -217,6 +323,7 @@ namespace ERMS.Application.Features.Applications.Commands.CreateOffer
             <div class='urgent'>
                 ⚠️ <strong>Quan trọng:</strong> Vui lòng phản hồi đề nghị này trước ngày <strong>{offer.ExpirationDate:dd/MM/yyyy HH:mm}</strong>.
             </div>
+            {responseActionsHtml}
 
             <p>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với bộ phận HR của chúng tôi qua email này hoặc số điện thoại: <strong>1900-xxxx</strong>.</p>
             
@@ -234,14 +341,14 @@ namespace ERMS.Application.Features.Applications.Commands.CreateOffer
 </body>
 </html>";
 
-            try
+            if (string.IsNullOrWhiteSpace(recipientEmail))
             {
-                await _emailService.SendEmailAsync(candidateUser.Email, emailSubject, emailBody);
+                throw new BusinessException("Không tìm thấy email ứng viên để gửi offer.");
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Failed to send email: {ex.Message}");
-            }
+
+            await _emailService.SendEmailAsync(recipientEmail, emailSubject, emailBody);
         }
     }
 }
+
+

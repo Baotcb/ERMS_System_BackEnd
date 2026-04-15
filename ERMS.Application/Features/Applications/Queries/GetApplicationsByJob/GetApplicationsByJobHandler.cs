@@ -49,6 +49,7 @@ public sealed class GetApplicationsByJobHandler : IRequestHandler<GetApplication
         var query = _context.Applications
             .Include(a => a.Candidate)
                 .ThenInclude(c => c.User)
+            .Include(a => a.ExternalCandidate)
             .Include(a => a.Resume)
             .Include(a => a.CVScreeningResult)
             .Where(a => a.JobPostingId == request.JobPostingId && !a.IsDeleted);
@@ -72,14 +73,22 @@ public sealed class GetApplicationsByJobHandler : IRequestHandler<GetApplication
             {
                 ApplicationId = a.Id,
                 CandidateId = a.CandidateId,
-                CandidateName = a.Candidate.User.FullName,
-                CandidateEmail = a.Candidate.User.Email,
-                CandidatePhone = a.Candidate.User.PhoneNumber,
+                CandidateName = a.ExternalCandidateId != null && a.ExternalCandidate != null
+                    ? a.ExternalCandidate.FullName
+                    : a.Candidate.User.FullName,
+                CandidateEmail = a.ExternalCandidateId != null && a.ExternalCandidate != null
+                    ? a.ExternalCandidate.Email
+                    : a.Candidate.User.Email,
+                CandidatePhone = a.ExternalCandidateId != null && a.ExternalCandidate != null
+                    ? a.ExternalCandidate.PhoneNumber
+                    : a.Candidate.User.PhoneNumber,
                 ResumeUrl = a.Resume != null ? a.Resume.FileUrl : null,
                 Stage = a.Stage,
                 Status = a.Status,
                 AppliedAt = a.AppliedAt,
                 HRNote = a.HRNote,
+                IsExternal = a.ExternalCandidateId != null,
+                Source = a.Source,
                 CVScreeningResult = a.CVScreeningResult
             })
             .ToListAsync(cancellationToken);
@@ -96,6 +105,8 @@ public sealed class GetApplicationsByJobHandler : IRequestHandler<GetApplication
             Status = x.Status,
             AppliedAt = x.AppliedAt,
             HRNote = x.HRNote,
+            IsExternal = x.IsExternal,
+            Source = x.Source,
             // CV Screening Result mapping
             OverallScore = x.CVScreeningResult?.OverallScore,
             SkillMatchScore = x.CVScreeningResult?.SkillMatchScore,
