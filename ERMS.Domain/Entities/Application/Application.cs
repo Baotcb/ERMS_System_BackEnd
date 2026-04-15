@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using ERMS.Domain.Common;
+using ERMS.Domain.Entities.Candidate;
 using ERMS.Domain.Entities.Identity;
 using ERMS.Domain.Entities.Organization;
 using ERMS.Domain.Entities.Recruitment;
@@ -11,6 +12,7 @@ namespace ERMS.Domain.Entities.Application
     {
         public Guid JobPostingId { get; set; }
         public Guid CandidateId { get; set; }
+        public Guid? ExternalCandidateId { get; set; }
         public Guid? ResumeId { get; set; }
         public string? CoverLetter { get; set; }
         public decimal? ExpectedSalary { get; set; }
@@ -31,6 +33,7 @@ namespace ERMS.Domain.Entities.Application
 
         public virtual JobPosting JobPosting { get; set; } = null!;
         public virtual Candidate.Candidate Candidate { get; set; } = null!;
+        public virtual ExternalCandidate? ExternalCandidate { get; set; }
         public virtual Candidate.Resume? Resume { get; set; }
         public virtual Employee? ReferredBy { get; set; }
         public virtual Identity.User? RejectedBy { get; set; }

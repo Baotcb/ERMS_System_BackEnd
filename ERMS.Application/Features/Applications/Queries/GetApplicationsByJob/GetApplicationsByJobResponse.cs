@@ -29,6 +29,8 @@ public sealed class ApplicationListDto
     public string Status { get; set; } = null!;
     public DateTime AppliedAt { get; set; }
     public string? HRNote { get; set; }
+    public bool IsExternal { get; set; }
+    public string? Source { get; set; }
 
     // CV Screening Result
     public decimal? OverallScore { get; set; }

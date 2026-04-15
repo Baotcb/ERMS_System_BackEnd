@@ -25,6 +25,7 @@ namespace ERMS.Infrastructure
             services.Configure<CloudinarySettings>(configuration.GetSection("Cloudinary"));
             services.Configure<GeminiSettings>(configuration.GetSection("Gemini"));
             services.Configure<GroqSettings>(configuration.GetSection("Groq"));
+            services.Configure<GroqModelSettings>(configuration.GetSection("GroqModels"));
             services.Configure<PayOSSettings>(configuration.GetSection("PayOS"));
 
             // 1. DB Context
@@ -66,6 +67,7 @@ namespace ERMS.Infrastructure
             // CV Processing Services
             services.AddScoped<ICloudinaryService, CloudinaryService>();
             services.AddScoped<IPdfTextExtractor, PdfTextExtractor>();
+            services.AddHttpClient<ICVParsingService, CVParsingService>();
             // services.AddHttpClient<IGeminiAIService, GeminiAIService>(); // Gemini — kept for reference
             services.AddHttpClient<IAIService, GroqAIService>();
 

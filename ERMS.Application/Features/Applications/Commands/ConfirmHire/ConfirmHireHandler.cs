@@ -61,6 +61,7 @@ public sealed class ConfirmHireHandler : IRequestHandler<ConfirmHireCommand, Con
             .Include(a => a.Offer)
             .Include(a => a.Candidate)
                 .ThenInclude(c => c.User)
+            .Include(a => a.ExternalCandidate)
             .FirstOrDefaultAsync(a => a.Id == request.ApplicationId && !a.IsDeleted, cancellationToken)
             ?? throw new Exception($"Không tìm thấy hồ sơ ứng tuyển với ID {request.ApplicationId}.");
 
@@ -95,7 +96,7 @@ public sealed class ConfirmHireHandler : IRequestHandler<ConfirmHireCommand, Con
         }
 
         // 9. Begin transaction
-        using var transaction = await _context.BeginTransactionAsync(cancellationToken);
+        await using var transaction = await _context.BeginTransactionAsync(cancellationToken);
 
         try
         {
@@ -106,16 +107,26 @@ public sealed class ConfirmHireHandler : IRequestHandler<ConfirmHireCommand, Con
 
             // 11. Generate a secure password
             var generatedPassword = GenerateSecurePassword();
+            var candidateUser = application.Candidate.User;
+            var externalCandidate = application.ExternalCandidate;
+            var employeeFullName = application.ExternalCandidateId != null && externalCandidate != null
+                ? externalCandidate.FullName
+                : candidateUser.FullName;
+            var employeePhone = application.ExternalCandidateId != null && externalCandidate != null
+                ? externalCandidate.PhoneNumber
+                : candidateUser.PhoneNumber;
+            var welcomeEmail = application.ExternalCandidateId != null && externalCandidate != null
+                ? externalCandidate.Email
+                : candidateUser.Email;
 
             // 12. Create new User account with corporate email
-            var candidateUser = application.Candidate.User;
             var newUser = new User
             {
                 Id = Guid.CreateVersion7(),
                 UserName = request.EmployeeEmail,
                 Email = request.EmployeeEmail,
-                FullName = candidateUser.FullName,
-                PhoneNumber = candidateUser.PhoneNumber,
+                FullName = employeeFullName,
+                PhoneNumber = employeePhone,
                 EmailConfirmed = true,
                 DepartmentId = application.JobPosting.DepartmentId,
                 DateJoined = DateTime.UtcNow
@@ -165,21 +176,35 @@ public sealed class ConfirmHireHandler : IRequestHandler<ConfirmHireCommand, Con
 
             _logger.LogInformation(
                 "Application {ApplicationId} confirmed as hired. Employee {EmployeeCode} created with email {Email} in enterprise {EnterpriseId}.",
-                application.Id, employeeCode, request.EmployeeEmail, enterpriseId);
+                application.Id,
+                employeeCode,
+                request.EmployeeEmail,
+                enterpriseId);
 
             // 17. Send credentials email (after commit, so email failure won't rollback)
-            try
+            if (!string.IsNullOrWhiteSpace(welcomeEmail))
             {
-                await _emailService.SendEmailAsync(
-                    candidateUser.Email,
-                    "Chào mừng bạn đến với công ty - Thông tin tài khoản",
-                    CreateWelcomeEmailTemplate(candidateUser.FullName, request.EmployeeEmail, generatedPassword, employeeCode));
+                try
+                {
+                    await _emailService.SendEmailAsync(
+                        welcomeEmail,
+                        "Chào mừng bạn đến với công ty - Thông tin tài khoản",
+                        CreateWelcomeEmailTemplate(employeeFullName, request.EmployeeEmail, generatedPassword, employeeCode));
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(
+                        ex,
+                        "Failed to send credentials email to {CandidateEmail} for employee {EmployeeCode}. The hire was still committed successfully.",
+                        welcomeEmail,
+                        employeeCode);
+                }
             }
-            catch (Exception ex)
+            else
             {
-                _logger.LogWarning(ex,
-                    "Failed to send credentials email to {CandidateEmail} for employee {EmployeeCode}. The hire was still committed successfully.",
-                    candidateUser.Email, employeeCode);
+                _logger.LogWarning(
+                    "Skipped credentials email for application {ApplicationId} because candidate email is missing.",
+                    application.Id);
             }
 
             return new ConfirmHireResult
@@ -227,7 +252,7 @@ public sealed class ConfirmHireHandler : IRequestHandler<ConfirmHireCommand, Con
         var span = password.AsSpan();
         for (int i = span.Length - 1; i > 0; i--)
         {
-            int j = RandomNumberGenerator.GetInt32(i + 1);
+            var j = RandomNumberGenerator.GetInt32(i + 1);
             (span[i], span[j]) = (span[j], span[i]);
         }
 

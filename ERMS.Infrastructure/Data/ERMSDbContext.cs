@@ -48,6 +48,7 @@ namespace ERMS.Infrastructure.Data
 
        
         public DbSet<Candidate> Candidates { get; set; }
+        public DbSet<ExternalCandidate> ExternalCandidates { get; set; }
         public DbSet<Education> Educations { get; set; }
         public DbSet<WorkExperience> WorkExperiences { get; set; }
         public DbSet<CandidateSkill> CandidateSkills { get; set; }
@@ -328,6 +329,15 @@ namespace ERMS.Infrastructure.Data
                 .WithMany()
                 .HasForeignKey(o => o.SentById)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ApplicationEntities.Offer>()
+                .Property(o => o.ResponseToken)
+                .HasMaxLength(450);
+
+            builder.Entity<ApplicationEntities.Offer>()
+                .HasIndex(o => o.ResponseToken)
+                .IsUnique()
+                .HasFilter("[ResponseToken] IS NOT NULL");
             
             builder.Entity<ApplicationEntities.Interview>()
                 .HasOne(i => i.ScheduledBy)
@@ -389,6 +399,12 @@ namespace ERMS.Infrastructure.Data
                 .HasOne(a => a.Candidate)
                 .WithMany(c => c.Applications)
                 .HasForeignKey(a => a.CandidateId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ApplicationEntities.Application>()
+                .HasOne(a => a.ExternalCandidate)
+                .WithMany(ec => ec.Applications)
+                .HasForeignKey(a => a.ExternalCandidateId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             builder.Entity<Course>()
