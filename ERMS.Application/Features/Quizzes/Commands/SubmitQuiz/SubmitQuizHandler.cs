@@ -65,10 +65,10 @@ public sealed class SubmitQuizHandler
         attempt.IsPassed = score >= attempt.Quiz.PassingScore;
         attempt.Status = "Completed";
 
-        // Update enrollment status when quiz is passed
         if (attempt.IsPassed == true)
         {
             var enrollment = await _context.Enrollments
+                .Include(x => x.Course)
                 .FirstOrDefaultAsync(x => x.Id == attempt.EnrollmentId, cancellationToken);
 
             if (enrollment != null && enrollment.Status != "Completed")
@@ -76,8 +76,39 @@ public sealed class SubmitQuizHandler
                 enrollment.Status = "Completed";
                 enrollment.CompletedAt = DateTime.UtcNow;
             }
-        }
 
+            //  Lấy danh sách skill từ course
+            var courseSkills = await _context.CourseSkills
+                .Include(x => x.Skill)
+                .Where(x => x.CourseId == enrollment.CourseId)
+                .ToListAsync(cancellationToken);
+
+            //  Lấy employee
+            var employee = await _context.Employees
+                .FirstOrDefaultAsync(x => x.Id == enrollment.EmployeeId, cancellationToken);
+
+            if (employee != null && courseSkills.Any())
+            {
+                var newSkills = courseSkills
+                    .Select(x => x.Skill.SkillName) // giả sử Skill có Name
+                    .ToList();
+
+                //  nếu chưa có thì thêm (tránh trùng)
+                var currentSkills = string.IsNullOrEmpty(employee.SkillDescription)
+                    ? new List<string>()
+                    : employee.SkillDescription.Split(',').Select(s => s.Trim()).ToList();
+
+                foreach (var skill in newSkills)
+                {
+                    if (!currentSkills.Contains(skill))
+                    {
+                        currentSkills.Add(skill);
+                    }
+                }
+
+                employee.SkillDescription = string.Join(", ", currentSkills);
+            }
+        }
         await _context.SaveChangesAsync(cancellationToken);
 
         return new QuizResultDto
