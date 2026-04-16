@@ -1,11 +1,13 @@
 using MediatR;
 using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace ERMS.Application.Features.Enterprises.Commands.RegisterEnterprise
 {
     public class RegisterEnterpriseCommand : IRequest<Guid>
     {
         public string EnterpriseName { get; set; } = null!;
+        [RegularExpression(@"^[a-zA-Z0-9\-]*$", ErrorMessage = "Tax code contains invalid characters")]
         public string? TaxCode { get; set; }
         public string? Address { get; set; }
         public string? Phone { get; set; }
