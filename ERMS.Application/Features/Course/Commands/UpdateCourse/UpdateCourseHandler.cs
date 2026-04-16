@@ -1,3 +1,4 @@
+using AuldinSolutions.BackOffice;
 using ERMS.Application.Interface;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -62,21 +63,33 @@ namespace ERMS.Application.Features.Courses.Commands.UpdateCourse
 
             // Cập nhật khóa học
             var oldTrainerEmail = course.TrainerEmail; // lưu trước khi ghi đè
-            course.TrainingPlanId = request.TrainingPlanId;
-            course.CourseName = request.CourseName;
-            course.CourseCode = request.CourseCode;
-            course.Description = request.Description;
-            course.ThumbnailUrl = request.ThumbnailUrl;
-            course.TrainerEmail = request.TrainerEmail;
-            course.DurationMinutes = request.DurationMinutes;
+            if (request.TrainingPlanId.HasValue)
+                course.TrainingPlanId = request.TrainingPlanId;
+            if (request.CourseName != null)
+                course.CourseName = request.CourseName;
+            if (request.CourseCode != null)
+                course.CourseCode = request.CourseCode;
+            if (request.Description != null)
+                course.Description = request.Description;
+            if (request.ThumbnailUrl != null)
+                course.ThumbnailUrl = request.ThumbnailUrl;
+            if (request.TrainerEmail != null)
+                course.TrainerEmail = request.TrainerEmail;
             course.StartTime = request.StartTime;
             course.IsOnline = request.IsOnline;
-            course.Location = request.Location;
-            course.Level = request.Level;
+            if (request.DurationMinutes.HasValue)
+                course.DurationMinutes = request.DurationMinutes;
+            if (request.Location != null)
+                course.Location = request.Location;
+            if (request.Level != null)
+                course.Level = request.Level;
             course.IsMandatory = request.IsMandatory;
-            course.MaxEnrollments = request.MaxEnrollments;
-            course.EnrollmentDeadline = request.EnrollmentDeadline;
-            course.CompletionCriteria = request.CompletionCriteria;
+            if (request.MaxEnrollments.HasValue)
+                course.MaxEnrollments = request.MaxEnrollments;
+            if (request.EnrollmentDeadline.HasValue)
+                course.EnrollmentDeadline = request.EnrollmentDeadline;
+            if (request.CompletionCriteria != null)
+                course.CompletionCriteria = request.CompletionCriteria;
 
             //  Bảo toàn ContentManagerEmail: nếu TrainerEmail thay đổi → re-detect
             if (!string.Equals(oldTrainerEmail, request.TrainerEmail, StringComparison.OrdinalIgnoreCase))
