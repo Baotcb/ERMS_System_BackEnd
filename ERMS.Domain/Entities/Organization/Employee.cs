@@ -12,6 +12,7 @@ namespace ERMS.Domain.Entities.Organization
         public string EmployeeCode { get; set; } = null!;
         public int? DepartmentId { get; set; }
         public string? Position { get; set; }
+        public string? SkillDescription { get; set; }
         public Guid? JobPositionId { get; set; } 
         public DateTime? HireDate { get; set; }
         public DateTime? TerminationDate { get; set; }

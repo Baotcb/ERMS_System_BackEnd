@@ -256,6 +256,7 @@ namespace ERMS.Infrastructure.Services
             parsedRow.Phone = GetCellValue("Phone");
             parsedRow.DepartmentCode = GetCellValue("DepartmentCode");
             parsedRow.Position = GetCellValue("Position");
+            parsedRow.SkillDescription = GetCellValue("SkillDescription");
             parsedRow.Password = GetCellValue("Password");
 
             var rawRole = GetCellValue("Role");

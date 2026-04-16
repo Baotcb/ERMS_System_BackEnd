@@ -8,6 +8,7 @@ namespace ERMS.Application.Features.Employees.Commands.UpdateEmployee
         public Guid Id { get; set; }
         public int DepartmentId { get; set; }
         public string? Position { get; set; }
+        public string? SkillDescription { get; set; }
         public string EmploymentType { get; set; } = "FullTime";
         public Guid? ManagerId { get; set; }
         public string Status { get; set; } = "Active";

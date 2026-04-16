@@ -31,7 +31,7 @@ public class GetCourseProgressHandler
             .FirstOrDefaultAsync(x => x.UserId == userId, cancellationToken);
 
         if (employee == null)
-            throw new Exception("Employee not found");
+            throw new Exception("Không tìm thấy nhân viên");
 
         var enrollment = await _context.Enrollments
             .FirstOrDefaultAsync(x =>
@@ -41,7 +41,7 @@ public class GetCourseProgressHandler
                 cancellationToken);
 
         if (enrollment == null)
-            throw new Exception("User is not enrolled in this course");
+            throw new Exception("Người dùng chưa ghi danh khóa học này");
 
         var totalLessons = await _context.Lessons
             .CountAsync(x =>

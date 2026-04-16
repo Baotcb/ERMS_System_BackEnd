@@ -48,6 +48,7 @@ namespace ERMS.Infrastructure.Data
 
        
         public DbSet<Candidate> Candidates { get; set; }
+        public DbSet<ExternalCandidate> ExternalCandidates { get; set; }
         public DbSet<Education> Educations { get; set; }
         public DbSet<WorkExperience> WorkExperiences { get; set; }
         public DbSet<CandidateSkill> CandidateSkills { get; set; }
@@ -64,6 +65,8 @@ namespace ERMS.Infrastructure.Data
     
         public DbSet<TrainingPlan> TrainingPlans { get; set; }
         public DbSet<TrainingRequest> TrainingRequests { get; set; }
+        public DbSet<ChatConversation> ChatConversations { get; set; }
+        public DbSet<ChatMessage> ChatMessages { get; set; }
         public DbSet<Course> Courses { get; set; }
         public DbSet<CourseSkill> CourseSkills { get; set; }
         public DbSet<Lesson> Lessons { get; set; }
@@ -311,6 +314,64 @@ namespace ERMS.Infrastructure.Data
                 .HasForeignKey(t => t.RequestedById)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            builder.Entity<ChatConversation>()
+                .HasOne(c => c.Enterprise)
+                .WithMany()
+                .HasForeignKey(c => c.EnterpriseId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ChatConversation>()
+                .HasOne(c => c.User)
+                .WithMany()
+                .HasForeignKey(c => c.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ChatConversation>()
+                .HasOne(c => c.Department)
+                .WithMany()
+                .HasForeignKey(c => c.DepartmentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ChatConversation>()
+                .Property(c => c.Title)
+                .HasMaxLength(250);
+
+            builder.Entity<ChatConversation>()
+                .HasMany(c => c.Messages)
+                .WithOne(m => m.ChatConversation)
+                .HasForeignKey(m => m.ChatConversationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<ChatConversation>()
+                .HasIndex(c => new { c.EnterpriseId, c.UserId, c.IsDeleted, c.LastMessageAt });
+
+            builder.Entity<ChatMessage>()
+                .HasOne(m => m.Enterprise)
+                .WithMany()
+                .HasForeignKey(m => m.EnterpriseId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ChatMessage>()
+                .HasOne(m => m.User)
+                .WithMany()
+                .HasForeignKey(m => m.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ChatMessage>()
+                .Property(m => m.Role)
+                .HasMaxLength(20)
+                .IsRequired();
+
+            builder.Entity<ChatMessage>()
+                .Property(m => m.Content)
+                .IsRequired();
+
+            builder.Entity<ChatMessage>()
+                .HasIndex(m => new { m.ChatConversationId, m.CreatedAt });
+
+            builder.Entity<ChatMessage>()
+                .HasIndex(m => new { m.EnterpriseId, m.IsDeleted });
+
             builder.Entity<ApplicationEntities.Offer>()
                 .HasOne(o => o.CreatedBy)
                 .WithMany()
@@ -328,6 +389,15 @@ namespace ERMS.Infrastructure.Data
                 .WithMany()
                 .HasForeignKey(o => o.SentById)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ApplicationEntities.Offer>()
+                .Property(o => o.ResponseToken)
+                .HasMaxLength(450);
+
+            builder.Entity<ApplicationEntities.Offer>()
+                .HasIndex(o => o.ResponseToken)
+                .IsUnique()
+                .HasFilter("[ResponseToken] IS NOT NULL");
             
             builder.Entity<ApplicationEntities.Interview>()
                 .HasOne(i => i.ScheduledBy)
@@ -389,6 +459,12 @@ namespace ERMS.Infrastructure.Data
                 .HasOne(a => a.Candidate)
                 .WithMany(c => c.Applications)
                 .HasForeignKey(a => a.CandidateId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ApplicationEntities.Application>()
+                .HasOne(a => a.ExternalCandidate)
+                .WithMany(ec => ec.Applications)
+                .HasForeignKey(a => a.ExternalCandidateId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             builder.Entity<Course>()

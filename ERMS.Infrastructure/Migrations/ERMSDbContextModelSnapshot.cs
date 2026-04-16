@@ -50,6 +50,9 @@ namespace ERMS.Infrastructure.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<Guid?>("ExternalCandidateId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("HRNote")
                         .HasColumnType("nvarchar(max)");
 
@@ -97,6 +100,8 @@ namespace ERMS.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CandidateId");
+
+                    b.HasIndex("ExternalCandidateId");
 
                     b.HasIndex("JobPostingId");
 
@@ -359,6 +364,10 @@ namespace ERMS.Infrastructure.Migrations
                     b.Property<DateTime?>("RespondedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("ResponseToken")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<decimal>("Salary")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
@@ -380,6 +389,9 @@ namespace ERMS.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime?>("TokenExpiresAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -393,6 +405,10 @@ namespace ERMS.Infrastructure.Migrations
                     b.HasIndex("CreatedById");
 
                     b.HasIndex("DepartmentId");
+
+                    b.HasIndex("ResponseToken")
+                        .IsUnique()
+                        .HasFilter("[ResponseToken] IS NOT NULL");
 
                     b.HasIndex("SentById");
 
@@ -544,6 +560,53 @@ namespace ERMS.Infrastructure.Migrations
                     b.HasIndex("CandidateId");
 
                     b.ToTable("Educations");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Candidate.ExternalCandidate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CurrentPosition")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("EnterpriseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ExternalCandidates");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Candidate.Resume", b =>
@@ -1205,6 +1268,9 @@ namespace ERMS.Infrastructure.Migrations
                     b.Property<decimal?>("Salary")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("SkillDescription")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -1890,6 +1956,98 @@ namespace ERMS.Infrastructure.Migrations
                     b.HasIndex("ResolvedById");
 
                     b.ToTable("Reports");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.ChatConversation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("DepartmentId")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("EnterpriseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastMessageAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Title")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DepartmentId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("EnterpriseId", "UserId", "IsDeleted", "LastMessageAt");
+
+                    b.ToTable("ChatConversations");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.ChatMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ChatConversationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("EnterpriseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("ChatConversationId", "CreatedAt");
+
+                    b.HasIndex("EnterpriseId", "IsDeleted");
+
+                    b.ToTable("ChatMessages");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.Course", b =>
@@ -2821,6 +2979,11 @@ namespace ERMS.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ERMS.Domain.Entities.Candidate.ExternalCandidate", "ExternalCandidate")
+                        .WithMany("Applications")
+                        .HasForeignKey("ExternalCandidateId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("ERMS.Domain.Entities.Recruitment.JobPosting", "JobPosting")
                         .WithMany("Applications")
                         .HasForeignKey("JobPostingId")
@@ -2840,6 +3003,8 @@ namespace ERMS.Infrastructure.Migrations
                         .HasForeignKey("ResumeId");
 
                     b.Navigation("Candidate");
+
+                    b.Navigation("ExternalCandidate");
 
                     b.Navigation("JobPosting");
 
@@ -3429,6 +3594,60 @@ namespace ERMS.Infrastructure.Migrations
                     b.Navigation("ResolvedBy");
                 });
 
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.ChatConversation", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Organization.Department", "Department")
+                        .WithMany()
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Enterprise.Enterprise", "Enterprise")
+                        .WithMany()
+                        .HasForeignKey("EnterpriseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Department");
+
+                    b.Navigation("Enterprise");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.ChatMessage", b =>
+                {
+                    b.HasOne("ERMS.Domain.Entities.Training.ChatConversation", "ChatConversation")
+                        .WithMany("Messages")
+                        .HasForeignKey("ChatConversationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Enterprise.Enterprise", "Enterprise")
+                        .WithMany()
+                        .HasForeignKey("EnterpriseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERMS.Domain.Entities.Identity.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ChatConversation");
+
+                    b.Navigation("Enterprise");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("ERMS.Domain.Entities.Training.Course", b =>
                 {
                     b.HasOne("ERMS.Domain.Entities.Enterprise.Enterprise", "Enterprise")
@@ -3775,6 +3994,11 @@ namespace ERMS.Infrastructure.Migrations
                     b.Navigation("WorkExperiences");
                 });
 
+            modelBuilder.Entity("ERMS.Domain.Entities.Candidate.ExternalCandidate", b =>
+                {
+                    b.Navigation("Applications");
+                });
+
             modelBuilder.Entity("ERMS.Domain.Entities.Enterprise.Enterprise", b =>
                 {
                     b.Navigation("Departments");
@@ -3826,6 +4050,11 @@ namespace ERMS.Infrastructure.Migrations
             modelBuilder.Entity("ERMS.Domain.Entities.Recruitment.RecruitmentPlan", b =>
                 {
                     b.Navigation("PlanDetails");
+                });
+
+            modelBuilder.Entity("ERMS.Domain.Entities.Training.ChatConversation", b =>
+                {
+                    b.Navigation("Messages");
                 });
 
             modelBuilder.Entity("ERMS.Domain.Entities.Training.Course", b =>
