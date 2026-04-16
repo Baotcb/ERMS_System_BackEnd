@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -5,7 +6,7 @@ namespace ERMS.Domain.Constants
 {
     /// <summary>
     /// Danh sách alias cho các cột trong file Excel import
-    /// Hỗ trợ nhận diện tên cột bằng tiếng Việt (có dấu, không dấu) và tiếng Anh
+    /// Hỗ trợ nhận diện tên cột bằng tiếng Việt và tiếng Anh
     /// </summary>
     public static class ColumnAliases
     {
@@ -31,6 +32,10 @@ namespace ERMS.Domain.Constants
             ["Position"] = new[] {
                 "position", "job title", "title", "chức vụ",
                 "chuc vu", "vị trí", "vi tri", "chức danh", "chuc danh"
+            },
+            ["SkillDescription"] = new[] {
+                "skill description", "skills", "skill", "kỹ năng", "ky nang",
+                "mô tả kỹ năng", "mo ta ky nang", "mô tả kĩ năng", "mo ta ki nang"
             },
             ["Password"] = new[] {
                 "password", "pass", "mật khẩu", "mat khau"

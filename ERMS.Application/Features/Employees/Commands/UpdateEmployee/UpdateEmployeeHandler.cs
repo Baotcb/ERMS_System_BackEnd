@@ -149,6 +149,7 @@ namespace ERMS.Application.Features.Employees.Commands.UpdateEmployee
             {
                 employee.DepartmentId = request.DepartmentId;
                 employee.Position = request.Position;
+                employee.SkillDescription = request.SkillDescription;
                 employee.EmploymentType = normalizedEmploymentType;
                 employee.ManagerId = request.ManagerId;
                 employee.Status = normalizedStatus;

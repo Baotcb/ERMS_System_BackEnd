@@ -64,6 +64,8 @@ namespace ERMS.Application.Interface
         
         DbSet<TrainingPlan> TrainingPlans { get; set; }
         DbSet<TrainingRequest> TrainingRequests { get; set; }
+        DbSet<ChatConversation> ChatConversations { get; set; }
+        DbSet<ChatMessage> ChatMessages { get; set; }
         DbSet<Course> Courses { get; set; }
         DbSet<CourseSkill> CourseSkills { get; set; }
         DbSet<Lesson> Lessons { get; set; }
