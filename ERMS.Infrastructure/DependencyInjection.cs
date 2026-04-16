@@ -90,7 +90,7 @@ namespace ERMS.Infrastructure
                 client.Timeout = TimeSpan.FromSeconds(5);
             });
 
-            // Hangfire setup
+            // Hangfire 
             services.AddHangfire(configurationHangfire => configurationHangfire
                 .SetDataCompatibilityLevel(Hangfire.CompatibilityLevel.Version_180)
                 .UseSimpleAssemblyNameTypeSerializer()
@@ -98,7 +98,6 @@ namespace ERMS.Infrastructure
                 .UseSqlServerStorage(configuration.GetConnectionString("DefaultConnection")));
 
             services.AddHangfireServer();
-            services.AddScoped<IDatabaseSyncJob, DatabaseSyncJob>();
 
             return services;
         }
