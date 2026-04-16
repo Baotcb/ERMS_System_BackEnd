@@ -3,6 +3,7 @@ using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Application;
 using ERMS.Domain.Constants.Roles;
 using ERMS.Domain.Entities.Candidate;
+using ERMS.Domain.Entities.Application;
 using ERMS.Domain.Entities.Enterprise;
 using ERMS.Domain.Entities.Identity;
 using ERMS.Domain.Entities.Organization;
@@ -105,7 +106,8 @@ public class ConfirmHireHandlerTests
         string stage = "Offered",
         string offerStatus = "Accepted",
         Guid? enterpriseId = null,
-        bool includeOffer = true)
+        bool includeOffer = true,
+        CVScreeningResult? screeningResult = null)
     {
         var candidate = new Candidate
         {
@@ -158,6 +160,8 @@ public class ConfirmHireHandlerTests
                 IsDeleted = false
             };
         }
+
+        application.CVScreeningResult = screeningResult;
 
         return application;
     }
@@ -381,6 +385,80 @@ public class ConfirmHireHandlerTests
         result.EmployeeEmail.Should().Be(TestEmail);
         result.EmployeeCode.Should().StartWith("TC-");
         result.EmployeeId.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public async Task Handle_ShouldPopulateSkillDescription_FromCvScreeningResult()
+    {
+        // Arrange
+        SetupAuthenticatedHR();
+        SetupEnterpriseDbSet();
+        SetupEmployeesDbSet();
+        SetupUserManagerSuccess();
+
+        var application = CreateApplication(
+            screeningResult: new CVScreeningResult
+            {
+                MatchedSkills = "[\"C#\",\".NET\"]",
+                MissingSkills = "[\"Azure\"]"
+            });
+        SetupApplicationDbSet(application);
+
+        Employee? createdEmployee = null;
+        var employeeSet = CreateMockDbSet(new List<Employee>().AsQueryable());
+        employeeSet.Setup(x => x.Add(It.IsAny<Employee>()))
+            .Callback<Employee>(employee => createdEmployee = employee);
+        _contextMock.Setup(x => x.Employees).Returns(employeeSet.Object);
+
+        var command = CreateValidCommand();
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.EmployeeId.Should().NotBeEmpty();
+        createdEmployee.Should().NotBeNull();
+        createdEmployee!.SkillDescription.Should().Contain("Kỹ năng phù hợp");
+        createdEmployee.SkillDescription.Should().Contain("C#");
+        createdEmployee.SkillDescription.Should().Contain(".NET");
+        createdEmployee.SkillDescription.Should().Contain("Kỹ năng còn thiếu");
+        createdEmployee.SkillDescription.Should().Contain("Azure");
+        createdEmployee.SkillDescription.Should().NotContain("[");
+        createdEmployee.SkillDescription.Should().NotContain("]");
+    }
+
+    [Fact]
+    public async Task Handle_ShouldIgnoreInvalidSkillJson_AndStillCreateEmployee()
+    {
+        // Arrange
+        SetupAuthenticatedHR();
+        SetupEnterpriseDbSet();
+        SetupEmployeesDbSet();
+        SetupUserManagerSuccess();
+
+        var application = CreateApplication(
+            screeningResult: new CVScreeningResult
+            {
+                MatchedSkills = "{not valid json",
+                MissingSkills = string.Empty
+            });
+        SetupApplicationDbSet(application);
+
+        Employee? createdEmployee = null;
+        var employeeSet = CreateMockDbSet(new List<Employee>().AsQueryable());
+        employeeSet.Setup(x => x.Add(It.IsAny<Employee>()))
+            .Callback<Employee>(employee => createdEmployee = employee);
+        _contextMock.Setup(x => x.Employees).Returns(employeeSet.Object);
+
+        var command = CreateValidCommand();
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.NewStage.Should().Be(ApplicationStage.Hired);
+        createdEmployee.Should().NotBeNull();
+        createdEmployee!.SkillDescription.Should().BeNull();
     }
 
     [Fact]

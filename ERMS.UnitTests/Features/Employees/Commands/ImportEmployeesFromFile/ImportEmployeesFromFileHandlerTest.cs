@@ -510,6 +510,82 @@ public class ImportEmployeesFromFileHandlerTest
     }
 
     [Fact]
+    public async Task Handle_WhenCommitWithSkillDescription_MapsSkillDescriptionToEmployee()
+    {
+        // Arrange
+        var enterpriseId = Guid.NewGuid();
+        var enterprise = new Enterprise
+        {
+            Id = enterpriseId,
+            EnterpriseCode = "ENT",
+            EnterpriseName = "Test Enterprise",
+            IsDeleted = false
+        };
+        var department = new Department
+        {
+            Id = 1,
+            DepartmentCode = "IT",
+            EnterpriseId = enterpriseId,
+            IsDeleted = false
+        };
+
+        SetupBasicContext(enterpriseId, new List<Department> { department }, enterprise);
+
+        var fileMock = CreateMockFormFile("test.xlsx", "fake excel content");
+        var command = new ImportEmployeesFromFileCommand
+        {
+            File = fileMock,
+            Commit = true
+        };
+
+        var parseResult = new ExcelParseResult
+        {
+            Rows = new List<ParsedEmployeeRow>
+            {
+                new ParsedEmployeeRow
+                {
+                    RowNumber = 2,
+                    IsValid = true,
+                    Email = "newuser@example.com",
+                    FullName = "New User",
+                    DepartmentCode = "IT",
+                    Position = "Developer",
+                    Phone = "0123456789",
+                    Password = "Password123!",
+                    Role = "Employee",
+                    SkillDescription = "Kỹ năng phù hợp: C#, .NET"
+                }
+            }
+        };
+
+        _mockExcelParser.Setup(x => x.ParseEmployeeImportFile(It.IsAny<Stream>(), It.IsAny<string>()))
+            .Returns(parseResult);
+
+        _mockUserManager.Setup(x => x.FindByEmailAsync(It.IsAny<string>()))
+            .ReturnsAsync((User?)null);
+
+        _mockUserManager.Setup(x => x.CreateAsync(It.IsAny<User>(), It.IsAny<string>()))
+            .ReturnsAsync(IdentityResult.Success);
+
+        _mockUserManager.Setup(x => x.AddToRoleAsync(It.IsAny<User>(), It.IsAny<string>()))
+            .ReturnsAsync(IdentityResult.Success);
+
+        Employee? createdEmployee = null;
+        var employeeSet = new List<Employee>().AsQueryable().BuildMockDbSet();
+        employeeSet.Setup(x => x.Add(It.IsAny<Employee>()))
+            .Callback<Employee>(employee => createdEmployee = employee);
+        _mockContext.Setup(x => x.Employees).Returns(employeeSet.Object);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.SuccessCount.Should().Be(1);
+        createdEmployee.Should().NotBeNull();
+        createdEmployee!.SkillDescription.Should().Be("Kỹ năng phù hợp: C#, .NET");
+    }
+
+    [Fact]
     public async Task Handle_WhenCommitWithDirectorWithoutDepartment_CreatesEmployeeWithNullDepartment()
     {
         // Arrange

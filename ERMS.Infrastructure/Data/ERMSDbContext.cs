@@ -65,6 +65,8 @@ namespace ERMS.Infrastructure.Data
     
         public DbSet<TrainingPlan> TrainingPlans { get; set; }
         public DbSet<TrainingRequest> TrainingRequests { get; set; }
+        public DbSet<ChatConversation> ChatConversations { get; set; }
+        public DbSet<ChatMessage> ChatMessages { get; set; }
         public DbSet<Course> Courses { get; set; }
         public DbSet<CourseSkill> CourseSkills { get; set; }
         public DbSet<Lesson> Lessons { get; set; }
@@ -311,6 +313,64 @@ namespace ERMS.Infrastructure.Data
                 .WithMany()
                 .HasForeignKey(t => t.RequestedById)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ChatConversation>()
+                .HasOne(c => c.Enterprise)
+                .WithMany()
+                .HasForeignKey(c => c.EnterpriseId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ChatConversation>()
+                .HasOne(c => c.User)
+                .WithMany()
+                .HasForeignKey(c => c.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ChatConversation>()
+                .HasOne(c => c.Department)
+                .WithMany()
+                .HasForeignKey(c => c.DepartmentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ChatConversation>()
+                .Property(c => c.Title)
+                .HasMaxLength(250);
+
+            builder.Entity<ChatConversation>()
+                .HasMany(c => c.Messages)
+                .WithOne(m => m.ChatConversation)
+                .HasForeignKey(m => m.ChatConversationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<ChatConversation>()
+                .HasIndex(c => new { c.EnterpriseId, c.UserId, c.IsDeleted, c.LastMessageAt });
+
+            builder.Entity<ChatMessage>()
+                .HasOne(m => m.Enterprise)
+                .WithMany()
+                .HasForeignKey(m => m.EnterpriseId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ChatMessage>()
+                .HasOne(m => m.User)
+                .WithMany()
+                .HasForeignKey(m => m.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ChatMessage>()
+                .Property(m => m.Role)
+                .HasMaxLength(20)
+                .IsRequired();
+
+            builder.Entity<ChatMessage>()
+                .Property(m => m.Content)
+                .IsRequired();
+
+            builder.Entity<ChatMessage>()
+                .HasIndex(m => new { m.ChatConversationId, m.CreatedAt });
+
+            builder.Entity<ChatMessage>()
+                .HasIndex(m => new { m.EnterpriseId, m.IsDeleted });
 
             builder.Entity<ApplicationEntities.Offer>()
                 .HasOne(o => o.CreatedBy)

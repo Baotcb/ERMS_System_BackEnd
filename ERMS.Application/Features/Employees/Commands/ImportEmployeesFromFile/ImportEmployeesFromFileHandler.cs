@@ -248,6 +248,7 @@ namespace ERMS.Application.Features.Employees.Commands.ImportEmployeesFromFile
                             DepartmentId = isDirectorRole ? null : department!.Id,
                             EmployeeCode = $"{enterprise.EnterpriseCode}-{employeeCount:D4}",
                             Position = row.Position,
+                            SkillDescription = row.SkillDescription,
                             EmploymentType = "FullTime",
                             HireDate = DateTime.UtcNow,
                             Status = "Active",

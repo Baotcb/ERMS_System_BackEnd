@@ -1,13 +1,17 @@
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Application;
 using ERMS.Domain.Constants.Roles;
+using ERMS.Domain.Entities.Application;
 using ERMS.Domain.Entities.Identity;
 using ERMS.Domain.Entities.Organization;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
+using System.Linq;
 using System.Security.Cryptography;
+using System.Text.Json;
 
 namespace ERMS.Application.Features.Applications.Commands.ConfirmHire;
 
@@ -62,6 +66,7 @@ public sealed class ConfirmHireHandler : IRequestHandler<ConfirmHireCommand, Con
             .Include(a => a.Candidate)
                 .ThenInclude(c => c.User)
             .Include(a => a.ExternalCandidate)
+            .Include(a => a.CVScreeningResult)
             .FirstOrDefaultAsync(a => a.Id == request.ApplicationId && !a.IsDeleted, cancellationToken)
             ?? throw new Exception($"Không tìm thấy hồ sơ ứng tuyển với ID {request.ApplicationId}.");
 
@@ -156,6 +161,7 @@ public sealed class ConfirmHireHandler : IRequestHandler<ConfirmHireCommand, Con
                 DepartmentId = application.JobPosting.DepartmentId,
                 EmployeeCode = employeeCode,
                 Position = application.Offer.Position,
+                SkillDescription = BuildSkillDescription(application.CVScreeningResult),
                 Salary = application.Offer.Salary,
                 HireDate = application.Offer.StartDate,
                 EmploymentType = "FullTime",
@@ -459,5 +465,49 @@ public sealed class ConfirmHireHandler : IRequestHandler<ConfirmHireCommand, Con
     </div>
 </body>
 </html>";
+    }
+
+    private static string? BuildSkillDescription(CVScreeningResult? screeningResult)
+    {
+        if (screeningResult == null)
+        {
+            return null;
+        }
+
+        var sections = new List<string>();
+
+        var matchedSkills = ParseSkillList(screeningResult.MatchedSkills);
+        if (matchedSkills.Count > 0)
+        {
+            sections.Add($"Kỹ năng phù hợp: {string.Join(", ", matchedSkills)}");
+        }
+
+        var missingSkills = ParseSkillList(screeningResult.MissingSkills);
+        if (missingSkills.Count > 0)
+        {
+            sections.Add($"Kỹ năng còn thiếu: {string.Join(", ", missingSkills)}");
+        }
+
+        return sections.Count > 0 ? string.Join(Environment.NewLine, sections) : null;
+    }
+
+    private static List<string> ParseSkillList(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return [];
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<List<string>>(json, (JsonSerializerOptions?)null)?
+                .Where(skill => !string.IsNullOrWhiteSpace(skill))
+                .Select(skill => skill!.Trim())
+                .ToList() ?? [];
+        }
+        catch
+        {
+            return [];
+        }
     }
 }

@@ -70,6 +70,7 @@ namespace ERMS.Infrastructure
             services.AddHttpClient<ICVParsingService, CVParsingService>();
             // services.AddHttpClient<IGeminiAIService, GeminiAIService>(); // Gemini — kept for reference
             services.AddHttpClient<IAIService, GroqAIService>();
+            services.AddHttpClient<ISkillGapChatService, SkillGapChatService>();
 
 
 
