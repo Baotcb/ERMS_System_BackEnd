@@ -33,46 +33,65 @@ namespace ERMS.UnitTests.Features.Enrollments.Commands
                 _emailServiceMock.Object);
         }
 
+       
         [Fact]
-        public async Task Handle_AssignSuccessfully_ShouldSendEmailsToTrainerAndTrainees()
+        public async Task Handle_AssignSuccessfully_WithValidDepartment_ShouldSendEmails()
         {
             // Arrange
             var enterpriseId = Guid.NewGuid();
             var courseId = Guid.NewGuid();
+            var trainingPlanId = Guid.NewGuid();
             var employeeId = Guid.NewGuid();
             var trainerEmail = "trainer@company.com";
             var traineeEmail = "trainee@company.com";
+            var departmentId = 1;
 
-            _currentUserServiceMock.Setup(x => x.GetEnterpriseIdAsync()).ReturnsAsync(enterpriseId);
+            _currentUserServiceMock.Setup(x => x.GetEnterpriseIdAsync())
+                .ReturnsAsync(enterpriseId);
 
-            // Mock Course
+            // Course
             var courses = new List<Course>
-            {
-                new Course {
-                    Id = courseId,
-                    EnterpriseId = enterpriseId,
-                    CourseName = "Test Course",
-                    TrainerEmail = trainerEmail,
-                    IsOnline = true,
-                    Status = "Published"
-                }
-            }.AsQueryable().BuildMockDbSet();
+    {
+        new Course {
+            Id = courseId,
+            EnterpriseId = enterpriseId,
+            TrainingPlanId = trainingPlanId,
+            CourseName = "Test Course",
+            TrainerEmail = trainerEmail,
+            IsOnline = true,
+            Status = "Published"
+        }
+    }.AsQueryable().BuildMockDbSet();
             _contextMock.Setup(x => x.Courses).Returns(courses.Object);
 
-            // Mock Employee (Trainee)
+            //  TrainingRequest (QUAN TRỌNG)
+            var trainingRequests = new List<TrainingRequest>
+    {
+        new TrainingRequest {
+            TrainingPlanId = trainingPlanId,
+            DepartmentId = departmentId,
+            IsDeleted = false
+        }
+    }.AsQueryable().BuildMockDbSet();
+            _contextMock.Setup(x => x.TrainingRequests).Returns(trainingRequests.Object);
+
+            // Employee hợp lệ
             var employees = new List<Employee>
-            {
-                new Employee {
-                    Id = employeeId,
-                    User = new User { Email = traineeEmail }
-                }
-            }.AsQueryable().BuildMockDbSet();
+    {
+        new Employee {
+            Id = employeeId,
+            EnterpriseId = enterpriseId,
+            DepartmentId = departmentId,
+            User = new User { Email = traineeEmail }
+        }
+    }.AsQueryable().BuildMockDbSet();
             _contextMock.Setup(x => x.Employees).Returns(employees.Object);
 
-            // Mock Enrollments (Empty)
-            _contextMock.Setup(x => x.Enrollments).Returns(new List<Enrollment>().AsQueryable().BuildMockDbSet().Object);
+            // Enrollments rỗng
+            _contextMock.Setup(x => x.Enrollments)
+                .Returns(new List<Enrollment>().AsQueryable().BuildMockDbSet().Object);
 
-            // Mock Zoom
+            // Zoom
             _zoomServiceMock.Setup(x => x.CreateMeetingAsync(It.IsAny<ZoomMeetingRequest>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ZoomMeetingResponse { JoinUrl = "https://zoom.us/j/123" });
 
@@ -88,11 +107,13 @@ namespace ERMS.UnitTests.Features.Enrollments.Commands
             // Assert
             result.TotalAssigned.Should().Be(1);
 
-            // Kiểm tra xem có gửi mail cho Trainee không
-            _emailServiceMock.Verify(x => x.SendEmailAsync(traineeEmail, It.Is<string>(s => s.Contains("[HỌC VIÊN]")), It.IsAny<string>()), Times.Once);
+            _emailServiceMock.Verify(x =>
+                x.SendEmailAsync(traineeEmail, It.Is<string>(s => s.Contains("[HỌC VIÊN]")), It.IsAny<string>()),
+                Times.Once);
 
-            // Kiểm tra xem có gửi mail cho Trainer không
-            _emailServiceMock.Verify(x => x.SendEmailAsync(trainerEmail, It.Is<string>(s => s.Contains("[GIẢNG VIÊN]")), It.IsAny<string>()), Times.Once);
+            _emailServiceMock.Verify(x =>
+                x.SendEmailAsync(trainerEmail, It.Is<string>(s => s.Contains("[GIẢNG VIÊN]")), It.IsAny<string>()),
+                Times.Once);
 
             _contextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         }
@@ -114,26 +135,129 @@ namespace ERMS.UnitTests.Features.Enrollments.Commands
         }
 
         [Fact]
+        public async Task Handle_InvalidDepartmentEmployee_ShouldThrowException()
+        {
+            // Arrange (GIỮ NGUYÊN)
+
+            var enterpriseId = Guid.NewGuid();
+            var courseId = Guid.NewGuid();
+            var trainingPlanId = Guid.NewGuid();
+            var employeeId = Guid.NewGuid();
+
+            _currentUserServiceMock.Setup(x => x.GetEnterpriseIdAsync())
+                .ReturnsAsync(enterpriseId);
+
+            var courses = new List<Course>
+    {
+        new Course {
+            Id = courseId,
+            EnterpriseId = enterpriseId,
+            TrainingPlanId = trainingPlanId,
+            Status = "Published"
+        }
+    }.AsQueryable().BuildMockDbSet();
+            _contextMock.Setup(x => x.Courses).Returns(courses.Object);
+
+            var trainingRequests = new List<TrainingRequest>
+    {
+        new TrainingRequest {
+            TrainingPlanId = trainingPlanId,
+            DepartmentId = 1,
+            IsDeleted = false
+        }
+    }.AsQueryable().BuildMockDbSet();
+            _contextMock.Setup(x => x.TrainingRequests).Returns(trainingRequests.Object);
+
+            var employees = new List<Employee>
+    {
+        new Employee {
+            Id = employeeId,
+            EnterpriseId = enterpriseId,
+            DepartmentId = 2, // ❌ sai department
+            User = new User { Email = "test@mail.com" }
+        }
+    }.AsQueryable().BuildMockDbSet();
+            _contextMock.Setup(x => x.Employees).Returns(employees.Object);
+
+            _contextMock.Setup(x => x.Enrollments)
+                .Returns(new List<Enrollment>().AsQueryable().BuildMockDbSet().Object);
+
+            var command = new AssignEmployeesToCourseCommand
+            {
+                CourseId = courseId,
+                EmployeeIds = new List<Guid> { employeeId }
+            };
+
+            // Act
+            Func<Task> act = () => _handler.Handle(command, CancellationToken.None);
+
+            // Assert
+            await act.Should().ThrowAsync<InvalidOperationException>()
+                .WithMessage("Có nhân viên không thuộc phòng ban của khóa học.");
+        }
+
+        [Fact]
         public async Task Handle_ExistingEnrollments_ShouldBeSkipped()
         {
             // Arrange
             var enterpriseId = Guid.NewGuid();
             var courseId = Guid.NewGuid();
+            var trainingPlanId = Guid.NewGuid();
             var existingEmployeeId = Guid.NewGuid();
+            var departmentId = 1;
 
-            _currentUserServiceMock.Setup(x => x.GetEnterpriseIdAsync()).ReturnsAsync(enterpriseId);
+            _currentUserServiceMock
+                .Setup(x => x.GetEnterpriseIdAsync())
+                .ReturnsAsync(enterpriseId);
 
-            var courses = new List<Course> { new Course { Id = courseId, EnterpriseId = enterpriseId, Status="Published" } }.AsQueryable().BuildMockDbSet();
+            // Course (phải có TrainingPlanId)
+            var courses = new List<Course>
+    {
+        new Course
+        {
+            Id = courseId,
+            EnterpriseId = enterpriseId,
+            TrainingPlanId = trainingPlanId,
+            Status = "Published"
+        }
+    }.AsQueryable().BuildMockDbSet();
             _contextMock.Setup(x => x.Courses).Returns(courses.Object);
 
-            // Đã tồn tại enrollment này rồi
-            var enrollments = new List<Enrollment>
-            {
-                new Enrollment { CourseId = courseId, EmployeeId = existingEmployeeId }
-            }.AsQueryable().BuildMockDbSet();
-            _contextMock.Setup(x => x.Enrollments).Returns(enrollments.Object);
+            // 🔥 TrainingRequest (bắt buộc)
+            var trainingRequests = new List<TrainingRequest>
+    {
+        new TrainingRequest
+        {
+            TrainingPlanId = trainingPlanId,
+            DepartmentId = departmentId,
+            IsDeleted = false
+        }
+    }.AsQueryable().BuildMockDbSet();
+            _contextMock.Setup(x => x.TrainingRequests).Returns(trainingRequests.Object);
 
-            _contextMock.Setup(x => x.Employees).Returns(new List<Employee>().AsQueryable().BuildMockDbSet().Object);
+            // Employee hợp lệ (đúng Department + Enterprise)
+            var employees = new List<Employee>
+    {
+        new Employee
+        {
+            Id = existingEmployeeId,
+            EnterpriseId = enterpriseId,
+            DepartmentId = departmentId,
+            User = new User { Email = "test@mail.com" }
+        }
+    }.AsQueryable().BuildMockDbSet();
+            _contextMock.Setup(x => x.Employees).Returns(employees.Object);
+
+            // Đã tồn tại enrollment
+            var enrollments = new List<Enrollment>
+    {
+        new Enrollment
+        {
+            CourseId = courseId,
+            EmployeeId = existingEmployeeId
+        }
+    }.AsQueryable().BuildMockDbSet();
+            _contextMock.Setup(x => x.Enrollments).Returns(enrollments.Object);
 
             var command = new AssignEmployeesToCourseCommand
             {
@@ -147,7 +271,11 @@ namespace ERMS.UnitTests.Features.Enrollments.Commands
             // Assert
             result.TotalAssigned.Should().Be(0);
             result.SkippedEmployeeIds.Should().Contain(existingEmployeeId);
-            _emailServiceMock.Verify(x => x.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.AtLeastOnce);
+
+            // vẫn gửi mail (theo logic hiện tại của bạn)
+            _emailServiceMock.Verify(x =>
+                x.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
+                Times.AtLeastOnce);
         }
     }
 }
