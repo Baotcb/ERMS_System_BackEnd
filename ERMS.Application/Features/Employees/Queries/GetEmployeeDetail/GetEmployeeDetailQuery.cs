@@ -19,6 +19,7 @@ namespace ERMS.Application.Features.Employees.Queries.GetEmployeeDetail
         public int? DepartmentId { get; set; }
         public string? DepartmentName { get; set; }
         public string? Position { get; set; }
+        public string? SkillDescription { get; set; }
         public string EmploymentType { get; set; } = null!;
         public DateTime? HireDate { get; set; }
         public string Status { get; set; } = null!;

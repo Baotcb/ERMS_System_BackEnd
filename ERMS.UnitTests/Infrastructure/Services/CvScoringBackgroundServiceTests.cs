@@ -1,9 +1,11 @@
 using ERMS.Application.Interface;
 using ERMS.Domain.Entities.Application;
+using ERMS.Infrastructure.Configuration;
 using ERMS.Infrastructure.Services;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using System.Text.Json;
 
@@ -34,7 +36,11 @@ public class CvScoringBackgroundServiceTests
         var scopeFactoryMock = new Mock<IServiceScopeFactory>();
         scopeFactoryMock.Setup(f => f.CreateScope()).Returns(scopeMock.Object);
 
-        _service = new CvScoringBackgroundService(_queue, scopeFactoryMock.Object, _loggerMock.Object);
+        _service = new CvScoringBackgroundService(
+            _queue,
+            scopeFactoryMock.Object,
+            _loggerMock.Object,
+            Options.Create(new GroqModelSettings { CvScoring = "qwen-3-32b" }));
     }
 
     private CvScoringWorkItem CreateWorkItem(Guid? applicationId = null)
@@ -128,6 +134,7 @@ public class CvScoringBackgroundServiceTests
         addedResults.Should().ContainSingle();
         addedResults[0].ApplicationId.Should().Be(appId);
         addedResults[0].OverallScore.Should().Be(85);
+        addedResults[0].AIModel.Should().Be("qwen-3-32b");
     }
 
     [Fact]

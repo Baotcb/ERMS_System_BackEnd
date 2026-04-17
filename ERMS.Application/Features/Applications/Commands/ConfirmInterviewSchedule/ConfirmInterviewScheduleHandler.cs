@@ -54,17 +54,19 @@ public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInt
         var interview = await _context.Interviews
             .Include(i => i.Application)
                 .ThenInclude(a => a.JobPosting)
-                    .ThenInclude(jp => jp.Enterprise)  
+                    .ThenInclude(jp => jp.Enterprise)
             .Include(i => i.Application)
                 .ThenInclude(a => a.Candidate)
                     .ThenInclude(c => c.User)
+            .Include(i => i.Application)
+                .ThenInclude(a => a.ExternalCandidate)
             .Include(i => i.Participants)
                 .ThenInclude(p => p.Employee)
                     .ThenInclude(e => e.User)
-            .FirstOrDefaultAsync(i => 
-                i.ApplicationId == request.ApplicationId && 
-                i.Status == InterviewStatus.PendingSchedule && 
-                !i.IsDeleted, 
+            .FirstOrDefaultAsync(i =>
+                i.ApplicationId == request.ApplicationId &&
+                i.Status == InterviewStatus.PendingSchedule &&
+                !i.IsDeleted,
                 cancellationToken)
             ?? throw new Exception($"Không tìm thấy buổi phỏng vấn đang chờ cho hồ sơ {request.ApplicationId}.");
 
@@ -80,7 +82,10 @@ public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInt
         {
             try
             {
-                var candidateFullName = interview.Application.Candidate.User?.FullName ?? "Candidate";
+                var candidateFullName = interview.Application.ExternalCandidate?.FullName
+                    ?? interview.Application.Candidate.User?.FullName
+                    ?? "Candidate";
+
                 var zoomMeeting = await _zoomService.CreateMeetingAsync(new ZoomMeetingRequest
                 {
                     Topic = $"Interview for {interview.Application.JobPosting.JobTitle}",
@@ -91,12 +96,14 @@ public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInt
                 }, cancellationToken);
 
                 meetingLink = zoomMeeting.JoinUrl;
-                _logger.LogInformation("Đã tự động tạo cuộc họ p Zoom {MeetingId} cho cuộc phỏng vấn {InterviewId}", 
-                    zoomMeeting.MeetingId, interview.Id);
+                _logger.LogInformation(
+                    "Đã tự động tạo cuộc họp Zoom {MeetingId} cho cuộc phỏng vấn {InterviewId}",
+                    zoomMeeting.MeetingId,
+                    interview.Id);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Không thể tự động tạo cuộc họ p Zoom cho cuộc phỏng vấn {InterviewId}", interview.Id);
+                _logger.LogError(ex, "Không thể tự động tạo cuộc họp Zoom cho cuộc phỏng vấn {InterviewId}", interview.Id);
                 throw new Exception("Không thể tạo cuộc họp Zoom. Vui lòng thử lại hoặc cung cấp link họp thủ công.", ex);
             }
         }
@@ -112,7 +119,7 @@ public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInt
             interview.Location = request.Location;
             interview.MeetingLink = request.InterviewFormat == InterviewFormat.Online ? meetingLink : null;
             interview.Status = InterviewStatus.Scheduled;
-            
+
             // 8. Update Application stage
             interview.Application.Stage = ApplicationStage.InterviewScheduled;
             interview.Application.StageUpdatedAt = DateTime.UtcNow;
@@ -123,7 +130,12 @@ public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInt
 
             _logger.LogInformation(
                 "Interview {InterviewId} confirmed ({Format}) for Application {ApplicationId} by HR {UserId}. Meeting Link: {Link}, Location: {Location}",
-                interview.Id, request.InterviewFormat, interview.ApplicationId, userId, interview.MeetingLink, request.Location);
+                interview.Id,
+                request.InterviewFormat,
+                interview.ApplicationId,
+                userId,
+                interview.MeetingLink,
+                request.Location);
 
             // 9. Send confirmation emails with calendar invite (fire-and-forget, after commit)
             await SendConfirmationEmailsAsync(interview);
@@ -177,7 +189,8 @@ public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInt
 
         // Create calendar event
         var attendees = new List<string>();
-        var candidateEmail = interview.Application.Candidate.User?.Email;
+        var candidateEmail = interview.Application.ExternalCandidate?.Email
+            ?? interview.Application.Candidate.User?.Email;
         if (!string.IsNullOrEmpty(candidateEmail))
         {
             attendees.Add(candidateEmail);
@@ -201,7 +214,7 @@ public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInt
         {
             calendarDescription += $"Location: {interview.Location}";
         }
-        
+
         var icsContent = _calendarService.CreateICalendarEvent(new CalendarEventRequest
         {
             Subject = $"Interview: {jobTitle}",
@@ -213,7 +226,7 @@ public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInt
             DurationMinutes = interview.Duration,
             AttendeeEmails = attendees,
             OrganizerEmail = _currentUserService.Email ?? "hr@erms.com",
-            OrganizerName = interview.Application.JobPosting.Enterprise?.EnterpriseName ?? "ERMS HR Department"  
+            OrganizerName = interview.Application.JobPosting.Enterprise?.EnterpriseName ?? "ERMS HR Department"
         });
 
         var attachments = new Dictionary<string, byte[]>
@@ -239,7 +252,10 @@ public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInt
         foreach (var participant in interview.Participants)
         {
             var interviewerEmail = participant.Employee?.User?.Email;
-            if (string.IsNullOrEmpty(interviewerEmail)) continue;
+            if (string.IsNullOrEmpty(interviewerEmail))
+            {
+                continue;
+            }
 
             try
             {
