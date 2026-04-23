@@ -20,6 +20,7 @@ namespace ERMS.UnitTests.Features.Users.Commands.GetProfile
     {
         private readonly Mock<UserManager<User>> _userManagerMock;
         private readonly Mock<ICurrentUserService> _currentUserServiceMock;
+        private readonly Mock<IERMSDbContext> _contextMock;
         private readonly GetProfileHandler _handler;
 
         public GetProfileHandlerTest()
@@ -29,7 +30,8 @@ namespace ERMS.UnitTests.Features.Users.Commands.GetProfile
                 userStoreMock.Object, null, null, null, null, null, null, null, null);
 
             _currentUserServiceMock = new Mock<ICurrentUserService>();
-            _handler = new GetProfileHandler(_userManagerMock.Object, _currentUserServiceMock.Object);
+            _contextMock = new Mock<IERMSDbContext>();
+            _handler = new GetProfileHandler(_userManagerMock.Object, _currentUserServiceMock.Object, _contextMock.Object);
         }
 
         private static IQueryable<T> CreateAsyncQueryable<T>(List<T> sourceList)

@@ -29,6 +29,7 @@ namespace ERMS.Application.Features.Training.Queries.GetAllTrainingRequests
         public Guid Id { get; set; }
         public string Subject { get; set; } = null!;
         public string Urgency { get; set; } = null!;
+        public string? Description { get; set; }
         public string Status { get; set; } = null!;
         public string DepartmentName { get; set; } = null!;
         public string RequestedByName { get; set; } = null!;

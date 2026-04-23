@@ -48,6 +48,9 @@ namespace ERMS.Application.Features.Training.Queries.GetTrainingPlanDetail
                             Id = r.Id,
                             Subject = r.Subject,
                             RequestedByName = r.RequestedBy.FullName,
+                            DepartmentName = r.Department.DepartmentName,
+                            TargetAudience = r.TargetAudience,
+                            EstimatedParticipants = r.EstimatedParticipants,
                             Status = r.Status
                         }).ToList()
                 })

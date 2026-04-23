@@ -75,6 +75,7 @@ namespace ERMS.Application.Features.Training.Queries.GetAllTrainingRequests
                     Id = t.Id,
                     Subject = t.Subject,
                     Urgency = t.Urgency,
+                    Description = t.Description,
                     Status = t.Status,
                     DepartmentName = t.Department.DepartmentName,
                     RequestedByName = t.RequestedBy.FullName,
