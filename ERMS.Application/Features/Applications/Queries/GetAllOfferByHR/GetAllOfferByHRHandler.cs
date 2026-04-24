@@ -39,6 +39,7 @@ namespace ERMS.Application.Features.Applications.Queries.GetAllOfferByHR
                 {
                     Id = o.Id,
                     ApplicationId = o.ApplicationId,
+                    CandidateName = o.Application.Candidate != null ? o.Application.Candidate.User.FullName : (o.Application.ExternalCandidate != null ? o.Application.ExternalCandidate.FullName : "N/A"),
                     OfferCode = o.OfferCode,
                     Position = o.Position,
                     DepartmentName = o.Department.DepartmentName,

@@ -54,10 +54,14 @@ public sealed class GenerateJDHandler : IRequestHandler<GenerateJDCommand, Gener
         // 5. Call Gemini AI to generate JD
         try
         {
+            var skillsArg = !string.IsNullOrWhiteSpace(request.UserPrompt) 
+                ? request.UserPrompt 
+                : planDetail.RequiredSkills;
+
             var jdResult = await _aiService.GenerateJobDescriptionAsync(
                 planDetail.PositionTitle,
                 planDetail.Justification,
-                planDetail.RequiredSkills,
+                skillsArg,
                 planDetail.MinExperience,
                 planDetail.MaxExperience,
                 planDetail.EducationLevel,
