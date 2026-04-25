@@ -25,7 +25,7 @@ public sealed class MyInterviewDto
     public string InterviewType { get; set; } = null!;
     public string InterviewFormat { get; set; } = null!;
     public int RoundNumber { get; set; }
-    public DateTime ScheduledAt { get; set; }
+    public DateTime? ScheduledAt { get; set; }
     public int Duration { get; set; }
     public string? Location { get; set; }
     public string? MeetingLink { get; set; }
