@@ -111,8 +111,11 @@ public sealed class CreateJobPostingHandler : IRequestHandler<CreateJobPostingCo
                 ? request.TitleOverride.Trim() 
                 : planDetail.PositionTitle,
             
-            // CRITICAL: Copy RequiredSkills to Requirements for AI CV scanning
-            Requirements = planDetail.RequiredSkills,
+            // Use HR override if provided (e.g. AI-rewritten requirements);
+            // otherwise fall back to PlanDetail.RequiredSkills (still needed for AI CV scanning).
+            Requirements = !string.IsNullOrWhiteSpace(request.RequirementsOverride)
+                ? request.RequirementsOverride.Trim()
+                : planDetail.RequiredSkills,
             
             ExperienceLevel = planDetail.MinExperience.HasValue 
                 ? $"{planDetail.MinExperience}-{planDetail.MaxExperience} years" 
