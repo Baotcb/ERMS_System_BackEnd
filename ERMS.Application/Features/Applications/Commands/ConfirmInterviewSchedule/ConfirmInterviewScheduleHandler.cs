@@ -159,10 +159,26 @@ public sealed class ConfirmInterviewScheduleHandler : IRequestHandler<ConfirmInt
         }
     }
 
+    // Display interview times in the local business timezone (Vietnam, UTC+7).
+    // Stored value is UTC; recipient .ics still carries 'Z' so any external calendar will
+    // re-convert to the viewer's own timezone correctly.
+    private static readonly TimeZoneInfo DisplayTimeZone = ResolveDisplayTimeZone();
+
+    private static TimeZoneInfo ResolveDisplayTimeZone()
+    {
+        // Try Windows id first, then IANA id (cross-platform safety).
+        try { return TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time"); }
+        catch { /* fall through */ }
+        try { return TimeZoneInfo.FindSystemTimeZoneById("Asia/Ho_Chi_Minh"); }
+        catch { return TimeZoneInfo.CreateCustomTimeZone("ICT", TimeSpan.FromHours(7), "Indochina Time", "ICT"); }
+    }
+
     private async Task SendConfirmationEmailsAsync(Domain.Entities.Application.Interview interview)
     {
         var jobTitle = interview.Application.JobPosting.JobTitle;
-        var scheduledAt = interview.ScheduledAt.ToString("dddd, MMMM dd, yyyy 'at' hh:mm tt 'UTC'");
+        var scheduledUtc = DateTime.SpecifyKind(interview.ScheduledAt, DateTimeKind.Utc);
+        var scheduledLocal = TimeZoneInfo.ConvertTimeFromUtc(scheduledUtc, DisplayTimeZone);
+        var scheduledAt = scheduledLocal.ToString("dddd, dd MMMM yyyy 'lúc' HH:mm") + " (GMT+7)";
         var duration = interview.Duration;
         var format = interview.InterviewFormat == InterviewFormat.Online ? "Online" : "Offline";
 

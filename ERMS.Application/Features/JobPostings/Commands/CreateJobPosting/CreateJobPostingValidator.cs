@@ -22,6 +22,10 @@ public sealed class CreateJobPostingValidator : AbstractValidator<CreateJobPosti
             .MaximumLength(5000)
             .When(x => !string.IsNullOrEmpty(x.DescriptionOverride));
 
+        RuleFor(x => x.RequirementsOverride)
+            .MaximumLength(5000)
+            .When(x => !string.IsNullOrEmpty(x.RequirementsOverride));
+
         RuleFor(x => x.SalaryRangeMin)
             .GreaterThanOrEqualTo(0)
             .When(x => x.SalaryRangeMin.HasValue);

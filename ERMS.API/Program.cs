@@ -8,7 +8,7 @@ using Scalar.AspNetCore;
 using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.HttpOverrides;
-using Hangfire;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -117,13 +117,7 @@ app.MapMethods("/db-health", new[] { "GET", "HEAD" }, async (IServiceProvider sp
 app.MapControllers();
 
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseHangfireDashboard("/hangfire", new Hangfire.DashboardOptions 
-    { 
-        Authorization = new[] { new Hangfire.Dashboard.LocalRequestsOnlyAuthorizationFilter() }
-    });
-}
+
 
 
 app.Run();

@@ -65,7 +65,7 @@ public sealed class GetMyInterviewsHandler : IRequestHandler<GetMyInterviewsQuer
                 InterviewType = p.Interview.InterviewType,
                 InterviewFormat = p.Interview.InterviewFormat.ToString(),
                 RoundNumber = p.Interview.RoundNumber,
-                ScheduledAt = p.Interview.ScheduledAt,
+                ScheduledAt = p.Interview.ScheduledAt == DateTime.MinValue ? (DateTime?)null : p.Interview.ScheduledAt,
                 Duration = p.Interview.Duration,
                 Location = p.Interview.Location,
                 MeetingLink = p.Interview.MeetingLink,
