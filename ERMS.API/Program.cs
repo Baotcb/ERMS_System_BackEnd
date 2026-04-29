@@ -76,7 +76,7 @@ app.UseAuthorization();
 
 
 
-if (!app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
     app.MapOpenApi();
