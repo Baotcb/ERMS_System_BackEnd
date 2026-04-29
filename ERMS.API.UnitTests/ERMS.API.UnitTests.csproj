@@ -4,10 +4,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <TargetFramework>net10.0</TargetFramework>
-    <IsTestProject>true</IsTestProject>
     <IsPackable>false</IsPackable>
-    <LangVersion>latest</LangVersion>
-    <DisableTransitiveProjectReferences>false</DisableTransitiveProjectReferences>
+    <UseVSTest>true</UseVSTest>
+    <TestingPlatformDotnetTestSupport>false</TestingPlatformDotnetTestSupport>
   </PropertyGroup>
 
   <ItemGroup>
