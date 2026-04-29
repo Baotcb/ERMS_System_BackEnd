@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using ERMS.Domain.Entities.Identity;
 
 namespace ERMS.UnitTests.Features.JobPostings.Queries.GetJobPostingById
 {
@@ -67,6 +68,9 @@ namespace ERMS.UnitTests.Features.JobPostings.Queries.GetJobPostingById
             _currentUserServiceMock.Setup(x => x.UserId).Returns(userId);
             _currentUserServiceMock.Setup(x => x.Roles).Returns(new List<string> { AppRoles.HRManager });
             _currentUserServiceMock.Setup(x => x.GetEnterpriseIdAsync()).ReturnsAsync(enterpriseId);
+
+            var user = new User { Id = userId, FullName = "Test User", Email = "test@user.com" };
+            _context.Users.Add(user);
 
             var department = new Department { Id = departmentId, DepartmentName = "HR" };
             _context.Departments.Add(department);

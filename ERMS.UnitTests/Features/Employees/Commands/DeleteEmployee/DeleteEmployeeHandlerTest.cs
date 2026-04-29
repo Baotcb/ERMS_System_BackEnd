@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Features.Employees.Commands.DeleteEmployee;
+using ERMS.Application.Features.Employees.Commands.DeleteEmployee;
 using ERMS.Application.Interface;
 using ERMS.Domain.Entities.Identity;
 using ERMS.Domain.Entities.Organization;
@@ -408,7 +408,7 @@ public class DeleteEmployeeHandlerTest
             x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains($"Deleted employee {employeeId}")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains($"Đã xóa nhân viên {employeeId}")),
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
