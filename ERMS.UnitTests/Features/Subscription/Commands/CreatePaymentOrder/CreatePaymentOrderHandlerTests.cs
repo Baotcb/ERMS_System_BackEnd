@@ -190,7 +190,7 @@ public class CreatePaymentOrderHandlerTests : IDisposable
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*free plan*");
+            .WithMessage("*Không thể mua gói miễn phí*");
     }
 
     [Fact]
@@ -250,7 +250,7 @@ public class CreatePaymentOrderHandlerTests : IDisposable
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*pending payment order*");
+            .WithMessage("*Đã có đơn thanh toán đang chờ xử lý*");
     }
 
     [Fact]

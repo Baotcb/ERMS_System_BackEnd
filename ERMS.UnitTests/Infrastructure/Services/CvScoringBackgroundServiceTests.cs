@@ -164,7 +164,7 @@ public class CvScoringBackgroundServiceTests
             x => x.Log(
                 LogLevel.Error,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("CV scoring failed")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Lỗi khi chấm điểm CV cho đơn ứng tuyển")),
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);

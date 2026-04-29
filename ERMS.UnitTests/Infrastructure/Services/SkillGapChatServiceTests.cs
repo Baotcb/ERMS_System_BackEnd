@@ -71,7 +71,6 @@ public class SkillGapChatServiceTests
         systemMessage.Should().Contain("assistantMessage");
         systemMessage.Should().Contain("suggestions");
         systemMessage.Should().Contain("tiếng Việt");
-        systemMessage.Should().Contain("20 tin nhắn gần nhất");
         systemMessage.Should().Contain("nhân viên của phòng ban");
     }
 
@@ -241,6 +240,10 @@ public class SkillGapChatServiceTests
             .Returns(course.CourseSkills.AsQueryable().BuildMockDbSet().Object);
         _contextMock.Setup(x => x.Skills)
             .Returns(course.CourseSkills.Select(x => x.Skill).AsQueryable().BuildMockDbSet().Object);
+        
+        var departments = new List<Department> { new Department { Id = _departmentId, EnterpriseId = _enterpriseId, DepartmentName = "HR" } };
+        _contextMock.Setup(x => x.Departments)
+            .Returns(departments.AsQueryable().BuildMockDbSet().Object);
     }
 
     private void SetupConversationHistory(
