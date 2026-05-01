@@ -16,20 +16,18 @@ using Moq;
 
 namespace ERMS.API.UnitTests;
 
-[TestFixture]
 public class AdminControllerTests
 {
     private Mock<ISender> _senderMock = null!;
     private AdminController _controller = null!;
 
-    [SetUp]
-    public void SetUp()
+    public AdminControllerTests()
     {
         _senderMock = new Mock<ISender>();
         _controller = new AdminController(_senderMock.Object);
     }
 
-    [Test]
+    [Fact]
     public async Task GetDashboard_ShouldSendGetAdminDashboardQuery_AndReturnOk()
     {
         var response = new GetAdminDashboardResponse { TotalEnterprises = 5 };
@@ -46,7 +44,7 @@ public class AdminControllerTests
             Times.Once);
     }
 
-    [Test]
+    [Fact]
     public async Task GetEnterprises_ShouldForwardProvidedQuery_AndReturnOk()
     {
         var query = new GetEnterpriseListQuery { Search = "tech", PageNumber = 2, PageSize = 5 };
@@ -62,7 +60,7 @@ public class AdminControllerTests
         _senderMock.Verify(sender => sender.Send(query, It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [Test]
+    [Fact]
     public async Task GetEnterpriseDetailById_ShouldWrapRouteIdIntoQuery_AndReturnOk()
     {
         var enterpriseId = Guid.NewGuid();
@@ -82,7 +80,7 @@ public class AdminControllerTests
             Times.Once);
     }
 
-    [Test]
+    [Fact]
     public async Task SetEnterpriseStatus_ShouldOverwriteRouteEnterpriseId_AndReturnSuccessPayload()
     {
         var routeEnterpriseId = Guid.NewGuid();
@@ -108,7 +106,7 @@ public class AdminControllerTests
         _senderMock.Verify(sender => sender.Send(command, It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [Test]
+    [Fact]
     public async Task SetEnterpriseLockState_ShouldReturnLockMessage_WhenIsLockedIsTrue()
     {
         var command = new SetEnterpriseLockStateCommand
@@ -130,7 +128,7 @@ public class AdminControllerTests
         _senderMock.Verify(sender => sender.Send(command, It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [Test]
+    [Fact]
     public async Task SetEnterpriseLockState_ShouldReturnUnlockMessage_WhenIsLockedIsFalse()
     {
         var command = new SetEnterpriseLockStateCommand
@@ -152,7 +150,7 @@ public class AdminControllerTests
         _senderMock.Verify(sender => sender.Send(command, It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [Test]
+    [Fact]
     public async Task GetPaymentHistory_ShouldForwardProvidedQuery_AndReturnOk()
     {
         var query = new GetGlobalPaymentHistoryQuery { EnterpriseSearch = "tech", PageNumber = 1, PageSize = 10 };
@@ -168,7 +166,7 @@ public class AdminControllerTests
         _senderMock.Verify(sender => sender.Send(query, It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [Test]
+    [Fact]
     public async Task GetPlatformStats_ShouldSendGetPlatformStatsQuery_AndReturnOk()
     {
         var response = new GetPlatformStatsResponse { TotalEnterprises = 5 };
@@ -185,7 +183,7 @@ public class AdminControllerTests
             Times.Once);
     }
 
-    [Test]
+    [Fact]
     public async Task GetAiServices_ShouldSendGetAiServiceOverviewQuery_AndReturnOk()
     {
         var response = new GetAiServiceOverviewResponse { ProviderName = "Gemini" };
@@ -202,7 +200,7 @@ public class AdminControllerTests
             Times.Once);
     }
 
-    [Test]
+    [Fact]
     public async Task GetSystemIntegrations_ShouldSendGetSystemIntegrationsQuery_AndReturnOk()
     {
         var response = new GetSystemIntegrationsResponse
@@ -230,3 +228,4 @@ public class AdminControllerTests
             .GetValue(instance)!;
     }
 }
+

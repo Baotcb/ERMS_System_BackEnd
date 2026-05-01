@@ -189,7 +189,7 @@ public class HandlePayOSWebhookHandlerTests
             x => x.Log(
                 LogLevel.Warning,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((state, _) => state.ToString()!.Contains("Failed to verify PayOS webhook signature or payload.")),
+                It.Is<It.IsAnyType>((state, _) => state.ToString()!.Contains("Không thể xác minh chữ ký hoặc dữ liệu webhook PayOS.")),
                 It.IsAny<InvalidOperationException>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);

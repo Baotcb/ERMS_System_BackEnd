@@ -1,4 +1,5 @@
-﻿using ERMS.Application.Features.RecruitmentPlans.Queries.GetAllRecruitmentPlans;
+﻿using ERMS.Domain.Entities.Organization;
+using ERMS.Application.Features.RecruitmentPlans.Queries.GetAllRecruitmentPlans;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Recruitment;
 using ERMS.Domain.Entities.Recruitment;
@@ -13,6 +14,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using ERMS.Domain.Entities.Organization;
 
 namespace ERMS.UnitTests.Features.RecruitmentPlans.Queries.GetAllRecruitmentPlans
 {
@@ -80,7 +82,7 @@ namespace ERMS.UnitTests.Features.RecruitmentPlans.Queries.GetAllRecruitmentPlan
                 new RecruitmentPlan 
                 { 
                     Id = Guid.NewGuid(), 
-                    EnterpriseId = enterpriseId, 
+                    EnterpriseId = enterpriseId, DepartmentId = 1, 
                     PlanName = "Plan One", 
                     PlanCode = "P1", 
                     Status = PlanStatus.Approved, 
@@ -92,7 +94,7 @@ namespace ERMS.UnitTests.Features.RecruitmentPlans.Queries.GetAllRecruitmentPlan
                 new RecruitmentPlan 
                 { 
                     Id = Guid.NewGuid(), 
-                    EnterpriseId = enterpriseId, 
+                    EnterpriseId = enterpriseId, DepartmentId = 1, 
                     PlanName = "Plan Two", 
                     PlanCode = "P2", 
                     Status = PlanStatus.Draft, 
@@ -104,7 +106,7 @@ namespace ERMS.UnitTests.Features.RecruitmentPlans.Queries.GetAllRecruitmentPlan
                 new RecruitmentPlan 
                 { 
                     Id = Guid.NewGuid(), 
-                    EnterpriseId = Guid.NewGuid(), 
+                    EnterpriseId = Guid.NewGuid(), DepartmentId = 1, 
                     PlanName = "Other Ent Plan", 
                     PlanCode = "OP", 
                     Status = PlanStatus.Approved, 
@@ -113,7 +115,7 @@ namespace ERMS.UnitTests.Features.RecruitmentPlans.Queries.GetAllRecruitmentPlan
                     IsDeleted = false
                 }
             });
-            await context.SaveChangesAsync();
+            context.Departments.Add(new Department { Id = 1, DepartmentName = "HR" }); await context.SaveChangesAsync();
 
             var handler = new GetAllRecruitmentPlansHandler(context, _currentUserServiceMock.Object);
             var query = new GetAllRecruitmentPlansQuery { Page = 1, PageSize = 10, Search = "One" };
@@ -165,7 +167,7 @@ namespace ERMS.UnitTests.Features.RecruitmentPlans.Queries.GetAllRecruitmentPlan
                 new RecruitmentPlan 
                 { 
                     Id = Guid.NewGuid(), 
-                    EnterpriseId = enterpriseId, 
+                    EnterpriseId = enterpriseId, DepartmentId = 1, 
                     PlanName = "P1", 
                     PlanCode = "P1", 
                     Status = PlanStatus.Approved, 
@@ -176,7 +178,7 @@ namespace ERMS.UnitTests.Features.RecruitmentPlans.Queries.GetAllRecruitmentPlan
                 new RecruitmentPlan 
                 { 
                     Id = Guid.NewGuid(), 
-                    EnterpriseId = enterpriseId, 
+                    EnterpriseId = enterpriseId, DepartmentId = 1, 
                     PlanName = "P2", 
                     PlanCode = "P2", 
                     Status = PlanStatus.Draft, 
@@ -185,7 +187,7 @@ namespace ERMS.UnitTests.Features.RecruitmentPlans.Queries.GetAllRecruitmentPlan
                     IsDeleted = false
                 }
             });
-            await context.SaveChangesAsync();
+            context.Departments.Add(new Department { Id = 1, DepartmentName = "HR" }); await context.SaveChangesAsync();
 
             var handler = new GetAllRecruitmentPlansHandler(context, _currentUserServiceMock.Object);
             var query = new GetAllRecruitmentPlansQuery { Status = PlanStatus.Draft };
@@ -233,7 +235,7 @@ namespace ERMS.UnitTests.Features.RecruitmentPlans.Queries.GetAllRecruitmentPlan
                 context.RecruitmentPlans.Add(new RecruitmentPlan 
                 { 
                     Id = Guid.NewGuid(), 
-                    EnterpriseId = enterpriseId, 
+                    EnterpriseId = enterpriseId, DepartmentId = 1, 
                     PlanName = $"Plan {i}", 
                     PlanCode = $"P{i}",
                     Status = PlanStatus.Draft,
@@ -243,7 +245,7 @@ namespace ERMS.UnitTests.Features.RecruitmentPlans.Queries.GetAllRecruitmentPlan
                     IsDeleted = false
                 });
             }
-            await context.SaveChangesAsync();
+            context.Departments.Add(new Department { Id = 1, DepartmentName = "HR" }); await context.SaveChangesAsync();
 
             var handler = new GetAllRecruitmentPlansHandler(context, _currentUserServiceMock.Object);
             var query = new GetAllRecruitmentPlansQuery { Page = 1, PageSize = 2 };
@@ -292,7 +294,7 @@ namespace ERMS.UnitTests.Features.RecruitmentPlans.Queries.GetAllRecruitmentPlan
                 new RecruitmentPlan 
                 { 
                     Id = Guid.NewGuid(), 
-                    EnterpriseId = enterpriseId, 
+                    EnterpriseId = enterpriseId, DepartmentId = 1, 
                     PlanName = "Active Plan", 
                     PlanCode = "AP",
                     Status = PlanStatus.Draft,
@@ -303,7 +305,7 @@ namespace ERMS.UnitTests.Features.RecruitmentPlans.Queries.GetAllRecruitmentPlan
                 new RecruitmentPlan 
                 { 
                     Id = Guid.NewGuid(), 
-                    EnterpriseId = enterpriseId, 
+                    EnterpriseId = enterpriseId, DepartmentId = 1, 
                     PlanName = "Deleted Plan", 
                     PlanCode = "DP",
                     Status = PlanStatus.Draft,
@@ -312,7 +314,7 @@ namespace ERMS.UnitTests.Features.RecruitmentPlans.Queries.GetAllRecruitmentPlan
                     IsDeleted = true
                 }
             });
-            await context.SaveChangesAsync();
+            context.Departments.Add(new Department { Id = 1, DepartmentName = "HR" }); await context.SaveChangesAsync();
 
             var handler = new GetAllRecruitmentPlansHandler(context, _currentUserServiceMock.Object);
             var query = new GetAllRecruitmentPlansQuery();
@@ -360,7 +362,7 @@ namespace ERMS.UnitTests.Features.RecruitmentPlans.Queries.GetAllRecruitmentPlan
                 new RecruitmentPlan 
                 { 
                     Id = Guid.NewGuid(), 
-                    EnterpriseId = enterpriseId, 
+                    EnterpriseId = enterpriseId, DepartmentId = 1, 
                     PlanName = "Q1 Hiring Plan", 
                     PlanCode = "Q1H2024",
                     Status = PlanStatus.Draft,
@@ -371,7 +373,7 @@ namespace ERMS.UnitTests.Features.RecruitmentPlans.Queries.GetAllRecruitmentPlan
                 new RecruitmentPlan 
                 { 
                     Id = Guid.NewGuid(), 
-                    EnterpriseId = enterpriseId, 
+                    EnterpriseId = enterpriseId, DepartmentId = 1, 
                     PlanName = "Q2 Recruitment", 
                     PlanCode = "Q2R2024",
                     Status = PlanStatus.Draft,
@@ -380,7 +382,7 @@ namespace ERMS.UnitTests.Features.RecruitmentPlans.Queries.GetAllRecruitmentPlan
                     IsDeleted = false
                 }
             });
-            await context.SaveChangesAsync();
+            context.Departments.Add(new Department { Id = 1, DepartmentName = "HR" }); await context.SaveChangesAsync();
 
             var handler = new GetAllRecruitmentPlansHandler(context, _currentUserServiceMock.Object);
 
@@ -457,7 +459,7 @@ namespace ERMS.UnitTests.Features.RecruitmentPlans.Queries.GetAllRecruitmentPlan
             context.RecruitmentPlans.Add(new RecruitmentPlan 
             { 
                 Id = Guid.NewGuid(), 
-                EnterpriseId = enterpriseId, 
+                EnterpriseId = enterpriseId, DepartmentId = 1, 
                 PlanName = "Approved Plan", 
                 PlanCode = "AP",
                 Status = PlanStatus.Approved,
@@ -467,7 +469,7 @@ namespace ERMS.UnitTests.Features.RecruitmentPlans.Queries.GetAllRecruitmentPlan
                 CampaignId = campaignId,
                 IsDeleted = false
             });
-            await context.SaveChangesAsync();
+            context.Departments.Add(new Department { Id = 1, DepartmentName = "HR" }); await context.SaveChangesAsync();
 
             var handler = new GetAllRecruitmentPlansHandler(context, _currentUserServiceMock.Object);
             var query = new GetAllRecruitmentPlansQuery();
@@ -528,7 +530,7 @@ namespace ERMS.UnitTests.Features.RecruitmentPlans.Queries.GetAllRecruitmentPlan
                 new RecruitmentPlan 
                 { 
                     Id = Guid.NewGuid(), 
-                    EnterpriseId = userEnterpriseId, 
+                    EnterpriseId = userEnterpriseId, DepartmentId = 1, 
                     PlanName = "User Plan", 
                     PlanCode = "UP",
                     Status = PlanStatus.Draft,
@@ -539,7 +541,7 @@ namespace ERMS.UnitTests.Features.RecruitmentPlans.Queries.GetAllRecruitmentPlan
                 new RecruitmentPlan 
                 { 
                     Id = Guid.NewGuid(), 
-                    EnterpriseId = otherEnterpriseId, 
+                    EnterpriseId = otherEnterpriseId, DepartmentId = 1, 
                     PlanName = "Other Plan", 
                     PlanCode = "OP",
                     Status = PlanStatus.Draft,
@@ -548,7 +550,7 @@ namespace ERMS.UnitTests.Features.RecruitmentPlans.Queries.GetAllRecruitmentPlan
                     IsDeleted = false
                 }
             });
-            await context.SaveChangesAsync();
+            context.Departments.Add(new Department { Id = 1, DepartmentName = "HR" }); await context.SaveChangesAsync();
 
             var handler = new GetAllRecruitmentPlansHandler(context, _currentUserServiceMock.Object);
             var query = new GetAllRecruitmentPlansQuery();
@@ -562,3 +564,7 @@ namespace ERMS.UnitTests.Features.RecruitmentPlans.Queries.GetAllRecruitmentPlan
         }
     }
 }
+
+
+
+
