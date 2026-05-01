@@ -2,14 +2,14 @@ using ERMS.Application.Features.Users.Commands.GetProfile;
 using ERMS.Application.Interface;
 using ERMS.Domain.Entities.Identity;
 using ERMS.Domain.Entities.Organization;
+using ERMS.Domain.Entities.Enterprise;
+using ERMS.UnitTests.Helpers;
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore.Query;
 using Moq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -34,26 +34,6 @@ namespace ERMS.UnitTests.Features.Users.Commands.GetProfile
             _handler = new GetProfileHandler(_userManagerMock.Object, _currentUserServiceMock.Object, _contextMock.Object);
         }
 
-        private static IQueryable<T> CreateAsyncQueryable<T>(List<T> sourceList)
-        {
-            var queryable = sourceList.AsQueryable();
-            var mock = new Mock<IQueryable<T>>();
-
-            mock.As<IAsyncEnumerable<T>>()
-                .Setup(m => m.GetAsyncEnumerator(It.IsAny<CancellationToken>()))
-                .Returns(new TestAsyncEnumerator<T>(queryable.GetEnumerator()));
-
-            mock.As<IQueryable<T>>()
-                .Setup(m => m.Provider)
-                .Returns(new TestAsyncQueryProvider<T>(queryable.Provider));
-
-            mock.As<IQueryable<T>>().Setup(m => m.Expression).Returns(queryable.Expression);
-            mock.As<IQueryable<T>>().Setup(m => m.ElementType).Returns(queryable.ElementType);
-            mock.As<IQueryable<T>>().Setup(m => m.GetEnumerator()).Returns(queryable.GetEnumerator());
-
-            return mock.Object;
-        }
-
         [Fact]
         public async Task Handle_ShouldThrowUnauthorizedAccessException_WhenUserIdIsNull()
         {
@@ -74,10 +54,9 @@ namespace ERMS.UnitTests.Features.Users.Commands.GetProfile
             var userId = Guid.NewGuid();
             _currentUserServiceMock.Setup(x => x.UserId).Returns(userId);
 
-            // Mock Users property
-            var users = new List<User>();
-            var mockUsers = CreateAsyncQueryable(users);
-            _userManagerMock.Setup(x => x.Users).Returns(mockUsers);
+            // Mock Users property using BuildMockDbSet
+            var users = new List<User>().AsQueryable().BuildMockDbSet();
+            _userManagerMock.Setup(x => x.Users).Returns(users.Object);
 
             var command = new GetProfileCommand();
 
@@ -92,6 +71,8 @@ namespace ERMS.UnitTests.Features.Users.Commands.GetProfile
         {
             // Arrange
             var userId = Guid.NewGuid();
+            var enterprise = new Enterprise { EnterpriseName = "Test Corp", LogoUrl = "https://logo.png" };
+            var department = new Department { DepartmentName = "HR", Enterprise = enterprise };
             var user = new User
             {
                 Id = userId,
@@ -101,15 +82,19 @@ namespace ERMS.UnitTests.Features.Users.Commands.GetProfile
                 PhoneNumber = "0987654321",
                 AvatarUrl = "https://res.cloudinary.com/demo/image/upload/avatar.png",
                 DateJoined = DateTime.UtcNow,
-                Department = new Department { DepartmentName = "HR" }
+                Department = department,
+                DepartmentId = 1
             };
 
             _currentUserServiceMock.Setup(x => x.UserId).Returns(userId);
 
-            // Mock Users property
-            var users = new List<User> { user };
-            var mockUsers = CreateAsyncQueryable(users);
-            _userManagerMock.Setup(x => x.Users).Returns(mockUsers);
+            // Mock Users property using BuildMockDbSet (supports Include)
+            var mockUsers = new List<User> { user }.AsQueryable().BuildMockDbSet();
+            _userManagerMock.Setup(x => x.Users).Returns(mockUsers.Object);
+
+            // Mock Employees DbSet (handler uses fallback query)
+            var mockEmployees = new List<Employee>().AsQueryable().BuildMockDbSet();
+            _contextMock.Setup(c => c.Employees).Returns(mockEmployees.Object);
 
             _userManagerMock.Setup(x => x.GetRolesAsync(user))
                 .ReturnsAsync(new List<string> { "Manager" });
@@ -128,98 +113,5 @@ namespace ERMS.UnitTests.Features.Users.Commands.GetProfile
             result.DepartmentName.Should().Be("HR");
         }
     }
-
-    // Helper classes for Async Query Provider (Reused locally to avoid dependencies)
-    internal class TestAsyncQueryProvider<TEntity> : IAsyncQueryProvider
-    {
-        private readonly IQueryProvider _inner;
-
-        internal TestAsyncQueryProvider(IQueryProvider inner)
-        {
-            _inner = inner;
-        }
-
-        public IQueryable CreateQuery(Expression expression)
-        {
-            return new TestAsyncEnumerable<TEntity>(expression);
-        }
-
-        public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
-        {
-            return new TestAsyncEnumerable<TElement>(expression);
-        }
-
-        public object Execute(Expression expression)
-        {
-            return _inner.Execute(expression)!;
-        }
-
-        public TResult Execute<TResult>(Expression expression)
-        {
-            return _inner.Execute<TResult>(expression);
-        }
-
-        public TResult ExecuteAsync<TResult>(Expression expression, CancellationToken cancellationToken)
-        {
-            var expectedResultType = typeof(TResult).GetGenericArguments()[0];
-            var executionResult = typeof(IQueryProvider)
-                .GetMethod(
-                    name: nameof(IQueryProvider.Execute),
-                    genericParameterCount: 1,
-                    types: new[] { typeof(Expression) })!
-                .MakeGenericMethod(expectedResultType)
-                .Invoke(this, new[] { expression });
-
-            return (TResult)typeof(Task).GetMethod(nameof(Task.FromResult))!
-                .MakeGenericMethod(expectedResultType)
-                .Invoke(null, new[] { executionResult })!;
-        }
-    }
-
-    internal class TestAsyncEnumerable<T> : EnumerableQuery<T>, IAsyncEnumerable<T>, IQueryable<T>
-    {
-        public TestAsyncEnumerable(IEnumerable<T> enumerable)
-            : base(enumerable)
-        { }
-
-        public TestAsyncEnumerable(Expression expression)
-            : base(expression)
-        { }
-
-        public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
-        {
-            return new TestAsyncEnumerator<T>(this.AsEnumerable().GetEnumerator());
-        }
-
-        IQueryProvider IQueryable.Provider
-        {
-            get { return new TestAsyncQueryProvider<T>(this); }
-        }
-    }
-
-    internal class TestAsyncEnumerator<T> : IAsyncEnumerator<T>
-    {
-        private readonly IEnumerator<T> _inner;
-
-        public TestAsyncEnumerator(IEnumerator<T> inner)
-        {
-            _inner = inner;
-        }
-
-        public ValueTask DisposeAsync()
-        {
-            _inner.Dispose();
-            return ValueTask.CompletedTask;
-        }
-
-        public ValueTask<bool> MoveNextAsync()
-        {
-            return new ValueTask<bool>(_inner.MoveNext());
-        }
-
-        public T Current
-        {
-            get { return _inner.Current; }
-        }
-    }
 }
+

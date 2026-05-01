@@ -1,4 +1,4 @@
-﻿using ERMS.Application.Features.Interviews.Queries.GetInterviewsForFeedback;
+using ERMS.Application.Features.Interviews.Queries.GetInterviewsForFeedback;
 using ERMS.Application.Interface;
 using ERMS.Domain.Constants.Application;
 using ERMS.Domain.Constants.Roles;
@@ -106,14 +106,14 @@ public class GetInterviewsForFeedbackHandlerTests
             }
         };
 
-        // Out of scope status (Scheduled instead of Completed)
+        // Out of scope status (Cancelled is not in Scheduled/Completed filter)
         var appScheduled = new ApplicationEntity { Id = Guid.NewGuid(), JobPosting = job1, Candidate = candidate1, IsDeleted = false };
         var interviewScheduled = new Interview
         {
             Id = Guid.NewGuid(),
             ApplicationId = appScheduled.Id,
             Application = appScheduled,
-            Status = InterviewStatus.Completed,
+            Status = InterviewStatus.Cancelled,
             IsDeleted = false,
             Participants = new List<InterviewParticipant>
             {
