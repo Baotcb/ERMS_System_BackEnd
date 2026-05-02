@@ -363,6 +363,61 @@ public class UpdateEmployeeHandlerTest
     }
 
     [Fact]
+    public async Task Handle_WhenSkillDescriptionProvided_UpdatesSkillDescription()
+    {
+        // Arrange
+        var enterpriseId = Guid.NewGuid();
+        var employeeId = Guid.NewGuid();
+        var departmentId = 1;
+
+        _mockCurrentUserService.Setup(x => x.GetEnterpriseIdAsync())
+            .ReturnsAsync(enterpriseId);
+
+        var employee = new Employee
+        {
+            Id = employeeId,
+            EnterpriseId = enterpriseId,
+            DepartmentId = departmentId,
+            SkillDescription = null,
+            IsDeleted = false
+        };
+
+        var employees = new List<Employee> { employee }.AsQueryable();
+        _mockContext.Setup(x => x.Employees)
+            .Returns(DbContextMockHelper.BuildMockDbSet(employees).Object);
+
+        var department = new Department
+        {
+            Id = departmentId,
+            EnterpriseId = enterpriseId,
+            IsDeleted = false
+        };
+
+        var departments = new List<Department> { department }.AsQueryable();
+        _mockContext.Setup(x => x.Departments)
+            .Returns(DbContextMockHelper.BuildMockDbSet(departments).Object);
+
+        _mockContext.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+
+        var command = new UpdateEmployeeCommand
+        {
+            Id = employeeId,
+            DepartmentId = departmentId,
+            Position = "Developer",
+            EmploymentType = "FullTime",
+            Status = "Active",
+            SkillDescription = "Kỹ năng phù hợp: C#, .NET"
+        };
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        employee.SkillDescription.Should().Be("Kỹ năng phù hợp: C#, .NET");
+    }
+
+    [Fact]
     public async Task Handle_WhenUpdating_SetsUpdatedAtTimestamp()
     {
         // Arrange
@@ -655,7 +710,7 @@ public class UpdateEmployeeHandlerTest
             x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains($"Updated employee {employeeId}")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains($"Đã cập nhật nhân viên {employeeId}")),
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);

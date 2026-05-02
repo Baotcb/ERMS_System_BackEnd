@@ -68,6 +68,7 @@ namespace ERMS.Application.Interface
         public string? Phone { get; set; }
         public string? DepartmentCode { get; set; }
         public string? Position { get; set; }
+        public string? SkillDescription { get; set; }
         public string? Password { get; set; }
         public string? Role { get; set; }
 

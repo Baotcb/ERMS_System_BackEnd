@@ -1,22 +1,27 @@
 using ERMS.Application.Features.Applications.Commands.AcceptOffer;
+using ERMS.Application.Features.Applications.Commands.AddExternalApplication;
 using ERMS.Application.Features.Applications.Queries.GetAllApplications;
 using ERMS.Application.Features.Applications.Commands.ConfirmHire;
 using ERMS.Application.Features.Applications.Commands.AssignInterviewer;
 using ERMS.Application.Features.Applications.Commands.ConfirmInterviewSchedule;
 using ERMS.Application.Features.Applications.Commands.CancelOffer;
 using ERMS.Application.Features.Applications.Commands.CreateOffer;
+using ERMS.Application.Features.Applications.Commands.ExtractCVInfo;
 using ERMS.Application.Features.Applications.Commands.ForwardApplication;
 using ERMS.Application.Features.Applications.Commands.RejectApplication;
 using ERMS.Application.Features.Applications.Commands.RejectOffer;
+using ERMS.Application.Features.Applications.Commands.RespondOfferByToken;
 using ERMS.Application.Features.Applications.Commands.SubmitApplication;
 using ERMS.Application.Features.Applications.Commands.SubmitFinalDecision;
 using ERMS.Application.Features.Applications.Commands.SubmitInterviewFeedback;
 using ERMS.Application.Features.Applications.Commands.WithdrawApplication;
 using ERMS.Application.Features.Applications.Queries.GetAllOfferByHR;
+using ERMS.Application.Features.Applications.Queries.GetApplicationResumeDownload;
 using ERMS.Application.Features.Applications.Queries.GetApplicationsByJob;
 using ERMS.Application.Features.Applications.Queries.GetMyApplications;
 using ERMS.Application.Features.Applications.Queries.GetMyOffers;
 using ERMS.Application.Features.Applications.Queries.GetOfferByIdOfHR;
+using ERMS.Application.Features.Applications.Queries.GetOfferByToken;
 using ERMS.Application.Features.Interviews.Queries.GetAllInterviews;
 using ERMS.Application.Features.Interviews.Queries.GetInterviewFeedbackById;
 using ERMS.Application.Features.Interviews.Queries.GetInterviewsForFeedback;
@@ -182,6 +187,38 @@ public class ApplicationsController : ControllerBase
     }
 
     /// <summary>
+    /// Get a time-limited download URL for an application's resume.
+    /// </summary>
+    /// <remarks>
+    /// **Access:** Candidate owner, HR Manager, Director, Department Head in same department
+    /// </remarks>
+    [HttpGet("{applicationId}/resume/download")]
+    [ProducesResponseType(StatusCodes.Status302Found)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> DownloadResume(Guid applicationId)
+    {
+        try
+        {
+            var result = await _mediator.Send(new GetApplicationResumeDownloadQuery
+            {
+                ApplicationId = applicationId
+            });
+
+            return Redirect(result.DownloadUrl);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Forward (shortlist) an application - changes stage from Applied to Shortlisted
     /// </summary>
     /// <remarks>
@@ -245,6 +282,84 @@ public class ApplicationsController : ControllerBase
             return Ok(new
             {
                 message = "Application rejected successfully.",
+                data = result
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Extract CV information from an uploaded file
+    /// </summary>
+    /// <remarks>
+    /// **Access:** HR Manager only
+    /// 
+    /// Accepts a CV file and returns parsed candidate information for external application workflows.
+    /// </remarks>
+    /// <param name="command">Form data containing the CV file</param>
+    /// <returns>Extracted CV information</returns>
+    [HttpPost("extract-cv-info")]
+    [Authorize(Roles = AppRoles.HRManager)]
+    [Consumes("multipart/form-data")]
+    [ProducesResponseType(typeof(ExtractCVInfoResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> ExtractCVInfo([FromForm] ExtractCVInfoCommand command)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        try
+        {
+            var result = await _mediator.Send(command);
+            return Ok(new
+            {
+                message = "CV information extracted successfully.",
+                data = result
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Add an external application using pre-parsed CV information
+    /// </summary>
+    /// <remarks>
+    /// **Access:** HR Manager only
+    /// 
+    /// Creates an application for an external candidate using provided resume data.
+    /// </remarks>
+    /// <param name="command">Application data for an external candidate</param>
+    /// <returns>Created external application details</returns>
+    [HttpPost("add-external")]
+    [Authorize(Roles = AppRoles.HRManager)]
+    [ProducesResponseType(typeof(AddExternalApplicationResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> AddExternalApplication([FromBody] AddExternalApplicationCommand command)
+    {
+        try
+        {
+            var result = await _mediator.Send(command);
+            return Ok(new
+            {
+                message = "External application added successfully.",
                 data = result
             });
         }
@@ -742,6 +857,75 @@ public class ApplicationsController : ControllerBase
         catch (UnauthorizedAccessException ex)
         {
             return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get offer details using a public response token
+    /// </summary>
+    /// <remarks>
+    /// **Access:** Anonymous
+    /// 
+    /// Returns the offer summary needed by the FE response page.
+    /// </remarks>
+    /// <param name="token">Offer response token</param>
+    /// <returns>Offer details</returns>
+    [HttpGet("offer-response/{token}")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(GetOfferByTokenResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetOfferByToken(string token)
+    {
+        try
+        {
+            var query = new GetOfferByTokenQuery
+            {
+                Token = token
+            };
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Respond to an offer using a public response token
+    /// </summary>
+    /// <remarks>
+    /// **Access:** Anonymous
+    /// 
+    /// Accepts or rejects an offer based on the action query parameter.
+    /// </remarks>
+    /// <param name="token">Offer response token</param>
+    /// <param name="action">accept or reject</param>
+    /// <returns>Offer response result</returns>
+    [HttpPost("offer-response/{token}")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(RespondOfferByTokenResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> RespondOfferByToken(string token, [FromQuery] string action)
+    {
+        try
+        {
+            var command = new RespondOfferByTokenCommand
+            {
+                Token = token,
+                Action = action
+            };
+            var result = await _mediator.Send(command);
+            return Ok(new
+            {
+                message = "Offer response submitted successfully.",
+                data = result
+            });
         }
         catch (Exception ex)
         {

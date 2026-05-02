@@ -777,6 +777,7 @@ public class GetAllEmployeesHandlerTest
                 Position = "Senior Developer",
                 EmploymentType = "FullTime",
                 HireDate = hireDate,
+                SkillDescription = "C#, .NET, Azure",
                 Status = "Active",
                 IsDeleted = false,
                 CreatedAt = createdAt,
@@ -811,6 +812,7 @@ public class GetAllEmployeesHandlerTest
         dto.HireDate.Should().Be(hireDate);
         dto.Status.Should().Be("Active");
         dto.CreatedAt.Should().Be(createdAt);
+        dto.SkillDescription.Should().Be("C#, .NET, Azure");
     }
 
     [Fact]

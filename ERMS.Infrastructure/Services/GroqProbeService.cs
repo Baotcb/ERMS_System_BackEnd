@@ -15,11 +15,16 @@ public sealed class GroqProbeService : IAIProbeService
 
     private readonly HttpClient _httpClient;
     private readonly GroqSettings _settings;
+    private readonly GroqModelSettings _modelSettings;
 
-    public GroqProbeService(HttpClient httpClient, IOptions<GroqSettings> options)
+    public GroqProbeService(
+        HttpClient httpClient,
+        IOptions<GroqSettings> options,
+        IOptions<GroqModelSettings> modelOptions)
     {
         _httpClient = httpClient;
         _settings = options.Value;
+        _modelSettings = modelOptions.Value;
     }
 
     public async Task<GetGeminiProbeResponse> ProbeAsync(CancellationToken cancellationToken)
@@ -33,12 +38,23 @@ public sealed class GroqProbeService : IAIProbeService
                 Success = false,
                 HttpStatusCode = 0,
                 GoogleStatus = "CONFIGURATION_ERROR",
-                Message = "Groq API key is not configured.",
+                Message = "Groq API key chưa được cấu hình.",
                 CheckedAtUtc = checkedAtUtc
             };
         }
 
-        var model = string.IsNullOrWhiteSpace(_settings.Model) ? "llama-3.3-70b-versatile" : _settings.Model;
+        var model = ResolveModel();
+        if (string.IsNullOrWhiteSpace(model))
+        {
+            return new GetGeminiProbeResponse
+            {
+                Success = false,
+                HttpStatusCode = 0,
+                GoogleStatus = "CONFIGURATION_ERROR",
+                Message = "Model Groq chưa được cấu hình (GroqModels:Probe).",
+                CheckedAtUtc = checkedAtUtc
+            };
+        }
 
         var requestBody = new
         {
@@ -67,7 +83,7 @@ public sealed class GroqProbeService : IAIProbeService
                     Success = true,
                     HttpStatusCode = (int)response.StatusCode,
                     GoogleStatus = response.StatusCode.ToString(),
-                    Message = "Groq probe succeeded.",
+                    Message = "Kiểm tra kết nối Groq thành công.",
                     ResponsePreview = Truncate(responseContent),
                     CheckedAtUtc = checkedAtUtc
                 };
@@ -105,7 +121,7 @@ public sealed class GroqProbeService : IAIProbeService
             using var document = JsonDocument.Parse(responseContent);
 
             if (!document.RootElement.TryGetProperty("error", out var errorElement))
-                return ("HTTP_ERROR", "Groq probe failed.");
+                return ("HTTP_ERROR", "Kiểm tra kết nối Groq thất bại.");
 
             var status = errorElement.TryGetProperty("type", out var typeElement)
                 ? typeElement.GetString()
@@ -113,13 +129,13 @@ public sealed class GroqProbeService : IAIProbeService
 
             var message = errorElement.TryGetProperty("message", out var messageElement)
                 ? messageElement.GetString()
-                : "Groq probe failed.";
+                : "Kiểm tra kết nối Groq thất bại.";
 
             return (status, message);
         }
         catch
         {
-            return ("HTTP_ERROR", "Groq probe failed.");
+            return ("HTTP_ERROR", "Kiểm tra kết nối Groq thất bại.");
         }
     }
 
@@ -129,5 +145,15 @@ public sealed class GroqProbeService : IAIProbeService
             return value;
 
         return value.Length <= MaxPreviewLength ? value : value[..MaxPreviewLength];
+    }
+
+    private string? ResolveModel()
+    {
+        if (!string.IsNullOrWhiteSpace(_modelSettings.Probe))
+        {
+            return _modelSettings.Probe.Trim();
+        }
+
+        return null;
     }
 }

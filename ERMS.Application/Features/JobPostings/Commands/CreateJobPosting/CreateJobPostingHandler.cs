@@ -91,6 +91,13 @@ public sealed class CreateJobPostingHandler : IRequestHandler<CreateJobPostingCo
             throw new Exception("Yêu cầu kỹ năng trong chi tiết kế hoạch trống. Chức năng sàng lọc CV bằng AI cần yêu cầu công việc để hoạt động.");
         }
 
+        var salaryRangeMin = request.SalaryRangeMin ?? planDetail.SalaryRangeMin;
+        var salaryRangeMax = request.SalaryRangeMax ?? planDetail.SalaryRangeMax;
+        if (salaryRangeMin.HasValue && salaryRangeMax.HasValue && salaryRangeMax.Value < salaryRangeMin.Value)
+        {
+            throw new Exception("SalaryRangeMax phải lớn hơn hoặc bằng SalaryRangeMin.");
+        }
+
         // 8. Create JobPosting with AUTO-FILL from PlanDetail
         var jobPosting = new JobPosting
         {
@@ -104,15 +111,18 @@ public sealed class CreateJobPostingHandler : IRequestHandler<CreateJobPostingCo
                 ? request.TitleOverride.Trim() 
                 : planDetail.PositionTitle,
             
-            // CRITICAL: Copy RequiredSkills to Requirements for AI CV scanning
-            Requirements = planDetail.RequiredSkills,
+            // Use HR override if provided (e.g. AI-rewritten requirements);
+            // otherwise fall back to PlanDetail.RequiredSkills (still needed for AI CV scanning).
+            Requirements = !string.IsNullOrWhiteSpace(request.RequirementsOverride)
+                ? request.RequirementsOverride.Trim()
+                : planDetail.RequiredSkills,
             
             ExperienceLevel = planDetail.MinExperience.HasValue 
                 ? $"{planDetail.MinExperience}-{planDetail.MaxExperience} years" 
                 : null,
             EducationLevel = planDetail.EducationLevel,
-            SalaryRangeMin = planDetail.SalaryRangeMin,
-            SalaryRangeMax = planDetail.SalaryRangeMax,
+            SalaryRangeMin = salaryRangeMin,
+            SalaryRangeMax = salaryRangeMax,
             Quantity = planDetail.Quantity,
             EmploymentType = "Full-time",
             
@@ -127,7 +137,7 @@ public sealed class CreateJobPostingHandler : IRequestHandler<CreateJobPostingCo
             
             // Initial state
             Status = JobPostingStatus.Draft,
-            ShowSalary = true,
+            ShowSalary = request.ShowSalary ?? true,
             ViewCount = 0,
             ApplicationCount = 0,
             CreatedById = userId,

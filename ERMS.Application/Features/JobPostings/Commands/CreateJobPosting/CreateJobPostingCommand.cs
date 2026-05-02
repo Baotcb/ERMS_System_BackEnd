@@ -8,7 +8,11 @@ public sealed class CreateJobPostingCommand : IRequest<Guid>
     public DateTime ApplicationDeadline { get; set; }
     public string? TitleOverride { get; set; }
     public string? DescriptionOverride { get; set; }
+    public string? RequirementsOverride { get; set; }
     public string? Benefits { get; set; }
     public string? Location { get; set; }
     public string? RemoteOption { get; set; }
+    public decimal? SalaryRangeMin { get; set; }
+    public decimal? SalaryRangeMax { get; set; }
+    public bool? ShowSalary { get; set; }
 }

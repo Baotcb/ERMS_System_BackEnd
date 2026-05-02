@@ -34,11 +34,19 @@ namespace ERMS.Application.Features.Applications.Queries.GetAllOfferByHR
             }
 
             var offers = await _context.Offers
+                .Include(o => o.Application)
+                    .ThenInclude(a => a.Candidate)
+                        .ThenInclude(c => c.User)
+                .Include(o => o.Application)
+                    .ThenInclude(a => a.ExternalCandidate)
                 .Where(o => o.CreatedById == userId && !o.IsDeleted)
                 .Select(o => new HROfferDto
                 {
                     Id = o.Id,
                     ApplicationId = o.ApplicationId,
+                    CandidateName = o.Application.ExternalCandidateId != null && o.Application.ExternalCandidate != null 
+                        ? o.Application.ExternalCandidate.FullName 
+                        : o.Application.Candidate.User.FullName,
                     OfferCode = o.OfferCode,
                     Position = o.Position,
                     DepartmentName = o.Department.DepartmentName,

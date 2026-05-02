@@ -9,6 +9,7 @@ using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.HttpOverrides;
 
+
 var builder = WebApplication.CreateBuilder(args);
 
 
@@ -33,7 +34,6 @@ var app = builder.Build();
 app.UseForwardedHeaders();
 
 // Configure the HTTP request pipeline.
-app.UseForwardedHeaders();
 app.UseExceptionHandler(errorApp =>
 {
     errorApp.Run(async context =>
@@ -71,19 +71,20 @@ app.UseCors("AllowFrontend");
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapOpenApi();
-app.MapScalarApiReference(options => {
-    options.Title = "ERMS System API";
-    options.Theme = ScalarTheme.DeepSpace;
-    options.ShowSidebar = true;
-});
 
 
 
 
-if (!app.Environment.IsDevelopment())
+
+if (app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
+    app.MapOpenApi();
+    app.MapScalarApiReference(options => {
+        options.Title = "ERMS System API";
+        options.Theme = ScalarTheme.DeepSpace;
+        options.ShowSidebar = true;
+    });
 }
 
 
@@ -114,5 +115,9 @@ app.MapMethods("/db-health", new[] { "GET", "HEAD" }, async (IServiceProvider sp
 }).AllowAnonymous();
 
 app.MapControllers();
+
+
+
+
 
 app.Run();

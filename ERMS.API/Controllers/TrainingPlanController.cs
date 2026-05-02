@@ -1,7 +1,9 @@
-﻿using ERMS.Application.Features.Training.Commands.ApproveTrainingPlan;
+﻿using ERMS.Application.Features.Dashboard.Queries.GetTrainingDashboard;
+using ERMS.Application.Features.Training.Commands.ApproveTrainingPlan;
 using ERMS.Application.Features.Training.Commands.CloseTrainingPlan;
 using ERMS.Application.Features.Training.Commands.CreateTrainingPlan;
 using ERMS.Application.Features.Training.Commands.CreateTrainingRequest;
+using ERMS.Application.Features.Training.Commands.DeleteTrainingPlan;
 using ERMS.Application.Features.Training.Commands.RejectTrainingPlan;
 using ERMS.Application.Features.Training.Commands.UpdateTrainingPlan;
 using ERMS.Application.Features.Training.Queries.GetAllTrainingPlans;
@@ -142,6 +144,39 @@ namespace ERMS.API.Controllers
                 return Ok(new
                 {
                     message = "Training plan closed successfully",
+                    success = result
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [Authorize(Roles = AppRoles.Director)]
+        [HttpGet("director-dashboard")]
+        public async Task<IActionResult> GetTrainingDashboard()
+        {
+            try
+            {
+                var result = await _mediator.Send(new GetTrainingDashboardQuery());
+                return Ok(result);
+            }
+            catch (Exception ex) { 
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            try
+            {
+                var result = await _mediator.Send(new DeleteTrainingPlanCommand { Id = id });
+                return Ok(new
+                {
+                    message = "Training plan deleted successfully",
                     success = result
                 });
             }

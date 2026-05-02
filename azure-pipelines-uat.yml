@@ -3,21 +3,62 @@ trigger:
     include:
     - UAT
     
-pr: none
+pr:
+  branches:
+    include:
+    - UAT
 variables:
   dockerRegistryConnection: 'DockerHubConnection'
   imageName: 'baotcq/erms-api'
-  
   tag: '$(Build.BuildId)'
+  solution: '**/*.sln'
+  buildConfiguration: 'Release'
+  dotNetVersion: '10.x'
 
 pool:
   vmImage: 'ubuntu-latest'
 
 stages:
-- stage: Build_And_Push
-  displayName: 'Đóng gói & Đẩy Docker Image'
+- stage: Build_And_Test
+  displayName: 'Build & Test'
   jobs:
   - job: Build
+    displayName: 'Build và Test'
+    steps:
+    - task: UseDotNet@2
+      displayName: 'Install .NET 10 SDK'
+      inputs:
+        packageType: 'sdk'
+        version: '$(dotNetVersion)'
+        includePreviewVersions: true
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Restore Dependencies'
+      inputs:
+        command: 'restore'
+        projects: '$(solution)'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Build Solution'
+      inputs:
+        command: 'build'
+        projects: '$(solution)'
+        arguments: '--configuration $(buildConfiguration) --no-restore'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Run Unit Tests'
+      inputs:
+        command: 'test'
+        projects: '**/*UnitTests.csproj'
+        arguments: '--configuration $(buildConfiguration) --no-build --collect:"XPlat Code Coverage"'
+        publishTestResults: true
+
+- stage: Build_And_Push
+  displayName: 'Đóng gói & Đẩy Docker Image'
+  dependsOn: Build_And_Test
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/UAT'))
+  jobs:
+  - job: BuildDocker
     displayName: 'Build Docker API'
     steps:
     - task: Docker@2
@@ -34,7 +75,7 @@ stages:
 - stage: Update_Manifest
   displayName: 'Cập nhật kho hạ tầng GitOps (VPS)'
   dependsOn: Build_And_Push
-  condition: succeeded()
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/UAT'))
   jobs:
   - job: UpdateConfig
     displayName: 'Báo cho ArgoCD cập nhật'

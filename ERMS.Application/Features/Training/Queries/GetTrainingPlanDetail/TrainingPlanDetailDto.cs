@@ -34,6 +34,12 @@ namespace ERMS.Application.Features.Training.Queries.GetTrainingPlanDetail
 
         public string RequestedByName { get; set; } = null!;
 
+        public string DepartmentName { get; set; } = null!;
+
+        public string? TargetAudience { get; set; }
+
+        public int? EstimatedParticipants { get; set; }
+
         public string Status { get; set; } = null!;
     }
 }

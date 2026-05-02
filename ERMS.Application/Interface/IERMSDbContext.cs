@@ -47,6 +47,7 @@ namespace ERMS.Application.Interface
 
         // ================= Candidate =================
         DbSet<Candidate> Candidates { get; set; }
+        DbSet<ExternalCandidate> ExternalCandidates { get; set; }
         DbSet<Education> Educations { get; set; }
         DbSet<WorkExperience> WorkExperiences { get; set; }
         DbSet<CandidateSkill> CandidateSkills { get; set; }
@@ -63,6 +64,8 @@ namespace ERMS.Application.Interface
         
         DbSet<TrainingPlan> TrainingPlans { get; set; }
         DbSet<TrainingRequest> TrainingRequests { get; set; }
+        DbSet<ChatConversation> ChatConversations { get; set; }
+        DbSet<ChatMessage> ChatMessages { get; set; }
         DbSet<Course> Courses { get; set; }
         DbSet<CourseSkill> CourseSkills { get; set; }
         DbSet<Lesson> Lessons { get; set; }

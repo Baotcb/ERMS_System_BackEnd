@@ -12,6 +12,7 @@ namespace ERMS.Application.Features.Applications.Queries.GetAllOfferByHR
     {
         public Guid Id { get; set; }
         public Guid ApplicationId { get; set; }
+        public string CandidateName { get; set; } = null!;
         public string? OfferCode { get; set; }
         public string Position { get; set; } = null!;
         public string DepartmentName { get; set; }

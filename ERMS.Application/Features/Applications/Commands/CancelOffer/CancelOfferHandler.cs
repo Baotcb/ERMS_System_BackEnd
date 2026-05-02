@@ -55,6 +55,8 @@ public sealed class CancelOfferHandler : IRequestHandler<CancelOfferCommand, Can
             .Include(o => o.Application)
                 .ThenInclude(a => a.Candidate)
                     .ThenInclude(c => c.User)
+            .Include(o => o.Application)
+                .ThenInclude(a => a.ExternalCandidate)
             .FirstOrDefaultAsync(o => o.Id == request.OfferId && !o.IsDeleted, cancellationToken)
             ?? throw new Exception($"Không tìm thấy offer với ID {request.OfferId}.");
 
@@ -92,7 +94,7 @@ public sealed class CancelOfferHandler : IRequestHandler<CancelOfferCommand, Can
         await _context.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation(
-            "Offer {OfferId} cancelled by HR Manager {UserId}. Application {ApplicationId} moved to {Stage}.",
+            "Offer {OfferId} đã bị hủy bởi HR Manager {UserId}. Ứng tuyển {ApplicationId} chuyển sang trạng thái {Stage}.",
             offer.Id,
             userId,
             application.Id,
@@ -116,9 +118,11 @@ public sealed class CancelOfferHandler : IRequestHandler<CancelOfferCommand, Can
         string cancellationReason)
     {
         var candidateUser = application.Candidate.User;
+        var recipientName = application.ExternalCandidate?.FullName ?? candidateUser.FullName;
+        var recipientEmail = application.ExternalCandidate?.Email ?? candidateUser.Email;
         var emailSubject = $"Thông báo hủy offer - {offer.Position}";
 
-        var encodedName = WebUtility.HtmlEncode(candidateUser.FullName);
+        var encodedName = WebUtility.HtmlEncode(recipientName);
         var encodedPosition = WebUtility.HtmlEncode(offer.Position);
         var encodedReason = WebUtility.HtmlEncode(cancellationReason);
 
@@ -166,13 +170,19 @@ public sealed class CancelOfferHandler : IRequestHandler<CancelOfferCommand, Can
 </body>
 </html>";
 
+        if (string.IsNullOrWhiteSpace(recipientEmail))
+        {
+            _logger.LogWarning("Bỏ qua việc gửi email hủy offer {OfferId} vì không có email ứng viên.", offer.Id);
+            return;
+        }
+
         try
         {
-            await _emailService.SendEmailAsync(candidateUser.Email, emailSubject, emailBody);
+            await _emailService.SendEmailAsync(recipientEmail, emailSubject, emailBody);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to send cancellation email for offer {OfferId} to {Email}.", offer.Id, candidateUser.Email);
+            _logger.LogWarning(ex, "Gửi email hủy offer {OfferId} đến {Email} thất bại.", offer.Id, recipientEmail);
         }
     }
 }

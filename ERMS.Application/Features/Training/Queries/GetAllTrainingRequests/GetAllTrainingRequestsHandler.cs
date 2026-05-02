@@ -25,11 +25,17 @@ namespace ERMS.Application.Features.Training.Queries.GetAllTrainingRequests
             GetAllTrainingRequestsQuery request,
             CancellationToken cancellationToken)
         {
-           
+            var enterpriseId = await _currentUserService.GetEnterpriseIdAsync();
+
+            if (!enterpriseId.HasValue)
+                throw new UnauthorizedAccessException();
+
 
             var query = _context.TrainingRequests
-                .Where(t =>  !t.IsDeleted)
-                .AsQueryable();
+    .Where(t =>
+        !t.IsDeleted &&
+        t.EnterpriseId == enterpriseId.Value)
+    .AsQueryable();
 
             // Search
             if (!string.IsNullOrEmpty(request.Search))
@@ -69,6 +75,7 @@ namespace ERMS.Application.Features.Training.Queries.GetAllTrainingRequests
                     Id = t.Id,
                     Subject = t.Subject,
                     Urgency = t.Urgency,
+                    Description = t.Description,
                     Status = t.Status,
                     DepartmentName = t.Department.DepartmentName,
                     RequestedByName = t.RequestedBy.FullName,

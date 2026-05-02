@@ -60,7 +60,7 @@ namespace ERMS.API.Controllers
             var result = await _mediator.Send(new GetTrainerFeedbacksQuery());
             return Ok(result);
         }
-
+         
         [HttpGet("check/{courseId}")]
         public async Task<IActionResult> CheckFeedback(Guid courseId)
         {
@@ -71,12 +71,26 @@ namespace ERMS.API.Controllers
                 .FirstOrDefaultAsync(x => x.UserId == userId);
             if (employee == null) return Ok(new { hasSubmitted = false });
 
-            var exists = await _context.CourseFeedbacks
-                .AnyAsync(x => x.CourseId == courseId &&
-                               x.EmployeeId == employee.Id &&
-                               !x.IsDeleted);
+            var feedback = await _context.CourseFeedbacks
+                .Where(x => x.CourseId == courseId &&
+                            x.EmployeeId == employee.Id &&
+                            !x.IsDeleted)
+                .Select(x => new
+                {
+                    feedbackId = x.Id,
+                    courseRating = x.CourseRating,
+                    trainerRating = x.TrainerRating,
+                    comment = x.Comment,
+                    isAnonymous = x.IsAnonymous,
+                    createdAt = x.CreatedAt
+                })
+                .FirstOrDefaultAsync();
 
-            return Ok(new { hasSubmitted = exists });
+            return Ok(new
+            {
+                hasSubmitted = feedback != null,
+                feedbackData = feedback
+            });
         }
 
         [HttpPost("{feedbackId}/replies")]
